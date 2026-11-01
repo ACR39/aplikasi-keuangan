@@ -196,11 +196,11 @@ def data_kosong() -> dict:
             {"id": "k_tagihan", "nama": "Tagihan & Utilitas", "tipe": "keluar", "anggaran": 1000000},
             {"id": "k_belanja", "nama": "Belanja Kebutuhan", "tipe": "keluar", "anggaran": 1000000},
         ],
-        "transaksi": [],   # [{"id","tanggal","tipe"("masuk"|"keluar"|"transfer"),"judul","jumlah","dompet","ke_dompet","kategori","catatan","foto","oleh"}]
-        "utang": [],       # [{"id","arah"("utang"|"piutang"),"nama","orang","jumlah","tanggal","tenggat","catatan","lunas"}]
-        "rencana": [],     # [{"id","nama","target","terkumpul","prioritas","catatan","tercapai"}]
-        "aktivitas": [],   # [{"id","waktu","oleh","jenis","nama","rincian"}]
-        "sampah": [],      # [{"id","transaksi":{...},"dihapus":"YYYY-MM-DD HH:MM","oleh"}]
+        "transaksi": [],
+        "utang": [],
+        "rencana": [],
+        "aktivitas": [],
+        "sampah": [],
     }
 
 
@@ -465,7 +465,7 @@ def kartu_tx_html(t: dict) -> str:
     jml = int(t.get("jumlah", 0) or 0)
     if tipe == "masuk":
         ic, kls_ic, tanda, kls_b, lbl = "↙", "", "+", "", "Pemasukan"
-         lenc = '<span class="lencana lc-h">Masuk</span>'
+        lenc = '<span class="lencana lc-h">Masuk</span>'
         meta = [fmt_iso(t.get("tanggal", "")), nama_dompet(t.get("dompet", "")), nama_kat(t.get("kategori", ""))]
     elif tipe == "transfer":
         ic, kls_ic, tanda, kls_b, lbl = "⇄", " trf", "", "biru", "Transfer"
@@ -580,7 +580,6 @@ if halaman == "Beranda":
         f'<div class="sc-stat"><div class="sc-lab">Utang/Piutang Aktif</div><div class="sc-val">{utang_aktif}</div></div>'
         '</div>', unsafe_allow_html=True)
 
-    # Kartu Perlu Perhatian (Anggaran lewat & Utang jatuh tempo)
     perhatian = []
     for k in D["kategori"]:
         ang = int(k.get("anggaran", 0) or 0)
@@ -714,8 +713,7 @@ if halaman == "Kelola transaksi":
                     e1, e2, _ = st.columns([1, 1, 4])
                     e1.button("Edit", key=f"kedit_{t['id']}", on_click=atur, args=("tx_mode", t["id"]), use_container_width=True)
                     if e2.button("Hapus", key=f"khapus_{t['id']}", use_container_width=True):
-                        D[" transaksi"] = [x for x in D["transaksi"] if x["id"] != t["id"]]
-                        D["transaksi"] = D[" transaksi"]
+                        D["transaksi"] = [x for x in D["transaksi"] if x["id"] != t["id"]]
                         D["sampah"].append({"id": uuid.uuid4().hex[:8], "transaksi": dict(t),
                                             "dihapus": sekarang().strftime("%Y-%m-%d %H:%M"), "oleh": pengguna_nama()})
                         log_akt("buang", t.get("judul", ""), rp(t.get("jumlah", 0)))
