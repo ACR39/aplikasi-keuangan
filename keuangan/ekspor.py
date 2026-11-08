@@ -23,21 +23,21 @@ def tabel_transaksi() -> pd.DataFrame:
 def excel_lengkap() -> bytes:
     out = io.BytesIO()
     with pd.ExcelWriter(out, engine="openpyxl") as w:
-        tabel_transaksi().to_excel(w, "Transaksi", index=False)
+        tabel_transaksi().to_excel(w, sheet_name="Transaksi", index=False)
         pd.DataFrame([{"Dompet": d["nama"], "Jenis": d.get("jenis", ""), "Saldo awal": d.get("saldo_awal", 0),
                        "Saldo sekarang": saldo_dompet(d["id"]), "Diarsipkan": "ya" if d.get("arsip") else ""}
-                      for d in D["dompet"]]).to_excel(w, "Dompet", index=False)
+                      for d in D["dompet"]]).to_excel(w, sheet_name="Dompet", index=False)
         pd.DataFrame([{"Kategori": nama_kat(a["kategori"]), "Batas per bulan": a["batas"]} for a in D["anggaran"]],
-                     columns=["Kategori", "Batas per bulan"]).to_excel(w, "Anggaran", index=False)
+                     columns=["Kategori", "Batas per bulan"]).to_excel(w, sheet_name="Anggaran", index=False)
         pd.DataFrame([{"Tagihan": t["nama"], "Jumlah": t["jumlah"], "Berulang": t["tiap"], "Jatuh tempo": t["berikut"],
                        "Dompet": nama_dompet(t["dompet"]), "Aktif": "ya" if t.get("aktif", True) else ""} for t in D["tagihan"]],
-                     columns=["Tagihan", "Jumlah", "Berulang", "Jatuh tempo", "Dompet", "Aktif"]).to_excel(w, "Tagihan", index=False)
+                     columns=["Tagihan", "Jumlah", "Berulang", "Jatuh tempo", "Dompet", "Aktif"]).to_excel(w, sheet_name="Tagihan", index=False)
         pd.DataFrame([{"Target": g["nama"], "Target (Rp)": g["target"], "Terkumpul": sum(s["jumlah"] for s in g["setoran"]),
                        "Tenggat": g.get("tenggat", "")} for g in D["tabungan"]],
-                     columns=["Target", "Target (Rp)", "Terkumpul", "Tenggat"]).to_excel(w, "Tabungan", index=False)
+                     columns=["Target", "Target (Rp)", "Terkumpul", "Tenggat"]).to_excel(w, sheet_name="Tabungan", index=False)
         pd.DataFrame([{"Jenis": "Utang saya" if u["arah"] == "utang" else "Piutang", "Orang": u["orang"], "Jumlah": u["jumlah"],
                        "Dibayar": sum(b["jumlah"] for b in u["bayar"]), "Tenggat": u.get("tenggat", "")} for u in D["utang"]],
-                     columns=["Jenis", "Orang", "Jumlah", "Dibayar", "Tenggat"]).to_excel(w, "Utang-piutang", index=False)
+                     columns=["Jenis", "Orang", "Jumlah", "Dibayar", "Tenggat"]).to_excel(w, sheet_name="Utang-piutang", index=False)
         for ws in w.book.worksheets:
             for kol in ws.columns:
                 ws.column_dimensions[kol[0].column_letter].width = min(max(len(str(c.value or "")) for c in kol) + 3, 40)
