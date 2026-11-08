@@ -363,6 +363,8 @@ WIB = timezone(timedelta(hours=7))
 BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober",
          "November", "Desember"]
 JENIS = {"masuk": "Pemasukan", "keluar": "Pengeluaran", "transfer": "Transfer"}
+TOKO_IKON = {"Minimarket": "🏪", "Supermarket": "🛒", "Pasar": "🧺", "Warung": "🏠", "Toko online": "📦", "Restoran / kafe": "🍽️",
+             "SPBU": "⛽", "Apotek": "💊", "Lainnya": "📍"}
 JENIS_DOMPET = ["Tunai", "Rekening bank", "Dompet digital", "Kartu kredit", "Investasi", "Lainnya"]
 
 
@@ -485,7 +487,8 @@ def data_kosong() -> dict:
         # [{"id","nama","jenis","saldo_awal","arsip"}]  saldo sekarang dihitung dari saldo awal + transaksi
         "kategori": kategori_awal(),  # [{"id","nama","jenis"(masuk|keluar),"induk"(id kategori utama, kosong = utama),"ikon","warna"}]
         "transaksi": [],  # [{"id","jenis"(masuk|keluar|transfer),"tgl","jumlah","dompet","ke","biaya","kategori","catatan",
-                          #   "barang","qty","harga_satuan","tagihan","utang","dibuat","oleh"}]
+                          #   "barang","qty","harga_satuan","toko","lokasi","waktu"(HH:MM),"tagihan","utang","dibuat","oleh"}]
+        "toko": [],       # [{"id","nama","jenis","lokasi"}]  tempat beli / toko
         "barang": [],     # [{"id","nama","kategori"(id kategori atau sub kategori),"harga"(harga satuan terakhir),"satuan"}]
         "anggaran": [],   # [{"id","kategori","batas"}]  batas per bulan, berlaku tiap bulan
         "tagihan": [],    # [{"id","nama","jumlah","kategori","dompet","tiap","berikut","catatan","aktif"}]

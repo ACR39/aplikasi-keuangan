@@ -152,9 +152,38 @@ def f_barang(kat: str = ""):
     return lambda i: m.get(i, "(barang dihapus)")
 
 
+def kunci_urut(t: dict):
+    """Urutan kronologis: tanggal, lalu jam beli, lalu saat dicatat."""
+    return (t["tgl"], t.get("waktu", "") or "", t.get("dibuat", ""))
+
+
 def transaksi_barang(id_) -> list:
     """Transaksi yang memakai barang ini, terbaru dulu."""
-    return sorted([t for t in D["transaksi"] if t.get("barang") == id_], key=lambda t: (t["tgl"], t.get("dibuat", "")), reverse=True)
+    return sorted([t for t in D["transaksi"] if t.get("barang") == id_], key=kunci_urut, reverse=True)
+
+
+# ---------------------------------------------------------------- toko / tempat beli
+def toko_dari(id_):
+    return next((x for x in D["toko"] if x["id"] == id_), None)
+
+
+def f_toko(tambahan: dict | None = None):
+    m = {x["id"]: x["nama"] + (f' · {x["lokasi"]}' if x.get("lokasi") else "") for x in D["toko"]}
+    m[""] = "(tanpa toko)"
+    m.update(tambahan or {})
+    return lambda i: m.get(i, "(toko dihapus)")
+
+
+def transaksi_toko(id_) -> list:
+    return sorted([t for t in D["transaksi"] if t.get("toko") == id_], key=kunci_urut, reverse=True)
+
+
+def teks_toko(t: dict) -> str:
+    """'Indomaret (Jl. Merdeka)' atau hanya lokasi / hanya toko; '' bila keduanya kosong."""
+    x = toko_dari(t.get("toko"))
+    nama = x["nama"] if x else ""
+    lok = t.get("lokasi", "")
+    return f"{nama} ({lok})" if nama and lok else nama or lok
 
 
 def perbarui_harga_barang(id_):
@@ -295,9 +324,11 @@ def baris_transaksi(t: dict) -> str:
         ikon, nom = "⇄", rp(t["jumlah"])
     else:
         judul = t.get("catatan") or teks_barang(t) or nama_kat(t.get("kategori"))
-        meta = f'{fmt_iso(t["tgl"])} · {nama_dompet(t["dompet"])} · {nama_kat(t.get("kategori"))}'
+        meta = f'{fmt_iso(t["tgl"])}{" " + t["waktu"] if t.get("waktu") else ""} · {nama_dompet(t["dompet"])} · {nama_kat(t.get("kategori"))}'
         if t.get("catatan") and teks_barang(t):
             meta += f' · {teks_barang(t)}'
+        if teks_toko(t):
+            meta += f' · {teks_toko(t)}'
         ikon = "↓" if j == "masuk" else "↑"
         nom = ("+" if j == "masuk" else "-") + rp(t["jumlah"])
     k = kat_dari(t.get("kategori")) if j != "transfer" else None
@@ -326,4 +357,28 @@ def ringkas_teks(t: dict) -> str:
     if t["jenis"] == "transfer":
         return f'{isi}, {nama_dompet(t["dompet"])} → {nama_dompet(t.get("ke"))}'
     return (f'{isi}, {nama_kat(t.get("kategori"))}, {nama_dompet(t["dompet"])}' + (f", {teks_barang(t)}" if teks_barang(t) else "")
-            + (f' ("{t["catatan"]}")' if t.get("catatan") else ""))
+            + (f", di {teks_toko(t)}" if teks_toko(t) else "") + (f' ("{t["catatan"]}")' if t.get("catatan") else ""))
+
+
+def pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_sub: bool = True) -> str:
+    """Dua kotak terpisah: Kategori (utama) lalu Sub kategori. Kembalikan id kategori efektif
+    (sub kalau dipilih, kalau tidak kategori utama). Dipakai di luar st.form agar sub ikut berubah."""
+    utama = [k["id"] for k in kategori_utama(jenis)]
+    if not utama:
+        return ""
+    a = akar(awal) if kat_dari(awal) else ""
+    sub_awal = awal if a and a != awal else ""
+    c1, c2 = kolom or st.columns(2)
+    if st.session_state.get(f"{kunci}_kat") not in utama:
+        st.session_state.pop(f"{kunci}_kat", None)
+    kat = c1.selectbox("Kategori", utama, index=utama.index(a) if a in utama else 0, format_func=f_kat(), key=f"{kunci}_kat")
+    if not tampil_sub:
+        return kat
+    anak = [""] + [k["id"] for k in sorted(anak_dari(kat), key=lambda k: k["nama"].lower())]
+    if st.session_state.get(f"{kunci}_sub") not in anak:
+        st.session_state.pop(f"{kunci}_sub", None)
+    nama_sub = {k["id"]: k["nama"] for k in anak_dari(kat)}
+    nama_sub[""] = "(tanpa sub kategori)"
+    sub = c2.selectbox("Sub kategori", anak, index=anak.index(sub_awal) if sub_awal in anak else 0,
+                       format_func=lambda i: nama_sub.get(i, "(dihapus)"), key=f"{kunci}_sub")
+    return sub or kat

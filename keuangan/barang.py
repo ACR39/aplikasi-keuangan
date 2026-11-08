@@ -2,7 +2,7 @@
 import streamlit as st
 
 from keuangan.bantu import (
-    akar, atur, catat, e, f_kat, ikon_kat, kategori_jenis, nama_kat, selesai_simpan, transaksi_barang, turunan, versi,
+    pilih_kategori, akar, atur, catat, e, f_kat, ikon_kat, kategori_jenis, nama_kat, selesai_simpan, transaksi_barang, turunan, versi,
 )
 from keuangan.inti import D, baru_id, fmt_iso, hanya_lihat, rp
 
@@ -13,15 +13,17 @@ def semua_kategori() -> list:
 
 def _form(awal: dict | None, kat_awal: str = ""):
     awal = awal or {}
-    ids = semua_kategori()
-    if not ids:
+    if not semua_kategori():
         st.warning("Belum ada kategori. Tambah dulu di Pengaturan > Kategori.")
         return
     pil = awal.get("kategori") or kat_awal
-    with st.form(f"f_brg_{versi()}_{awal.get('id', 'baru')}", clear_on_submit=not awal):
-        c1, c2 = st.columns([2, 2])
-        nama = c1.text_input("Nama barang", value=awal.get("nama", ""), placeholder="Contoh: Indomie goreng")
-        kat = c2.selectbox("Kategori atau sub kategori", ids, index=ids.index(pil) if pil in ids else 0, format_func=f_kat())
+    kk = f"f_brg_{versi()}_{awal.get('id', 'baru')}"
+    jenis = next((k["jenis"] for k in D["kategori"] if k["id"] == pil), "keluar")
+    jenis = st.radio("Jenis kategori", ["keluar", "masuk"], index=0 if jenis == "keluar" else 1, horizontal=True,
+                     format_func=lambda j: "Pengeluaran" if j == "keluar" else "Pemasukan", key=f"{kk}_jenis")
+    kat = pilih_kategori(f"{kk}_{jenis}", jenis, pil if any(k["id"] == pil and k["jenis"] == jenis for k in D["kategori"]) else "")
+    with st.form(f"{kk}_{kat}", clear_on_submit=not awal):
+        nama = st.text_input("Nama barang", value=awal.get("nama", ""), placeholder="Contoh: Indomie goreng")
         c3, c4 = st.columns(2)
         satuan = c3.text_input("Satuan, opsional", value=awal.get("satuan", ""), placeholder="bungkus, kg, liter")
         harga = c4.number_input("Harga satuan (Rp), opsional", min_value=0, step=500, value=int(awal.get("harga", 0) or 0),

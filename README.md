@@ -6,13 +6,15 @@ Data disimpan sebagai satu file `data.json` di repositori GitHub privat.
 
 ## Menu
 - **Beranda**: total saldo, pemasukan dan pengeluaran bulan terpilih, hal yang perlu perhatian (tagihan jatuh tempo, anggaran hampir atau sudah lewat, utang jatuh tempo, saldo negatif), saldo per dompet, anggaran, target tabungan, grafik. Bagian Beranda bisa disembunyikan di Pengaturan > Tampilan.
-- **Transaksi**: Catat transaksi (pemasukan, pengeluaran, transfer dengan biaya admin), Daftar transaksi (filter bulan, jenis, dompet, kategori, kata kunci; ubah dan hapus), Barang dan produk (daftar barang per kategori atau sub kategori, misalnya Indomie di Belanja bahan makanan), Riwayat aktivitas, Tempat sampah (30 hari).
+- **Transaksi**: Catat transaksi (pemasukan, pengeluaran, transfer dengan biaya admin), Daftar transaksi (filter bulan, jenis, dompet, kategori, kata kunci; ubah dan hapus), Toko dan tempat beli (daftar toko beserta jenis dan lokasi), Barang dan produk (daftar barang per kategori atau sub kategori, misalnya Indomie di Belanja bahan makanan), Riwayat aktivitas, Tempat sampah (30 hari).
 - **Pantau**: Anggaran per kategori, Tagihan berulang (tombol Bayar otomatis membuat pengeluaran dan memajukan jatuh tempo), Target tabungan (perkiraan setoran per bulan), Utang-piutang (cicilan, bisa ikut tercatat di dompet), Laporan (bulanan, tren 12 bulan, per dompet).
 - **Pengaturan**: Tampilan, Ekspor dan impor (Excel lengkap, CSV transaksi, impor dari Excel/CSV), Dompet, Kategori (kategori utama + sub kategori dengan ikon dan warna, gabungkan saat menghapus), Cadangan dan pulihkan (unduh JSON, titik pulih dari riwayat commit).
 
 Kategori punya dua tingkat: kategori utama (misalnya Rumah) dan sub kategori (misalnya Listrik). Transaksi boleh memakai keduanya. Anggaran, laporan, dan filter pada kategori utama otomatis mencakup semua sub kategorinya. Data lama tanpa sub kategori tetap terbuka (kategori lama jadi kategori utama).
 
 Barang: saat mencatat pengeluaran/pemasukan, pilih kategori lalu barangnya (daftar barang menyesuaikan kategori; kategori utama menampilkan barang semua sub-nya). Isi banyaknya dan harga satuan, total dihitung otomatis, dan harga barang diperbarui dari transaksi terbaru. Barang belum ada bisa ditambah langsung dari halaman Catat transaksi. Laporan > Barang menampilkan total belanja per barang dan grafik perubahan harga.
+
+Kategori dan Sub kategori dipilih di dua kotak terpisah. Toko / tempat beli dipilih dari daftar (atau ditambah langsung di halaman Catat transaksi); lokasi terisi otomatis dari toko tetapi bisa diubah, dan Waktu beli terisi jam sekarang (WIB). Daftar transaksi bisa difilter per toko dan dicari berdasarkan toko atau lokasi. Laporan > Toko menampilkan kunjungan dan total per toko, serta grafik jam belanja.
 
 Saldo dompet tidak disimpan, tetapi dihitung dari saldo awal + semua transaksi, jadi tidak bisa tidak sinkron.
 Transfer tidak dihitung sebagai pemasukan atau pengeluaran; biaya admin transfer dihitung sebagai pengeluaran.
@@ -38,7 +40,7 @@ streamlit run app.py
 - `lihat`: hanya melihat dan mengekspor.
 
 ## Format impor
-Kolom opsional `Barang`, `Banyaknya`, `Harga satuan` (barang baru dibuat otomatis; Jumlah boleh kosong bila ketiganya diisi). Kolom (kategori boleh `Rumah` atau sub kategori `Rumah › Listrik`): `Tanggal, Jenis, Jumlah, Dompet, Ke dompet, Biaya admin, Kategori, Catatan`. Jenis: Pemasukan, Pengeluaran, atau Transfer.
+Kolom opsional `Barang`, `Banyaknya`, `Harga satuan`, `Toko`, `Lokasi`, `Waktu` (format 14:30; toko baru dibuat otomatis; barang baru dibuat otomatis; Jumlah boleh kosong bila ketiganya diisi). Kolom (kategori boleh `Rumah` atau sub kategori `Rumah › Listrik`): `Tanggal, Jenis, Jumlah, Dompet, Ke dompet, Biaya admin, Kategori, Catatan`. Jenis: Pemasukan, Pengeluaran, atau Transfer.
 Tanggal `2026-03-15` atau `15/03/2026`; angka boleh `1.250.000`. Contoh file bisa diunduh di menu impor.
 
 ## Struktur kode

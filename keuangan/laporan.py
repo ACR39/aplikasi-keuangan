@@ -3,7 +3,7 @@ import pandas as pd
 import streamlit as st
 
 from keuangan.bantu import (
-    daftar_bulan, transaksi_barang,    akar, ikon_kat,    deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_dompet, nama_kat, per_kategori, pilih_bulan,
+    daftar_bulan, transaksi_barang, transaksi_toko,    akar, ikon_kat,    deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_dompet, nama_kat, per_kategori, pilih_bulan,
     ringkas_bulan, saldo_dompet, transaksi_bulan, ym_ini, batang,
 )
 from keuangan.inti import D, nama_bulan, rp
@@ -143,8 +143,40 @@ def _barang():
             st.caption("Grafik harga muncul setelah barang ini dibeli minimal dua kali.")
 
 
+def _toko():
+    bulan = st.selectbox("Periode", ["semua"] + daftar_bulan(), key="lp_bulan_t",
+                         format_func=lambda b: "Semua waktu" if b == "semua" else nama_bulan(b))
+    baris = []
+    for x in D["toko"]:
+        ts = [t for t in transaksi_toko(x["id"]) if t["jenis"] == "keluar" and (bulan == "semua" or t["tgl"][:7] == bulan)]
+        if not ts:
+            continue
+        total = sum(t["jumlah"] for t in ts)
+        baris.append({"Toko": x["nama"], "Jenis": x.get("jenis", ""), "Lokasi": x.get("lokasi", ""), "Kunjungan": len(ts),
+                      "Total (Rp)": total, "Rata-rata (Rp)": round(total / len(ts)), "Terakhir": ts[0]["tgl"]})
+    if not baris:
+        st.info("Belum ada pengeluaran dengan toko pada periode ini. Pilih toko saat mencatat transaksi.")
+    else:
+        df = pd.DataFrame(baris).sort_values("Total (Rp)", ascending=False).set_index("Toko")
+        st.dataframe(df.style.format({"Total (Rp)": "{:,.0f}".format, "Rata-rata (Rp)": "{:,.0f}".format}), width="stretch")
+        st.bar_chart(df["Total (Rp)"], color="#256b4a")
+    jam = {}
+    for t in D["transaksi"]:
+        if t["jenis"] == "keluar" and t.get("waktu") and (bulan == "semua" or t["tgl"][:7] == bulan):
+            h = int(t["waktu"][:2])
+            jam[h] = jam.get(h, 0) + t["jumlah"]
+    with st.container(key="kartu_g_lp_jam"):
+        st.markdown("**Jam belanja**")
+        if jam:
+            st.bar_chart(pd.Series({f"{h:02d}": jam.get(h, 0) for h in range(24)}, name="Pengeluaran (Rp)"), color="#3b82c4")
+            puncak = max(jam, key=jam.get)
+            st.caption(f"Pengeluaran terbesar terjadi sekitar pukul {puncak:02d}.00 ({rp(jam[puncak])}). Hanya transaksi yang punya waktu beli.")
+        else:
+            st.caption("Belum ada transaksi dengan waktu beli pada periode ini.")
+
+
 def halaman_laporan():
-    t1, t2, t3, t4 = st.tabs(["Bulanan", "Tren", "Per dompet", "Barang"])
+    t1, t2, t3, t4, t5 = st.tabs(["Bulanan", "Tren", "Per dompet", "Barang", "Toko"])
     with t1:
         _bulanan()
     with t2:
@@ -153,3 +185,5 @@ def halaman_laporan():
         _dompet()
     with t4:
         _barang()
+    with t5:
+        _toko()

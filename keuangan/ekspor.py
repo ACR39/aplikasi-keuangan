@@ -5,20 +5,21 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 
-from keuangan.bantu import barang_dari, catat, nama_dompet, nama_kat, perbarui_harga_barang, saldo_dompet, selesai_simpan, transaksi_barang
+from keuangan.bantu import kunci_urut, toko_dari, transaksi_toko, barang_dari, catat, nama_dompet, nama_kat, perbarui_harga_barang, saldo_dompet, selesai_simpan, transaksi_barang
 from keuangan.inti import D, JENIS, baru_id, hanya_lihat, sekarang
 
-KOLOM = ["Tanggal", "Jenis", "Jumlah", "Dompet", "Ke dompet", "Biaya admin", "Kategori", "Catatan", "Barang", "Banyaknya", "Harga satuan"]
+KOLOM = ["Tanggal", "Jenis", "Jumlah", "Dompet", "Ke dompet", "Biaya admin", "Kategori", "Catatan", "Barang", "Banyaknya", "Harga satuan", "Toko", "Lokasi", "Waktu"]
 
 
 def tabel_transaksi() -> pd.DataFrame:
     baris = []
-    for t in sorted(D["transaksi"], key=lambda t: (t["tgl"], t.get("dibuat", ""))):
+    for t in sorted(D["transaksi"], key=kunci_urut):
         baris.append({"Tanggal": t["tgl"], "Jenis": JENIS[t["jenis"]], "Jumlah": t["jumlah"], "Dompet": nama_dompet(t["dompet"]),
                       "Ke dompet": nama_dompet(t["ke"]) if t.get("ke") else "", "Biaya admin": t.get("biaya", 0) or 0,
                       "Kategori": nama_kat(t.get("kategori")) if t["jenis"] != "transfer" else "", "Catatan": t.get("catatan", ""),
                       "Barang": (barang_dari(t.get("barang")) or {}).get("nama", ""), "Banyaknya": t.get("qty", "") or "",
-                      "Harga satuan": t.get("harga_satuan", "") or ""})
+                      "Harga satuan": t.get("harga_satuan", "") or "",
+                      "Toko": (toko_dari(t.get("toko")) or {}).get("nama", ""), "Lokasi": t.get("lokasi", ""), "Waktu": t.get("waktu", "")})
     return pd.DataFrame(baris, columns=KOLOM)
 
 
@@ -30,6 +31,11 @@ def excel_lengkap() -> bytes:
                        "Kali dibeli": len(transaksi_barang(b["id"])), "Total belanja": sum(t["jumlah"] for t in transaksi_barang(b["id"]))}
                       for b in D["barang"]], columns=["Barang", "Kategori", "Satuan", "Harga terakhir", "Kali dibeli", "Total belanja"]
                      ).to_excel(w, sheet_name="Barang", index=False)
+        pd.DataFrame([{"Toko": x["nama"], "Jenis": x.get("jenis", ""), "Lokasi": x.get("lokasi", ""),
+                       "Kunjungan": len(transaksi_toko(x["id"])),
+                       "Total belanja": sum(t["jumlah"] for t in transaksi_toko(x["id"]) if t["jenis"] == "keluar")}
+                      for x in D["toko"]], columns=["Toko", "Jenis", "Lokasi", "Kunjungan", "Total belanja"]
+                     ).to_excel(w, sheet_name="Toko", index=False)
         pd.DataFrame([{"Dompet": d["nama"], "Jenis": d.get("jenis", ""), "Saldo awal": d.get("saldo_awal", 0),
                        "Saldo sekarang": saldo_dompet(d["id"]), "Diarsipkan": "ya" if d.get("arsip") else ""}
                       for d in D["dompet"]]).to_excel(w, sheet_name="Dompet", index=False)
@@ -106,6 +112,26 @@ def _tanggal(s) -> str:
     raise ValueError(f"tanggal tidak dikenali: {s}")
 
 
+def _waktu(s) -> str:
+    """Terima 'HH:MM', 'HH:MM:SS', 'HH.MM', objek jam, atau pecahan hari Excel; kembalikan 'HH:MM' atau ''."""
+    if s is None or (isinstance(s, float) and pd.isna(s)) or str(s).strip() in ("", "nan", "NaT"):
+        return ""
+    if hasattr(s, "hour"):
+        return f"{s.hour:02d}:{s.minute:02d}"
+    x = str(s).strip().replace(".", ":")
+    try:
+        if ":" not in x:
+            m = round(float(x) * 1440) % 1440
+            return f"{m // 60:02d}:{m % 60:02d}"
+        h, m = x.split(":")[:2]
+        h, m = int(h), int(m)
+        if 0 <= h < 24 and 0 <= m < 60:
+            return f"{h:02d}:{m:02d}"
+    except ValueError:
+        pass
+    raise ValueError(f"waktu '{s}' tidak dikenali (pakai format 14:30)")
+
+
 def _cocok_jenis(s: str) -> str:
     s = str(s).strip().lower()
     for k, v in JENIS.items():
@@ -125,12 +151,12 @@ def halaman_impor():
     with st.container(key="kartu_g_impor"):
         st.markdown("**Impor transaksi**")
         st.caption("Kolom wajib: Tanggal, Jenis (Pemasukan / Pengeluaran / Transfer), Dompet, dan Jumlah (boleh kosong bila Banyaknya dan Harga satuan diisi). Kolom lain: Kategori (boleh 'Rumah' atau sub kategori 'Rumah › Listrik'), Catatan, "
-                   "Ke dompet dan Biaya admin (untuk transfer). Kolom Barang, Banyaknya, Harga satuan bersifat opsional (barang baru dibuat otomatis di kategorinya). "
+                   "Ke dompet dan Biaya admin (untuk transfer). Kolom Barang, Banyaknya, Harga satuan, Toko, Lokasi, Waktu (14:30) bersifat opsional (barang dan toko baru dibuat otomatis). "
                    " Tanggal boleh 2026-03-15 atau 15/03/2026.")
-        contoh = pd.DataFrame([["2026-03-01", "Pemasukan", 5000000, "BCA", "", 0, "Gaji", "Gaji Maret", "", "", ""],
-                               ["2026-03-02", "Pengeluaran", 35000, "Tunai", "", 0, "Makan dan minum", "Makan siang", "", "", ""],
-                               ["2026-03-03", "Transfer", 500000, "BCA", "GoPay", 2500, "", "Isi saldo", "", "", ""],
-                               ["2026-03-04", "Pengeluaran", 15000, "Tunai", "", 0, "Makan dan minum › Belanja bahan makanan", "", "Indomie goreng", 5, 3000]],
+        contoh = pd.DataFrame([["2026-03-01", "Pemasukan", 5000000, "BCA", "", 0, "Gaji", "Gaji Maret", "", "", "", "", "", ""],
+                               ["2026-03-02", "Pengeluaran", 35000, "Tunai", "", 0, "Makan dan minum", "Makan siang", "", "", "", "Warung Bu Tini", "Jl. Melati", "12:30"],
+                               ["2026-03-03", "Transfer", 500000, "BCA", "GoPay", 2500, "", "Isi saldo", "", "", "", "", "", ""],
+                               ["2026-03-04", "Pengeluaran", 15000, "Tunai", "", 0, "Makan dan minum › Belanja bahan makanan", "", "Indomie goreng", 5, 3000, "Indomaret Merdeka", "Jl. Merdeka, Bandung", "18:45"]],
                               columns=KOLOM)
         st.download_button("Unduh contoh file (CSV)", contoh.to_csv(index=False).encode("utf-8-sig"), file_name="contoh-impor.csv", mime="text/csv")
         berkas = st.file_uploader("File Excel atau CSV", type=["xlsx", "xlsm", "csv"], key="impor_berkas")
@@ -149,7 +175,8 @@ def halaman_impor():
             st.error("Kolom belum ada: " + ", ".join(kurang))
             return
         baru, galat = [], []
-        dom_baru, kat_baru, brg_baru = {}, {}, {}
+        dom_baru, kat_baru, brg_baru, tk_baru = {}, {}, {}, {}
+        tk_cari = {x["nama"].strip().lower(): x for x in D["toko"]}
         brg_cari = {(b["nama"].strip().lower(), b["kategori"]): b for b in D["barang"]}
         dom_nama = {d["nama"].strip().lower(): d["id"] for d in D["dompet"]}
         kat_cari = {(k["nama"].strip().lower(), k.get("induk", ""), k["jenis"]): k["id"] for k in D["kategori"]}
@@ -199,6 +226,20 @@ def halaman_impor():
                         raise ValueError("dompet asal dan tujuan sama")
                 else:
                     t["kategori"] = id_kat(str(r.get("Kategori", "")), jenis)
+                    nt = str(r.get("Toko", "") if "Toko" in df.columns else "").strip()
+                    nt = "" if nt.lower() == "nan" else nt
+                    if nt:
+                        if nt.lower() not in tk_cari:
+                            if not buat:
+                                raise ValueError(f"toko '{nt}' tidak ada")
+                            tk_cari[nt.lower()] = tk_baru[nt.lower()] = {"id": baru_id(), "nama": nt, "jenis": "Lainnya", "lokasi": ""}
+                        t["toko"] = tk_cari[nt.lower()]["id"]
+                    lk = str(r.get("Lokasi", "") if "Lokasi" in df.columns else "").strip()
+                    if lk and lk.lower() != "nan":
+                        t["lokasi"] = lk
+                    wk = _waktu(r.get("Waktu", "") if "Waktu" in df.columns else "")
+                    if wk:
+                        t["waktu"] = wk
                     nb = str(r.get("Barang", "")).strip()
                     if nb:
                         qty = _desimal(r.get("Banyaknya", "")) or 1.0
@@ -219,8 +260,8 @@ def halaman_impor():
         if galat:
             with st.expander("Baris bermasalah (tidak diimpor)", expanded=True):
                 st.write("\n".join(f"- {g}" for g in galat[:50]))
-        if dom_baru or kat_baru or brg_baru:
-            st.caption(f"Akan dibuat: {len(dom_baru)} dompet, {len(kat_baru)} kategori, dan {len(brg_baru)} barang baru.")
+        if dom_baru or kat_baru or brg_baru or tk_baru:
+            st.caption(f"Akan dibuat: {len(dom_baru)} dompet, {len(kat_baru)} kategori, {len(brg_baru)} barang, dan {len(tk_baru)} toko baru.")
         if baru and st.button(f"Impor {len(baru)} transaksi", type="primary", key="impor_go"):
             for n, i in dom_baru.items():
                 D["dompet"].append({"id": i, "nama": n.title() if n.islower() else n, "jenis": "Lainnya", "saldo_awal": 0, "arsip": False})
@@ -229,6 +270,7 @@ def halaman_impor():
                 D["kategori"].append({"id": i, "nama": nama_k, "jenis": j, "induk": induk, "ikon": p["ikon"] if p else "🏷️",
                                       "warna": p["warna"] if p else "#9aa0a6"})
             D["barang"].extend(brg_baru.values())
+            D["toko"].extend(tk_baru.values())
             D["transaksi"].extend(baru)
             for bb in {t["barang"] for t in baru if t.get("barang")}:
                 perbarui_harga_barang(bb)

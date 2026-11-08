@@ -4,7 +4,7 @@ import streamlit as st
 
 from keuangan.anggaran import status_anggaran
 from keuangan.bantu import (
-    atur, baris_transaksi, batang, ikon_kat, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
+    atur, baris_transaksi, batang, ikon_kat, kunci_urut, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
     pilih_bulan, pindah_halaman, ringkas_bulan, saldo_dompet, total_saldo, ym_ini,
 )
 from keuangan.inti import D, fmt_iso, hanya_lihat, nama_bulan, rp
@@ -113,7 +113,7 @@ def halaman_beranda():
     if "terakhir" not in sembunyi:
         with st.container(key="kartu_g_br_terakhir"):
             st.markdown("**Transaksi terakhir**")
-            terakhir = sorted(D["transaksi"], key=lambda t: (t["tgl"], t.get("dibuat", "")), reverse=True)[:6]
+            terakhir = sorted(D["transaksi"], key=kunci_urut, reverse=True)[:6]
             if not terakhir:
                 st.caption("Belum ada transaksi. Mulai dari menu Catat transaksi.")
             for t in terakhir:
