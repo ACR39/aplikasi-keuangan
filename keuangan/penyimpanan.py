@@ -7,7 +7,9 @@ from datetime import datetime, timezone
 import requests
 import streamlit as st
 
-from keuangan.inti import FILE_LOKAL, WIB, cfg_github, data_kosong, hanya_lihat, pengguna_nama, sekarang
+from keuangan.inti import (
+    FILE_LOKAL, WIB, cfg_github, data_kosong, hanya_lihat, lengkapi_kategori, pengguna_nama, sekarang,
+)
 
 
 class Bentrok(Exception):
@@ -27,6 +29,7 @@ def lengkapi(d: dict) -> dict:
     """Pastikan semua kunci data ada (data lama dari versi sebelumnya tetap bisa dibuka)."""
     for k, v in data_kosong().items():
         d.setdefault(k, v)
+    lengkapi_kategori(d["kategori"])
     return d
 
 

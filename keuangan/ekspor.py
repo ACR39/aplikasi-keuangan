@@ -113,7 +113,7 @@ def halaman_impor():
         return
     with st.container(key="kartu_g_impor"):
         st.markdown("**Impor transaksi**")
-        st.caption("Kolom wajib: Tanggal, Jenis (Pemasukan / Pengeluaran / Transfer), Jumlah, Dompet. Kolom lain: Kategori, Catatan, "
+        st.caption("Kolom wajib: Tanggal, Jenis (Pemasukan / Pengeluaran / Transfer), Jumlah, Dompet. Kolom lain: Kategori (boleh 'Rumah' atau sub kategori 'Rumah › Listrik'), Catatan, "
                    "Ke dompet dan Biaya admin (untuk transfer). Tanggal boleh 2026-03-15 atau 15/03/2026.")
         contoh = pd.DataFrame([["2026-03-01", "Pemasukan", 5000000, "BCA", "", 0, "Gaji", "Gaji Maret"],
                                ["2026-03-02", "Pengeluaran", 35000, "Tunai", "", 0, "Makan dan minum", "Makan siang"],
@@ -137,7 +137,7 @@ def halaman_impor():
         baru, galat = [], []
         dom_baru, kat_baru = {}, {}
         dom_nama = {d["nama"].strip().lower(): d["id"] for d in D["dompet"]}
-        kat_nama = {(k["nama"].strip().lower(), k["jenis"]): k["id"] for k in D["kategori"]}
+        kat_cari = {(k["nama"].strip().lower(), k.get("induk", ""), k["jenis"]): k["id"] for k in D["kategori"]}
 
         def id_dompet(nama):
             n = nama.strip().lower()
@@ -148,14 +148,27 @@ def halaman_impor():
             dom_nama[n] = dom_baru[n] = baru_id()
             return dom_baru[n]
 
-        def id_kat(nama, jenis):
-            n = nama.strip().lower() or "lainnya"
-            if (n, jenis) in kat_nama:
-                return kat_nama[(n, jenis)]
+        def satu_kat(nama, induk, jenis):
+            kunci = (nama.strip().lower(), induk, jenis)
+            if kunci in kat_cari:
+                return kat_cari[kunci]
             if not buat:
                 raise ValueError(f"kategori '{nama}' tidak ada")
-            kat_nama[(n, jenis)] = kat_baru[(n, jenis)] = baru_id()
-            return kat_baru[(n, jenis)]
+            nid = baru_id()
+            kat_cari[kunci] = nid
+            kat_baru[kunci] = (nid, nama.strip(), induk)
+            return nid
+
+        def id_kat(teks, jenis):
+            """Terima 'Rumah', 'Rumah › Listrik' (atau tanda '>' / '/'), atau nama sub kategori saja."""
+            bagian = [x.strip() for x in teks.replace("›", ">").split(">") if x.strip()] or ["Lainnya"]
+            if len(bagian) == 1:
+                n = bagian[0].lower()
+                cocok = [k for k in D["kategori"] if k["jenis"] == jenis and k["nama"].strip().lower() == n]
+                if cocok:
+                    return sorted(cocok, key=lambda k: bool(k.get("induk")))[0]["id"]
+                return satu_kat(bagian[0], "", jenis)
+            return satu_kat(bagian[1], satu_kat(bagian[0], "", jenis), jenis)
 
         for i, r in df.iterrows():
             try:
@@ -185,8 +198,10 @@ def halaman_impor():
         if baru and st.button(f"Impor {len(baru)} transaksi", type="primary", key="impor_go"):
             for n, i in dom_baru.items():
                 D["dompet"].append({"id": i, "nama": n.title() if n.islower() else n, "jenis": "Lainnya", "saldo_awal": 0, "arsip": False})
-            for (n, j), i in kat_baru.items():
-                D["kategori"].append({"id": i, "nama": n.capitalize(), "jenis": j})
+            for (_, _, j), (i, nama_k, induk) in sorted(kat_baru.items(), key=lambda x: bool(x[0][1])):
+                p = next((k for k in D["kategori"] if k["id"] == induk), None)
+                D["kategori"].append({"id": i, "nama": nama_k, "jenis": j, "induk": induk, "ikon": p["ikon"] if p else "🏷️",
+                                      "warna": p["warna"] if p else "#9aa0a6"})
             D["transaksi"].extend(baru)
             catat("impor", f"Impor {len(baru)} transaksi dari {berkas.name}")
             selesai_simpan(f"{len(baru)} transaksi diimpor.")

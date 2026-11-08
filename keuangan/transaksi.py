@@ -2,7 +2,7 @@
 import streamlit as st
 
 from keuangan.bantu import (
-    f_dompet, f_kat,
+    f_dompet, f_kat, turunan,
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
     ringkas_teks, selesai_simpan, tambah_transaksi, versi, daftar_bulan, deretan_stat, kartu_stat,
 )
@@ -106,7 +106,7 @@ def _filter() -> list:
             continue
         if dom != "semua" and dom not in (t["dompet"], t.get("ke")):
             continue
-        if kat != "semua" and t.get("kategori") != kat:
+        if kat != "semua" and t.get("kategori") not in turunan(kat):
             continue
         if q and q not in f'{t.get("catatan", "")} {nama_kat(t.get("kategori"))} {nama_dompet(t["dompet"])}'.lower():
             continue

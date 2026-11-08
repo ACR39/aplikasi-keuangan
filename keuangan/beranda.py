@@ -4,7 +4,7 @@ import streamlit as st
 
 from keuangan.anggaran import status_anggaran
 from keuangan.bantu import (
-    atur, baris_transaksi, batang, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
+    atur, baris_transaksi, batang, ikon_kat, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
     pilih_bulan, pindah_halaman, ringkas_bulan, saldo_dompet, total_saldo, ym_ini,
 )
 from keuangan.inti import D, fmt_iso, hanya_lihat, nama_bulan, rp
@@ -75,7 +75,7 @@ def halaman_beranda():
                 if not dt:
                     st.caption("Belum ada anggaran.")
                 for a, pakai, persen in dt:
-                    st.markdown(f'<div class="ag"><b>{e(nama_kat(a["kategori"]))}</b><span>{rp(pakai)} / {rp(a["batas"])}</span></div>'
+                    st.markdown(f'<div class="ag"><b>{ikon_kat(a["kategori"])}{e(nama_kat(a["kategori"]))}</b><span>{rp(pakai)} / {rp(a["batas"])}</span></div>'
                                 f'{batang(pakai, a["batas"])}', unsafe_allow_html=True)
                 if not hanya_lihat() or dt:
                     st.button("Kelola anggaran", key="lompat_ag", on_click=pindah_halaman, args=("Anggaran",))
@@ -95,7 +95,7 @@ def halaman_beranda():
         if "g_kategori" not in sembunyi:
             with st.container(key="kartu_g_br_kat"):
                 st.markdown(f"**Pengeluaran per kategori, {nama_bulan(ym)}**")
-                data = per_kategori(ym, "keluar")
+                data = per_kategori(ym, "keluar", gabung=True)
                 if data:
                     st.bar_chart(pd.DataFrame({"Kategori": [nama_kat(k) for k in data], "Jumlah": list(data.values())}).set_index("Kategori"),
                                  color="#d64545", horizontal=True)

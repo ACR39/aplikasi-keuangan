@@ -6,7 +6,7 @@ from datetime import date, timedelta
 import streamlit as st
 
 from keuangan.inti import (
-    D, JENIS, MAKS_AKTIVITAS, TANPA_KAT, baru_id, fmt_iso, hari_ini, iso_ke_date, nama_bulan, pengguna_nama, rp,
+    D, JENIS, MAKS_AKTIVITAS, SEP, TANPA_KAT, baru_id, fmt_iso, hari_ini, iso_ke_date, nama_bulan, pengguna_nama, rp,
     sekarang,
 )
 from keuangan.penyimpanan import commit
@@ -68,23 +68,59 @@ def f_dompet(tambahan: dict | None = None):
     return lambda i: m.get(i, "(dompet dihapus)")
 
 
-def f_kat(tambahan: dict | None = None):
-    m = {k["id"]: k["nama"] for k in D["kategori"]}
-    m.update(tambahan or {})
-    return lambda i: m.get(i, "(kategori dihapus)")
-
-
 def kat_dari(id_):
     return next((k for k in D["kategori"] if k["id"] == id_), None)
 
 
-def nama_kat(id_) -> str:
+def anak_dari(id_) -> list:
+    return [k for k in D["kategori"] if k.get("induk") == id_]
+
+
+def turunan(id_) -> set:
+    """Kategori itu sendiri ditambah sub kategorinya."""
+    return {id_} | {k["id"] for k in anak_dari(id_)}
+
+
+def akar(id_) -> str:
+    """Id kategori utama dari sebuah kategori (dirinya sendiri kalau sudah utama)."""
     k = kat_dari(id_)
-    return k["nama"] if k else TANPA_KAT
+    return k["induk"] if k and k.get("induk") and kat_dari(k["induk"]) else id_
+
+
+def nama_kat(id_) -> str:
+    """'Rumah' untuk kategori utama, 'Rumah › Listrik' untuk sub kategori."""
+    k = kat_dari(id_)
+    if not k:
+        return TANPA_KAT
+    p = kat_dari(k.get("induk"))
+    return f'{p["nama"]}{SEP}{k["nama"]}' if p else k["nama"]
+
+
+def f_kat(tambahan: dict | None = None):
+    m = {k["id"]: nama_kat(k["id"]) for k in D["kategori"]}
+    m.update(tambahan or {})
+    return lambda i: m.get(i, "(kategori dihapus)")
+
+
+def kategori_utama(jenis: str) -> list:
+    return [k for k in D["kategori"] if k["jenis"] == jenis and not (k.get("induk") and kat_dari(k["induk"]))]
 
 
 def kategori_jenis(jenis: str) -> list:
-    return [k for k in D["kategori"] if k["jenis"] == jenis]
+    """Semua kategori satu jenis, berurutan: kategori utama lalu sub kategorinya."""
+    hasil = []
+    for p in kategori_utama(jenis):
+        hasil.append(p)
+        hasil += sorted(anak_dari(p["id"]), key=lambda k: k["nama"].lower())
+    return hasil
+
+
+def ikon_kat(id_) -> str:
+    """Bulatan berwarna berisi ikon kategori, untuk dipasang di HTML."""
+    k = kat_dari(id_)
+    if not k:
+        return ""
+    return f'<span class="kc" style="background:{e(k.get("warna", "#9aa0a6"))}">{e(k.get("ikon", "🏷️"))}</span>'
 
 
 def kat_pertama(jenis: str, pilihan: str = ""):
@@ -160,12 +196,13 @@ def ringkas_bulan(ym: str):
     return masuk, keluar + biaya
 
 
-def per_kategori(ym: str, jenis: str = "keluar") -> dict:
-    """{id kategori: total} untuk satu bulan, terbesar dulu."""
+def per_kategori(ym: str, jenis: str = "keluar", gabung: bool = False) -> dict:
+    """{id kategori: total} untuk satu bulan, terbesar dulu. gabung=True menjumlahkan sub kategori ke kategori utamanya."""
     h = {}
     for t in transaksi_bulan(ym):
         if t["jenis"] == jenis:
-            h[t.get("kategori", "")] = h.get(t.get("kategori", ""), 0) + int(t["jumlah"])
+            k = akar(t.get("kategori", "")) if gabung else t.get("kategori", "")
+            h[k] = h.get(k, 0) + int(t["jumlah"])
     return dict(sorted(h.items(), key=lambda x: -x[1]))
 
 
@@ -217,7 +254,10 @@ def baris_transaksi(t: dict) -> str:
         meta = f'{fmt_iso(t["tgl"])} · {nama_dompet(t["dompet"])} · {nama_kat(t.get("kategori"))}'
         ikon = "↓" if j == "masuk" else "↑"
         nom = ("+" if j == "masuk" else "-") + rp(t["jumlah"])
-    return (f'<div class="rt"><div class="ic {j}">{ikon}</div><div class="isi"><div class="jd">{e(judul)}</div>'
+    k = kat_dari(t.get("kategori")) if j != "transfer" else None
+    kotak = (f'<div class="ic kat" style="background:{e(k.get("warna", "#9aa0a6"))}">{e(k.get("ikon", "🏷️"))}</div>' if k
+             else f'<div class="ic {j}">{ikon}</div>')
+    return (f'<div class="rt">{kotak}<div class="isi"><div class="jd">{e(judul)}</div>'
             f'<div class="mt">{e(meta)}</div></div><div class="nom {j}">{e(nom)}</div></div>')
 
 

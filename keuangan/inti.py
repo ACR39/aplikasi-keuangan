@@ -313,6 +313,11 @@ CSS_TAMBAH_TERANG = """
 .rt .mt{font-size:.8rem;color:#5b6573;margin-top:.1rem;word-break:break-word}
 .rt .nom{flex:0 0 auto;text-align:right;font-weight:800;font-size:1.05rem;white-space:nowrap}
 .nom.masuk,.nm-masuk{color:#166534}.nom.keluar,.nm-keluar{color:#b42318}.nom.transfer,.nm-transfer{color:#2f5d9e}
+.rt .ic.kat{color:#fff;font-size:1.2rem}
+.kc{display:inline-flex;width:1.7rem;height:1.7rem;border-radius:50%;align-items:center;justify-content:center;font-size:.95rem;margin-right:.5rem;vertical-align:middle;color:#fff}
+.sub-rinci{margin:.25rem 0 .3rem 2.2rem;font-size:.82rem;color:#475569}
+.sub-rinci div{display:flex;justify-content:space-between;gap:.6rem;padding:.12rem 0;border-bottom:1px dashed #e8ebf0}
+details.rinci > summary{cursor:pointer;list-style:none}details.rinci > summary::-webkit-details-marker{display:none}
 .bar{height:10px;background:#e8ecf1;border-radius:999px;overflow:hidden;margin:.35rem 0 .2rem}
 .bar > i{display:block;height:100%;background:#34a874;border-radius:999px}
 .bar.w > i{background:#e0a63a}.bar.b > i{background:#d64545}
@@ -340,7 +345,7 @@ CSS_TAMBAH_GELAP = """
 .rt .ic.masuk{background:#12301f !important;color:#86efac !important}.rt .ic.keluar{background:#431a17 !important;color:#fca5a5 !important}
 .rt .ic.transfer{background:#14284a !important;color:#93c5fd !important}
 .nom.masuk,.nm-masuk{color:#4ade80 !important}.nom.keluar,.nm-keluar{color:#f87171 !important}.nom.transfer,.nm-transfer{color:#93c5fd !important}
-.bar{background:#2a3547 !important}
+.bar{background:#2a3547 !important}.sub-rinci{color:#94a3b8 !important}.sub-rinci div{border-bottom-color:#2a3547 !important}
 .dk1{background:#172131 !important;border-color:#2a3547 !important;border-top-color:#34a874 !important;box-shadow:none !important}
 .dk1 .s.neg{color:#f87171 !important}
 [class*="st-key-tx_"]{background:#172131 !important;border-color:#2a3547 !important;box-shadow:none !important}
@@ -417,24 +422,68 @@ def baru_id() -> str:
     return uuid.uuid4().hex[:8]
 
 
-KATEGORI_AWAL = [
-    ("k_makan", "Makan dan minum", "keluar"), ("k_belanja", "Belanja harian", "keluar"),
-    ("k_transport", "Transportasi", "keluar"), ("k_tagihan", "Tagihan dan utilitas", "keluar"),
-    ("k_rumah", "Rumah dan sewa", "keluar"), ("k_kesehatan", "Kesehatan", "keluar"),
-    ("k_hiburan", "Hiburan", "keluar"), ("k_pendidikan", "Pendidikan", "keluar"),
-    ("k_sosial", "Sosial dan donasi", "keluar"), ("k_bayar_utang", "Bayar utang / pinjamkan", "keluar"),
-    ("k_lain_k", "Lainnya", "keluar"),
-    ("k_gaji", "Gaji", "masuk"), ("k_usaha", "Usaha dan sampingan", "masuk"),
-    ("k_hadiah", "Hadiah", "masuk"), ("k_terima_utang", "Terima piutang / pinjaman", "masuk"),
-    ("k_lain_m", "Lainnya", "masuk"),
+SEP = " › "
+IKON_PILIHAN = ["🍽️", "🛒", "🛍️", "🏠", "💡", "🚌", "🚗", "🏥", "🎬", "🎓", "💻", "📱", "🎁", "🏦", "🤝", "📦", "💼", "🪙", "📈", "💸",
+                "🧾", "🔧", "👕", "🧴", "🍼", "🐾", "✈️", "☕", "⚽", "📚", "🔑", "❤️", "🏷️"]
+PALET = ["#e8502a", "#f2a43a", "#f5c542", "#7ed348", "#34a874", "#4dbba3", "#6ebcf0", "#3b82c4", "#5b6cf0", "#8a2be2",
+         "#d97aa0", "#e8527a", "#e05a5a", "#7a8c9b", "#9aa0a6"]
+
+# (id, nama, jenis, ikon, warna, [sub kategori])
+KATEGORI_SEED = [
+    ("k_makan", "Makan dan minum", "keluar", "🍽️", "#e8502a", ["Belanja bahan makanan", "Restoran dan kafe", "Jajan dan kopi"]),
+    ("k_belanja", "Belanja", "keluar", "🛍️", "#6ebcf0", ["Pakaian", "Elektronik", "Kebutuhan rumah", "Perawatan diri"]),
+    ("k_rumah", "Rumah", "keluar", "🏠", "#f2a43a", ["Sewa atau cicilan", "Perbaikan", "Perabot", "Asuransi rumah"]),
+    ("k_tagihan", "Tagihan dan utilitas", "keluar", "💡", "#f5c542", ["Listrik", "Air", "Internet", "Gas"]),
+    ("k_transport", "Transportasi", "keluar", "🚌", "#7a8c9b", ["Transportasi umum", "Ojek dan taksi online", "Parkir dan tol"]),
+    ("k_kendaraan", "Kendaraan", "keluar", "🚗", "#8a2be2", ["Bensin", "Servis", "Pajak dan STNK", "Asuransi kendaraan"]),
+    ("k_kesehatan", "Kesehatan", "keluar", "🏥", "#e05a5a", ["Dokter dan obat", "Asuransi kesehatan"]),
+    ("k_hiburan", "Hiburan", "keluar", "🎬", "#7ed348", ["Langganan", "Wisata", "Hobi"]),
+    ("k_pendidikan", "Pendidikan", "keluar", "🎓", "#3b82c4", ["Biaya sekolah", "Kursus dan buku"]),
+    ("k_komunikasi", "Komunikasi dan gawai", "keluar", "💻", "#5b6cf0", ["Pulsa dan paket data", "Perangkat"]),
+    ("k_sosial", "Sosial dan donasi", "keluar", "🎁", "#d97aa0", []),
+    ("k_keuangan", "Biaya keuangan", "keluar", "🏦", "#4dbba3", ["Biaya admin", "Pajak"]),
+    ("k_bayar_utang", "Bayar utang / pinjamkan", "keluar", "🤝", "#f0884a", []),
+    ("k_lain_k", "Lainnya", "keluar", "📦", "#9aa0a6", []),
+    ("k_gaji", "Gaji", "masuk", "💼", "#34a874", ["Gaji pokok", "Bonus dan tunjangan"]),
+    ("k_usaha", "Usaha dan sampingan", "masuk", "🪙", "#f0c040", []),
+    ("k_investasi_m", "Hasil investasi", "masuk", "📈", "#e8527a", ["Bunga", "Dividen"]),
+    ("k_hadiah", "Hadiah", "masuk", "🎁", "#d97aa0", []),
+    ("k_terima_utang", "Terima piutang / pinjaman", "masuk", "🤝", "#f0884a", []),
+    ("k_lain_m", "Lainnya", "masuk", "📦", "#9aa0a6", []),
 ]
+
+
+def _slug(t: str) -> str:
+    return "".join(c if c.isalnum() else "_" for c in t.lower())
+
+
+def kategori_awal() -> list:
+    """Kategori bawaan: kategori utama beserta sub kategorinya (sub memakai ikon dan warna induknya)."""
+    hasil = []
+    for i, n, j, ik, w, anak in KATEGORI_SEED:
+        hasil.append({"id": i, "nama": n, "jenis": j, "induk": "", "ikon": ik, "warna": w})
+        hasil += [{"id": f"{i}__{_slug(x)}", "nama": x, "jenis": j, "induk": i, "ikon": ik, "warna": w} for x in anak]
+    return hasil
+
+
+_SEED_IKON = {i: (ik, w) for i, _, _, ik, w, _ in KATEGORI_SEED}
+
+
+def lengkapi_kategori(daftar: list) -> list:
+    """Data dari versi lama (tanpa sub kategori, ikon, warna) dilengkapi tanpa mengubah id."""
+    for n, k in enumerate(daftar):
+        k.setdefault("induk", "")
+        ik, w = _SEED_IKON.get(k["id"], ("🏷️", PALET[n % len(PALET)]))
+        k.setdefault("ikon", ik)
+        k.setdefault("warna", w)
+    return daftar
 
 
 def data_kosong() -> dict:
     return {
         "dompet": [{"id": "d_tunai", "nama": "Tunai", "jenis": "Tunai", "saldo_awal": 0, "arsip": False}],
         # [{"id","nama","jenis","saldo_awal","arsip"}]  saldo sekarang dihitung dari saldo awal + transaksi
-        "kategori": [{"id": i, "nama": n, "jenis": j} for i, n, j in KATEGORI_AWAL],  # [{"id","nama","jenis"(masuk|keluar)}]
+        "kategori": kategori_awal(),  # [{"id","nama","jenis"(masuk|keluar),"induk"(id kategori utama, kosong = utama),"ikon","warna"}]
         "transaksi": [],  # [{"id","jenis"(masuk|keluar|transfer),"tgl","jumlah","dompet","ke","biaya","kategori","catatan",
                           #   "tagihan","utang","dibuat","oleh"}]
         "anggaran": [],   # [{"id","kategori","batas"}]  batas per bulan, berlaku tiap bulan

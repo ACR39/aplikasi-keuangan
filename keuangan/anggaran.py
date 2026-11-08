@@ -3,8 +3,8 @@ import streamlit as st
 
 from keuangan.bantu import (
     f_kat,
-    atur, batang, catat, deretan_stat, e, kartu_stat, kategori_jenis, nama_kat, per_kategori, pilih_bulan,
-    selesai_simpan, versi,
+    atur, batang, catat, deretan_stat, e, ikon_kat, kartu_stat, kategori_jenis, nama_kat, per_kategori, pilih_bulan,
+    selesai_simpan, turunan, versi,
 )
 from keuangan.inti import D, baru_id, hanya_lihat, nama_bulan, rp
 
@@ -12,8 +12,10 @@ from keuangan.inti import D, baru_id, hanya_lihat, nama_bulan, rp
 def status_anggaran(ym: str) -> list:
     """[(anggaran, terpakai, persen)] diurutkan dari yang paling penuh."""
     pakai = per_kategori(ym, "keluar")
-    hasil = [(a, pakai.get(a["kategori"], 0), (pakai.get(a["kategori"], 0) / a["batas"] * 100) if a["batas"] else 0)
-             for a in D["anggaran"]]
+
+    def dipakai(a):
+        return sum(pakai.get(i, 0) for i in turunan(a["kategori"]))
+    hasil = [(a, dipakai(a), (dipakai(a) / a["batas"] * 100) if a["batas"] else 0) for a in D["anggaran"]]
     return sorted(hasil, key=lambda x: -x[2])
 
 
@@ -30,7 +32,7 @@ def halaman_anggaran():
     with st.container(key="kartu_g_anggaran"):
         for a, pakai, persen in daftar:
             st.markdown(
-                f'<div class="perhatian"><div class="ag"><b>{e(nama_kat(a["kategori"]))}</b>'
+                f'<div class="perhatian"><div class="ag"><b>{ikon_kat(a["kategori"])}{e(nama_kat(a["kategori"]))}</b>'
                 f'<span>{rp(pakai)} dari {rp(a["batas"])} · <b>{persen:.0f}%</b></span></div>{batang(pakai, a["batas"])}'
                 f'<div class="ag"><span>{"Lewat " + rp(pakai - a["batas"]) if pakai > a["batas"] else "Sisa " + rp(a["batas"] - pakai)}</span></div></div>',
                 unsafe_allow_html=True)
@@ -73,4 +75,4 @@ def halaman_anggaran():
         if edit and st.button("Batal ubah", key="batal_ubah_ag"):
             st.session_state.pop("edit_ag", None)
             st.rerun()
-        st.caption(f"Batas berlaku tiap bulan. Angka terpakai dihitung dari pengeluaran pada {nama_bulan(ym)}.")
+        st.caption(f"Batas berlaku tiap bulan. Angka terpakai dihitung dari pengeluaran pada {nama_bulan(ym)}. Anggaran kategori utama sudah mencakup semua sub kategorinya.")

@@ -3,23 +3,34 @@ import pandas as pd
 import streamlit as st
 
 from keuangan.bantu import (
-    deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_dompet, nama_kat, per_kategori, pilih_bulan,
+    akar, ikon_kat,    deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_dompet, nama_kat, per_kategori, pilih_bulan,
     ringkas_bulan, saldo_dompet, transaksi_bulan, ym_ini, batang,
 )
 from keuangan.inti import D, nama_bulan, rp
 
 
 def _tabel_kategori(ym: str, jenis: str):
-    data = per_kategori(ym, jenis)
+    """Total per kategori utama (sub kategori dijumlahkan), dengan rincian sub yang bisa dibuka."""
+    data = per_kategori(ym, jenis, gabung=True)
+    mentah = per_kategori(ym, jenis)
     total = sum(data.values())
     if not data:
         st.caption("Tidak ada data.")
         return
     for k, v in data.items():
-        st.markdown(f'<div class="perhatian"><div class="ag"><b>{e(nama_kat(k))}</b><span>{rp(v)} · {v / total * 100:.0f}%</span></div>'
-                    f'{batang(v, total, "bl" if jenis == "masuk" else "w")}</div>', unsafe_allow_html=True)
+        rinci = {i: x for i, x in mentah.items() if akar(i) == k}
+        kepala = (f'<div class="ag"><b>{ikon_kat(k)}{e(nama_kat(k))}</b><span>{rp(v)} · {v / total * 100:.0f}%</span></div>'
+                  f'{batang(v, total, "bl" if jenis == "masuk" else "w")}')
+        if len(rinci) > 1 or (rinci and k not in rinci):
+            baris = "".join(f'<div><span>{e(nama_kat(i) if i != k else "Langsung di " + nama_kat(k))}</span><b>{rp(x)}</b></div>'
+                            for i, x in sorted(rinci.items(), key=lambda y: -y[1]))
+            st.markdown(f'<div class="perhatian"><details class="rinci"><summary>{kepala}</summary><div class="sub-rinci">{baris}</div></details></div>',
+                        unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="perhatian">{kepala}</div>', unsafe_allow_html=True)
     df = pd.DataFrame({"Kategori": [nama_kat(k) for k in data], "Jumlah": list(data.values())}).set_index("Kategori")
     st.bar_chart(df, color="#34a874" if jenis == "masuk" else "#d64545", horizontal=True)
+    st.caption("Ketuk satu kategori untuk melihat rincian sub kategorinya.")
 
 
 def _bulanan():
