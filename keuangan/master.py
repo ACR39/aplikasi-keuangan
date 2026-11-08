@@ -72,7 +72,7 @@ def halaman_dompet():
 
 def _jumlah_pakai(id_) -> int:
     return (sum(1 for t in D["transaksi"] if t.get("kategori") == id_) + sum(1 for a in D["anggaran"] if a["kategori"] == id_)
-            + sum(1 for t in D["tagihan"] if t["kategori"] == id_))
+            + sum(1 for t in D["tagihan"] if t["kategori"] == id_) + sum(1 for b in D["barang"] if b["kategori"] == id_))
 
 
 def _form_kat(kunci: str, jenis: str, awal: dict | None = None, induk: str = "", tombol: str = "Tambah"):
@@ -133,6 +133,9 @@ def _hapus_kat(k: dict, jenis: str):
         for t in D["tagihan"]:
             if t["kategori"] == k["id"]:
                 t["kategori"] = ganti
+        for bb in D["barang"]:
+            if bb["kategori"] == k["id"]:
+                bb["kategori"] = ganti
         sudah = {x["kategori"] for x in D["anggaran"] if x["kategori"] != k["id"]}
         D["anggaran"] = [x for x in D["anggaran"] if x["kategori"] != k["id"] or ganti not in sudah]
         for x in D["anggaran"]:

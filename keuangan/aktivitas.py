@@ -3,11 +3,11 @@ from datetime import timedelta
 
 import streamlit as st
 
-from keuangan.bantu import atur, baris_transaksi, catat, e, ringkas_teks, selesai_simpan
+from keuangan.bantu import atur, baris_transaksi, catat, e, perbarui_harga_barang, ringkas_teks, selesai_simpan
 from keuangan.inti import D, HARI_SAMPAH, fmt_iso, fmt_waktu, hanya_lihat, hari_ini, iso_ke_date
 
 IKON = {"tambah": "➕", "ubah": "✏️", "hapus": "🗑️", "pulih": "♻️", "tagihan": "⏰", "anggaran": "🎯", "tabungan": "🐷",
-        "utang": "🤝", "dompet": "👛", "kategori": "🏷️", "impor": "📥", "data": "💾"}
+        "utang": "🤝", "barang": "📦", "dompet": "👛", "kategori": "🏷️", "impor": "📥", "data": "💾"}
 
 
 def bersihkan_sampah():
@@ -47,6 +47,8 @@ def halaman_sampah():
                 if a.button("Pulihkan", key=f"pulih_{s['id']}", type="primary"):
                     D["sampah"] = [x for x in D["sampah"] if x["id"] != s["id"]]
                     D["transaksi"].append(t)
+                    if t.get("barang"):
+                        perbarui_harga_barang(t["barang"])
                     catat("pulih", ringkas_teks(t))
                     selesai_simpan("Transaksi dipulihkan.")
                 if b.button("Hapus permanen", key=f"permanen_{s['id']}"):

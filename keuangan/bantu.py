@@ -131,6 +131,50 @@ def kat_pertama(jenis: str, pilihan: str = ""):
     return daftar[0]["id"] if daftar else ""
 
 
+# ---------------------------------------------------------------- barang / produk
+def barang_dari(id_):
+    return next((b for b in D["barang"] if b["id"] == id_), None)
+
+
+def barang_dalam(kat: str) -> list:
+    """Barang milik kategori itu dan sub kategorinya, urut nama."""
+    ids = turunan(kat)
+    return sorted([b for b in D["barang"] if b["kategori"] in ids], key=lambda b: b["nama"].lower())
+
+
+def f_barang(kat: str = ""):
+    """Label pilihan barang. Kalau barang berada di sub kategori lain dari `kat`, nama sub ditambahkan."""
+    m = {}
+    for b in D["barang"]:
+        k = kat_dari(b["kategori"])
+        m[b["id"]] = b["nama"] if b["kategori"] == kat or not k else f'{b["nama"]} ({k["nama"]})'
+    m[""] = "(tanpa barang)"
+    return lambda i: m.get(i, "(barang dihapus)")
+
+
+def transaksi_barang(id_) -> list:
+    """Transaksi yang memakai barang ini, terbaru dulu."""
+    return sorted([t for t in D["transaksi"] if t.get("barang") == id_], key=lambda t: (t["tgl"], t.get("dibuat", "")), reverse=True)
+
+
+def perbarui_harga_barang(id_):
+    """Harga barang = harga satuan pada transaksi terbarunya."""
+    b = barang_dari(id_)
+    ada = [t for t in transaksi_barang(id_) if t.get("harga_satuan")]
+    if b and ada:
+        b["harga"] = int(round(ada[0]["harga_satuan"]))
+
+
+def teks_barang(t: dict) -> str:
+    """'Indomie × 5 bungkus' atau '' bila transaksi tanpa barang."""
+    b = barang_dari(t.get("barang"))
+    if not b:
+        return ""
+    q = t.get("qty") or 1
+    q = int(q) if float(q).is_integer() else q
+    return f'{b["nama"]} × {q}' + (f' {b["satuan"]}' if b.get("satuan") else "")
+
+
 def saldo_dompet(id_, sampai: str | None = None) -> int:
     """Saldo awal ditambah semua transaksi (sampai tanggal `sampai` bila diisi)."""
     d = dompet_dari(id_)
@@ -250,8 +294,10 @@ def baris_transaksi(t: dict) -> str:
             meta += f' · biaya {rp(t["biaya"])}'
         ikon, nom = "⇄", rp(t["jumlah"])
     else:
-        judul = t.get("catatan") or nama_kat(t.get("kategori"))
+        judul = t.get("catatan") or teks_barang(t) or nama_kat(t.get("kategori"))
         meta = f'{fmt_iso(t["tgl"])} · {nama_dompet(t["dompet"])} · {nama_kat(t.get("kategori"))}'
+        if t.get("catatan") and teks_barang(t):
+            meta += f' · {teks_barang(t)}'
         ikon = "↓" if j == "masuk" else "↑"
         nom = ("+" if j == "masuk" else "-") + rp(t["jumlah"])
     k = kat_dari(t.get("kategori")) if j != "transfer" else None
@@ -264,11 +310,13 @@ def baris_transaksi(t: dict) -> str:
 def tambah_transaksi(jenis, tgl, jumlah, dompet, kategori="", catatan="", ke="", biaya=0, **kait) -> dict:
     t = {"id": baru_id(), "jenis": jenis, "tgl": tgl.isoformat() if isinstance(tgl, date) else tgl,
          "jumlah": int(jumlah), "dompet": dompet, "kategori": kategori, "catatan": (catatan or "").strip(),
-         "dibuat": sekarang().strftime("%Y-%m-%d %H:%M"), "oleh": pengguna_nama()}
+         "dibuat": sekarang().strftime("%Y-%m-%d %H:%M:%S.%f"), "oleh": pengguna_nama()}
     if jenis == "transfer":
         t["ke"], t["biaya"] = ke, int(biaya or 0)
     t.update({k: v for k, v in kait.items() if v})
     D["transaksi"].append(t)
+    if t.get("barang"):
+        perbarui_harga_barang(t["barang"])
     return t
 
 
@@ -277,4 +325,5 @@ def ringkas_teks(t: dict) -> str:
     isi = f'{JENIS[t["jenis"]]} {rp(t["jumlah"])}'
     if t["jenis"] == "transfer":
         return f'{isi}, {nama_dompet(t["dompet"])} → {nama_dompet(t.get("ke"))}'
-    return f'{isi}, {nama_kat(t.get("kategori"))}, {nama_dompet(t["dompet"])}' + (f' ("{t["catatan"]}")' if t.get("catatan") else "")
+    return (f'{isi}, {nama_kat(t.get("kategori"))}, {nama_dompet(t["dompet"])}' + (f", {teks_barang(t)}" if teks_barang(t) else "")
+            + (f' ("{t["catatan"]}")' if t.get("catatan") else ""))

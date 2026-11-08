@@ -485,7 +485,8 @@ def data_kosong() -> dict:
         # [{"id","nama","jenis","saldo_awal","arsip"}]  saldo sekarang dihitung dari saldo awal + transaksi
         "kategori": kategori_awal(),  # [{"id","nama","jenis"(masuk|keluar),"induk"(id kategori utama, kosong = utama),"ikon","warna"}]
         "transaksi": [],  # [{"id","jenis"(masuk|keluar|transfer),"tgl","jumlah","dompet","ke","biaya","kategori","catatan",
-                          #   "tagihan","utang","dibuat","oleh"}]
+                          #   "barang","qty","harga_satuan","tagihan","utang","dibuat","oleh"}]
+        "barang": [],     # [{"id","nama","kategori"(id kategori atau sub kategori),"harga"(harga satuan terakhir),"satuan"}]
         "anggaran": [],   # [{"id","kategori","batas"}]  batas per bulan, berlaku tiap bulan
         "tagihan": [],    # [{"id","nama","jumlah","kategori","dompet","tiap","berikut","catatan","aktif"}]
         "tabungan": [],   # [{"id","nama","target","tenggat","catatan","setoran":[{"id","tgl","jumlah","catatan"}]}]

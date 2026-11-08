@@ -7,6 +7,7 @@ from keuangan.akses import COOKIE_TEMA, _jam_sesi, cek_login, js_cookie, keluar
 from keuangan.aktivitas import bersihkan_sampah, halaman_aktivitas, halaman_sampah
 from keuangan.anggaran import halaman_anggaran
 from keuangan.bantu import atur, pindah_halaman
+from keuangan.barang import halaman_barang
 from keuangan.beranda import halaman_beranda
 from keuangan.cadangan import halaman_cadangan, halaman_pulih
 from keuangan.ekspor import halaman_ekspor, halaman_impor
@@ -22,11 +23,11 @@ from keuangan.transaksi import halaman_catat, halaman_transaksi
 from keuangan.utang import halaman_utang
 from keuangan.inti import pasang_css
 
-UTAMA = ["Catat transaksi", "Daftar transaksi", "Riwayat aktivitas", "Tempat sampah"]
+UTAMA = ["Catat transaksi", "Daftar transaksi", "Barang dan produk", "Riwayat aktivitas", "Tempat sampah"]
 PANTAU = ["Anggaran", "Tagihan berulang", "Target tabungan", "Utang-piutang", "Laporan"]
 EDIT_SAJA = ("Catat transaksi",)
 MASTER = ["Dompet", "Kategori", "Cadangan dan pulihkan"]
-IKON = {"Beranda": "home", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Riwayat aktivitas": "history",
+IKON = {"Beranda": "home", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Riwayat aktivitas": "history",
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Tagihan berulang": "event_repeat", "Target tabungan": "savings",
         "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export",
         "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
@@ -41,6 +42,7 @@ DESKRIPSI = {
     "Beranda": "Ringkasan saldo, pemasukan dan pengeluaran bulan ini, hal yang perlu perhatian, dan grafik.",
     "Catat transaksi": "Catat pemasukan, pengeluaran, atau transfer antar dompet dalam beberapa ketukan.",
     "Daftar transaksi": "Cari dan saring semua transaksi, lalu ubah atau hapus kalau ada yang salah.",
+    "Barang dan produk": "Daftar barang per kategori atau sub kategori. Saat mencatat, barang bisa dipilih sesuai kategorinya.",
     "Riwayat aktivitas": "Semua perubahan data yang tercatat otomatis, lengkap dengan siapa dan kapan.",
     "Tempat sampah": "Transaksi yang dihapus disimpan 30 hari di sini, bisa dipulihkan sebelum hilang permanen.",
     "Anggaran": "Batas pengeluaran per kategori tiap bulan, dengan peringatan saat hampir atau sudah terlewati.",
@@ -153,6 +155,8 @@ def tampilkan_halaman(halaman):
         halaman_catat()
     elif halaman == "Daftar transaksi":
         halaman_transaksi()
+    elif halaman == "Barang dan produk":
+        halaman_barang()
     elif halaman == "Riwayat aktivitas":
         halaman_aktivitas()
     elif halaman == "Tempat sampah":

@@ -3,7 +3,7 @@ import pandas as pd
 import streamlit as st
 
 from keuangan.bantu import (
-    akar, ikon_kat,    deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_dompet, nama_kat, per_kategori, pilih_bulan,
+    daftar_bulan, transaksi_barang,    akar, ikon_kat,    deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_dompet, nama_kat, per_kategori, pilih_bulan,
     ringkas_bulan, saldo_dompet, transaksi_bulan, ym_ini, batang,
 )
 from keuangan.inti import D, nama_bulan, rp
@@ -111,11 +111,45 @@ def _dompet():
     st.caption(f"Arus tiap dompet pada {nama_bulan(ym)}. Satuan rupiah.")
 
 
+def _barang():
+    bulan = st.selectbox("Periode", ["semua"] + daftar_bulan(), key="lp_bulan_b",
+                         format_func=lambda b: "Semua waktu" if b == "semua" else nama_bulan(b))
+    baris, ada = [], {}
+    for b in D["barang"]:
+        ts = [t for t in transaksi_barang(b["id"]) if bulan == "semua" or t["tgl"][:7] == bulan]
+        if not ts:
+            continue
+        qty = sum(float(t.get("qty") or 0) for t in ts)
+        total = sum(t["jumlah"] for t in ts)
+        ada[b["id"]] = b
+        baris.append({"Barang": b["nama"], "Kategori": nama_kat(b["kategori"]), "Kali dibeli": len(ts), "Banyaknya": round(qty, 2),
+                      "Total (Rp)": total, "Harga rata-rata": round(total / qty) if qty else 0, "Harga terakhir": int(ts[0].get("harga_satuan") or 0)})
+    if not baris:
+        st.info("Belum ada transaksi yang memakai barang pada periode ini. Pilih barang saat mencatat transaksi.")
+        return
+    df = pd.DataFrame(baris).sort_values("Total (Rp)", ascending=False).set_index("Barang")
+    st.dataframe(df.style.format({"Total (Rp)": "{:,.0f}".format, "Harga rata-rata": "{:,.0f}".format, "Harga terakhir": "{:,.0f}".format,
+                                  "Banyaknya": "{:g}".format}), width="stretch")
+    with st.container(key="kartu_g_lp_harga"):
+        pilih = st.selectbox("Lihat perubahan harga", list(ada), format_func=lambda i: ada[i]["nama"], key="lp_barang_harga")
+        titik = sorted([t for t in transaksi_barang(pilih) if t.get("harga_satuan")], key=lambda t: (t["tgl"], t.get("dibuat", "")))
+        if len(titik) >= 2:
+            st.line_chart(pd.DataFrame({"Tanggal": [t["tgl"] for t in titik], "Harga satuan": [t["harga_satuan"] for t in titik]}).set_index("Tanggal"),
+                          color="#3b82c4")
+            naik = titik[-1]["harga_satuan"] - titik[0]["harga_satuan"]
+            st.caption(f"Dari {rp(titik[0]['harga_satuan'])} menjadi {rp(titik[-1]['harga_satuan'])} ({'naik' if naik > 0 else 'turun' if naik < 0 else 'tetap'}"
+                       f"{' ' + rp(abs(naik)) if naik else ''}).")
+        else:
+            st.caption("Grafik harga muncul setelah barang ini dibeli minimal dua kali.")
+
+
 def halaman_laporan():
-    t1, t2, t3 = st.tabs(["Bulanan", "Tren", "Per dompet"])
+    t1, t2, t3, t4 = st.tabs(["Bulanan", "Tren", "Per dompet", "Barang"])
     with t1:
         _bulanan()
     with t2:
         _tren()
     with t3:
         _dompet()
+    with t4:
+        _barang()
