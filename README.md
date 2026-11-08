@@ -16,7 +16,7 @@ Transfer tidak dihitung sebagai pemasukan atau pengeluaran; biaya admin transfer
 ## Memasang (sekali saja)
 1. Buat dua repositori GitHub **privat**: satu untuk kode (isi folder ini), satu untuk data (kosong, contoh `keuangan-data`, sudah ada branch `main` dengan minimal satu commit, misalnya README).
 2. Buat token GitHub (fine-grained) dengan izin **Contents: Read and write** hanya untuk repo data.
-3. Buat hash kata sandi: `python buat_hash.py`, salin hasilnya.
+3. Buat hash kata sandi: klik dua kali `buat_hash.py` (atau `python buat_hash.py` di terminal). Jendela menunggu Enter, dan hasilnya juga disimpan di `hasil-hash.txt`. Salin blok `[users...]` ke Secrets, lalu hapus `hasil-hash.txt`.
 4. Di Streamlit Community Cloud: New app, pilih repo kode, file utama `app.py`. Di Settings > Secrets tempel isi `.streamlit/secrets.toml.contoh` yang sudah diisi (token, repo data, user + hash).
 5. Pasang di HP: lihat `PWA-PANDUAN.md` di Pelacak Barang. Berkas ikon dan `enableStaticServing` sudah ada di sini.
 
