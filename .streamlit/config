@@ -1,5 +1,0 @@
-[server]
-enableStaticServing = true
-
-[theme]
-primaryColor = "#256b4a"
