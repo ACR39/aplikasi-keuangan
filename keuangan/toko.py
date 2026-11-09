@@ -2,10 +2,11 @@
 import streamlit as st
 
 from keuangan.bantu import atur, catat, e, ikon_foto, kolom_foto, link_aman, proses_foto, selesai_simpan, transaksi_toko, versi
+from keuangan.peta import peta_semua, pilih_titik, titik_dari, url_peta
 from keuangan.inti import D, TOKO_IKON, baru_id, fmt_iso, hanya_lihat, rp
 
 
-def _form(awal: dict | None):
+def _form(awal: dict | None, titik=None):
     awal = awal or {}
     with st.form(f"f_toko_{versi()}_{awal.get('id', 'baru')}", clear_on_submit=False):
         c1, c2 = st.columns(2)
@@ -33,6 +34,11 @@ def _form(awal: dict | None):
             else:
                 isi = {"nama": nama.strip(), "jenis": jenis, "lokasi": lokasi.strip()}
                 foto = proses_foto(berkas, hapus_f, awal.get("foto", ""), "toko")
+                if titik:
+                    isi["lat"], isi["lon"] = titik
+                else:
+                    awal.pop("lat", None)
+                    awal.pop("lon", None)
                 for k_, v_ in (("peta", peta.strip()), ("jam_buka", jam_buka.strip()), ("telepon", telepon.strip()),
                                ("catatan", catatan_t.strip()), ("favorit", bool(favorit)), ("foto", foto)):
                     if v_:
@@ -44,7 +50,7 @@ def _form(awal: dict | None):
                 else:
                     D["toko"].append({"id": baru_id(), **isi})
                 catat("toko", f"{'Ubah' if awal else 'Tambah'} toko {isi['nama']}")
-                selesai_simpan("Toko disimpan.", edit_toko=None)
+                selesai_simpan("Toko disimpan.", edit_toko=None, **{f"titik_{awal.get('id') or 'baru'}": "_reset"})
 
 
 def _lepas_toko(x: dict):
@@ -66,6 +72,8 @@ def halaman_toko():
         q = c2.text_input("Cari nama atau lokasi", key="tk_q", placeholder="Ketik kata kunci").strip().lower()
     daftar = [x for x in D["toko"] if (jn == "semua" or x.get("jenis") == jn) and q in f'{x["nama"]} {x.get("lokasi", "")}'.lower()]
     st.caption(f"{len(daftar)} toko" + ("" if daftar else ". Belum ada, tambahkan di bawah (atau langsung dari menu Catat transaksi)."))
+    if any(titik_dari(x) for x in D["toko"]) and st.toggle("Lihat semua toko di peta", key="tk_peta"):
+        peta_semua(daftar)
     for x in sorted(daftar, key=lambda x: (not x.get("favorit"), x["nama"].lower())):
         pakai = transaksi_toko(x["id"])
         total = sum(t["jumlah"] for t in pakai if t["jenis"] == "keluar")
@@ -74,8 +82,8 @@ def halaman_toko():
             ket += f' · 🕒 {e(x["jam_buka"])}'
         if x.get("telepon"):
             ket += f' · 📞 {e(x["telepon"])}'
-        if link_aman(x.get("peta", "")):
-            ket += f' · <a href="{e(x["peta"].strip())}" target="_blank" rel="noopener noreferrer">📍 Buka di peta</a>'
+        if url_peta(x):
+            ket += f' · <a href="{e(url_peta(x))}" target="_blank" rel="noopener noreferrer">📍 {"Titik di peta" if titik_dari(x) else "Buka di peta"}</a>'
         ket += f" · dikunjungi {len(pakai)}×" + (f" · total {rp(total)} · terakhir {fmt_iso(pakai[0]['tgl'])}" if pakai else "")
         with st.container(key=f"tx_tk_{x['id']}"):
             kolom = st.columns([1] + ([0.001, 0.001] if not hanya_lihat() else []))
@@ -98,7 +106,13 @@ def halaman_toko():
     edit = next((x for x in D["toko"] if x["id"] == st.session_state.get("edit_toko")), None)
     with st.container(key="kartu_g_form_tk"):
         st.markdown(f"**{'Ubah toko' if edit else 'Tambah toko'}**")
-        _form(edit)
+        kt = (edit or {}).get("id") or "baru"
+        if st.session_state.get(f"titik_{kt}") == "_reset":
+            for suf in ("", "_klik", "_minta"):
+                st.session_state.pop(f"titik_{kt}{suf}", None)
+        st.markdown("**Titik lokasi**")
+        titik = pilih_titik(kt, titik_dari(edit))
+        _form(edit, titik)
         if edit and st.button("Batal ubah", key="batal_ubah_tk"):
             st.session_state.pop("edit_toko", None)
             st.rerun()

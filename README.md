@@ -16,6 +16,8 @@ Beranda: pilih periode Minggu, Bulan, Tahun, atau Tanggal custom. Kartu angka di
 
 Rincian barang: barcode (bisa dicari langsung di halaman Catat, cocok dengan pembaca barcode USB/Bluetooth), merek, ukuran, tanggal kedaluwarsa (muncul di Perlu perhatian saat tinggal 14 hari), barang langganan, catatan, dan foto. Rincian toko: tautan peta, jam buka, telepon, catatan, favorit, dan foto. Transaksi bisa dilampiri foto struk. Laporan > Barang punya tabel Harga per toko.
 
+Titik lokasi toko: ketuk peta (OpenStreetMap, gratis tanpa kunci API) atau tekan Pakai lokasi saya sekarang saat berada di toko. Titik disimpan sebagai koordinat, tombol Titik di peta membuka Google Maps ke koordinat itu, dan toggle Lihat semua toko di peta menampilkan semua pin. Lokasi saat ini butuh HTTPS dan izin lokasi di browser (Streamlit Cloud sudah HTTPS).
+
 Foto disimpan sebagai berkas terpisah (folder `foto/` di repo GitHub, atau `data_lokal.json.foto/` saat mode uji coba), diperkecil otomatis, dan di data hanya tercatat namanya. Berkas cadangan JSON tidak memuat foto; folder `foto/` di repo sudah menjadi cadangannya.
 
 Barang: saat mencatat pengeluaran/pemasukan, pilih kategori lalu barangnya (daftar barang menyesuaikan kategori; kategori utama menampilkan barang semua sub-nya). Isi banyaknya dan harga satuan, total dihitung otomatis, dan harga barang diperbarui dari transaksi terbaru. Barang belum ada bisa ditambah langsung dari halaman Catat transaksi. Laporan > Barang menampilkan total belanja per barang dan grafik perubahan harga.
