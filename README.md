@@ -38,8 +38,9 @@ Transfer tidak dihitung sebagai pemasukan atau pengeluaran; biaya admin transfer
 ## Baca struk otomatis
 Di Catat transaksi, mode Struk: unggah foto struk lalu tekan **Baca isi struk dari foto ini**. Toko, tanggal, jam, dan daftar barang terisi sendiri; periksa lagi sebelum menyimpan. Total di struk dibandingkan dengan jumlah barang.
 
-Dua mesin, dipilih otomatis:
+Mesin dipilih otomatis, dicoba berurutan (Claude, OpenAI/gateway, OpenRouter, Gemini, Tesseract). Bila satu gagal (kuota habis, gangguan, tidak ada barang terbaca), otomatis pindah ke berikutnya:
 - **Claude** (lebih akurat, mengenali diskon): isi `[anthropic] api_key` di secrets. Foto dikirim ke Anthropic dan ada biaya per foto.
+- **OpenAI atau gateway kompatibel OpenAI** (misal relink): isi `[openai]` di secrets dengan `api_key`, `base_url` (sampai `/v1`), dan `model` yang bisa membaca gambar. Bagian `[openrouter]` (kunci dari openrouter.ai) dan `[gemini]` (kunci dari Google AI Studio) diisi dengan cara yang sama, `base_url` dan `model` sudah ada bawaannya.
 - **Tesseract** (gratis, jalan di server sendiri, hasil lebih kasar): `packages.txt` sudah memuat `tesseract-ocr` dan paket bahasa Indonesia; di komputer sendiri pasang Tesseract dan `pytesseract`.
 
 Tanpa keduanya, formulir struk tetap bisa diisi manual.

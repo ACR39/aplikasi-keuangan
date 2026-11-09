@@ -34,6 +34,24 @@ def _cfg_claude():
         return None
 
 
+# Penyedia berformat OpenAI: nama di secrets -> (alamat bawaan, model bawaan)
+PENYEDIA_OA = {
+    "openai": ("https://api.openai.com/v1", "gpt-4o-mini"),
+    "openrouter": ("https://openrouter.ai/api/v1", "google/gemini-2.5-flash"),
+    "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.5-flash"),
+}
+
+
+def _cfg_oa(nama: str):
+    """Secrets [openai] / [openrouter] / [gemini]: api_key, opsional base_url dan model."""
+    try:
+        a = st.secrets[nama]
+        base, model = PENYEDIA_OA[nama]
+        return {"key": a["api_key"], "base": str(a.get("base_url", base)).rstrip("/"), "model": a.get("model", model), "nama": nama}
+    except Exception:
+        return None
+
+
 def _ada_tesseract() -> bool:
     try:
         import pytesseract  # noqa: F401
@@ -42,9 +60,21 @@ def _ada_tesseract() -> bool:
     return shutil.which("tesseract") is not None
 
 
+def daftar_mesin() -> list:
+    """Mesin yang sudah diisi, urut dari yang diutamakan: claude, openai, openrouter, gemini, tesseract."""
+    m = []
+    if _cfg_claude():
+        m.append("claude")
+    m += [n for n in PENYEDIA_OA if _cfg_oa(n)]
+    if _ada_tesseract():
+        m.append("tesseract")
+    return m
+
+
 def mesin_tersedia() -> str:
-    """'claude', 'tesseract', atau '' bila belum ada yang aktif."""
-    return "claude" if _cfg_claude() else "tesseract" if _ada_tesseract() else ""
+    """Mesin pertama yang aktif, atau '' bila belum ada."""
+    d = daftar_mesin()
+    return d[0] if d else ""
 
 
 # ---------------------------------------------------------------- angka dan teks
@@ -69,9 +99,8 @@ def _kecilkan(mentah: bytes, sisi: int = 1600) -> bytes:
 
 
 # ---------------------------------------------------------------- Claude
-def _claude(mentah: bytes, kategori: list) -> dict:
-    c = _cfg_claude()
-    perintah = (
+def _perintah(kategori: list) -> str:
+    return (
         "Ini foto struk belanja di Indonesia. Ekstrak isinya sebagai JSON SAJA (tanpa penjelasan, tanpa markdown) dengan bentuk:\n"
         '{"toko": string|null, "tanggal": "YYYY-MM-DD"|null, "waktu": "HH:MM"|null, "total": integer|null, '
         '"item": [{"nama": string, "qty": number, "harga_satuan": integer, "harga_normal": integer|null, "kategori": string|null}]}\n'
@@ -81,6 +110,42 @@ def _claude(mentah: bytes, kategori: list) -> dict:
         "Perbaiki singkatan nama barang jadi nama yang mudah dibaca. "
         f"kategori: pilih SATU dari daftar ini yang paling cocok, atau null bila ragu: {json.dumps(kategori, ensure_ascii=False)}. "
         "Jangan menebak data yang tidak terlihat; pakai null.")
+
+
+def _json_dari(teks: str) -> dict:
+    m = re.search(r"\{.*\}", teks, re.S)
+    if not m:
+        raise RuntimeError("Jawaban tidak berbentuk JSON.")
+    return json.loads(m.group(0))
+
+
+def _openai(mentah: bytes, kategori: list, nama: str = "openai") -> dict:
+    c = _cfg_oa(nama)
+    url = c["base"] + "/chat/completions"
+    gambar = "data:image/jpeg;base64," + base64.b64encode(_kecilkan(mentah)).decode("ascii")
+    r = requests.post(url, timeout=90, headers={"Authorization": f"Bearer {c['key']}", "Content-Type": "application/json"},
+                      json={"model": c["model"], "temperature": 0, "messages": [{"role": "user", "content": [
+                          {"type": "text", "text": _perintah(kategori)},
+                          {"type": "image_url", "image_url": {"url": gambar}}]}]})
+    if r.status_code != 200:
+        try:
+            e = r.json().get("error", r.text[:200])
+            pesan = e.get("message", e) if isinstance(e, dict) else e
+        except Exception:
+            pesan = r.text[:200]
+        raise RuntimeError(f"{nama} menolak ({r.status_code}): {pesan}")
+    try:
+        teks = r.json()["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, ValueError):
+        raise RuntimeError(f"Format jawaban {nama} tidak dikenali.")
+    if isinstance(teks, list):
+        teks = "".join(x.get("text", "") for x in teks if isinstance(x, dict))
+    return _rapikan(_json_dari(teks), nama)
+
+
+def _claude(mentah: bytes, kategori: list) -> dict:
+    c = _cfg_claude()
+    perintah = _perintah(kategori)
     r = requests.post(URL_API, timeout=90, headers={"x-api-key": c["key"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
                       json={"model": c["model"], "max_tokens": 3000, "messages": [{"role": "user", "content": [
                           {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
@@ -170,16 +235,28 @@ def _rapikan(h: dict, mesin: str) -> dict:
 
 
 def baca_struk(mentah: bytes, nama_kategori: list) -> dict:
-    """Jalankan mesin yang tersedia. Melempar RuntimeError dengan pesan yang bisa ditampilkan."""
-    mesin = mesin_tersedia()
+    """Coba tiap mesin yang aktif berurutan; bila gagal lanjut ke berikutnya. Melempar RuntimeError berpesan jelas."""
+    mesin = daftar_mesin()
     if not mesin:
         raise RuntimeError("Belum ada mesin baca struk. Lihat README bagian Baca struk otomatis.")
-    try:
-        return _claude(mentah, nama_kategori) if mesin == "claude" else _tesseract(mentah)
-    except RuntimeError:
-        raise
-    except Exception as ex:
-        raise RuntimeError(f"Gagal membaca struk: {ex}") from ex
+    gagal = []
+    for m in mesin:
+        try:
+            if m == "claude":
+                h = _claude(mentah, nama_kategori)
+            elif m == "tesseract":
+                h = _tesseract(mentah)
+            else:
+                h = _openai(mentah, nama_kategori, m)
+        except Exception as ex:
+            gagal.append(f"{m}: {ex}")
+            continue
+        if h["item"] or m == mesin[-1]:
+            if gagal:
+                h["gagal"] = gagal
+            return h
+        gagal.append(f"{m}: tidak ada barang terbaca")
+    raise RuntimeError("Semua mesin gagal. " + " | ".join(gagal))
 
 
 # ---------------------------------------------------------------- pencocokan dengan data sendiri

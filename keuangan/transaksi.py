@@ -181,6 +181,8 @@ def form_struk():
         st.caption("Isi otomatis dari foto struk belum aktif. Cara mengaktifkannya ada di README bagian Baca struk otomatis.")
     if ocr:
         st.info(f"Terisi otomatis dari foto struk (mesin {ocr['mesin']}). Periksa setiap barang, harga, dan banyaknya sebelum menyimpan.")
+        if ocr.get("gagal"):
+            st.caption("Mesin sebelumnya gagal, otomatis pindah ke berikutnya: " + " | ".join(ocr["gagal"]))
         if ocr.get("toko") and not cocokkan_toko(ocr["toko"]):
             st.caption(f"Toko di struk: {ocr['toko']}. Belum ada di daftar toko; tambah di Pengaturan > Toko dan tempat beli bila perlu.")
         st.button("Kosongkan hasil baca", key=f"{base}_kosong", on_click=lambda: st.session_state.update(struk_ocr=None, ver=versi() + 1))
