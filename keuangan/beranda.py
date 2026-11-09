@@ -1,20 +1,23 @@
 """Beranda: ringkasan bulan, hal yang perlu perhatian, saldo dompet, anggaran, tabungan, dan grafik."""
+import calendar
+from datetime import date, timedelta
+
 import pandas as pd
 import streamlit as st
 
 from keuangan.anggaran import status_anggaran
 from keuangan.bantu import (
     atur, baris_transaksi, batang, ikon_kat, kunci_urut, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
-    pilih_bulan, pindah_halaman, ringkas_bulan, saldo_dompet, total_saldo, ym_ini,
+    pindah_halaman, saldo_dompet, total_saldo, ym_ini, akar, barang_dari, toko_dari,
 )
-from keuangan.inti import D, fmt_iso, hanya_lihat, nama_bulan, rp
+from keuangan.inti import D, TGL_MAX, TGL_MIN, fmt_iso, hanya_lihat, hari_ini, nama_bulan, rp
 from keuangan.tabungan import terkumpul
 from keuangan.tagihan import status_tagihan, tagihan_mendekat
 from keuangan.utang import jatuh_tempo_dekat, sisa
 
 SEKSI_BERANDA = [("ringkasan", "Ringkasan angka"), ("perhatian", "Perlu perhatian"), ("dompet", "Saldo per dompet"),
-                 ("anggaran", "Anggaran bulan ini"), ("tabungan", "Target tabungan"), ("g_kategori", "Grafik pengeluaran per kategori"),
-                 ("g_tren", "Grafik 6 bulan terakhir"), ("terakhir", "Transaksi terakhir")]
+                 ("anggaran", "Anggaran periode ini"), ("tabungan", "Target tabungan"), ("g_kategori", "Grafik pengeluaran per kategori"),
+                 ("g_tren", "Grafik pemasukan dan pengeluaran"), ("teratas", "Toko dan barang teratas"), ("terakhir", "Transaksi terakhir")]
 
 
 def disembunyikan() -> list:
@@ -40,16 +43,130 @@ def _perhatian() -> list:
     return baris
 
 
+MODE = {"minggu": "Minggu", "bulan": "Bulan", "tahun": "Tahun", "custom": "Tanggal custom"}
+BLN3 = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+
+
+def _senin(d: date) -> date:
+    return d - timedelta(days=d.weekday())
+
+
+def _teks_rentang(a: date, b: date) -> str:
+    if a == b:
+        return f"{a.day} {BLN3[a.month - 1]} {a.year}"
+    if a.year == b.year:
+        pertama = f"{a.day}" if a.month == b.month else f"{a.day} {BLN3[a.month - 1]}"
+        return f"{pertama} – {b.day} {BLN3[b.month - 1]} {b.year}"
+    return f"{a.day} {BLN3[a.month - 1]} {a.year} – {b.day} {BLN3[b.month - 1]} {b.year}"
+
+
+def _tgl_awal() -> date:
+    ada = [t["tgl"] for t in D["transaksi"]]
+    return min([date.fromisoformat(x) for x in ada] + [hari_ini()]) if ada else hari_ini()
+
+
+def pilih_periode():
+    """Kembalikan (mode, awal, akhir, label, sebelumnya) untuk periode yang dipilih di Beranda."""
+    kini = hari_ini()
+    mode = st.radio("Periode", list(MODE), format_func=MODE.get, horizontal=True, key="br_mode", index=1, label_visibility="collapsed")
+    if mode == "minggu":
+        w, mulai = [], _senin(kini)
+        while mulai >= _senin(_tgl_awal()):
+            w.append(mulai.isoformat())
+            mulai -= timedelta(days=7)
+        if st.session_state.get("br_minggu") not in w:
+            st.session_state["br_minggu"] = w[0]
+        pil = st.selectbox("Minggu", w, key="br_minggu",
+                           format_func=lambda s: _teks_rentang(date.fromisoformat(s), date.fromisoformat(s) + timedelta(days=6))
+                           + (" (minggu ini)" if s == w[0] else ""))
+        a = date.fromisoformat(pil)
+        b = a + timedelta(days=6)
+        prev = (a - timedelta(days=7), a - timedelta(days=1))
+        label = "minggu ini" if pil == w[0] else _teks_rentang(a, b)
+    elif mode == "bulan":
+        ym = pilih_bulan_beranda()
+        th, bl = int(ym[:4]), int(ym[5:7])
+        a, b = date(th, bl, 1), date(th, bl, calendar.monthrange(th, bl)[1])
+        pt, pb = (th, bl - 1) if bl > 1 else (th - 1, 12)
+        prev = (date(pt, pb, 1), date(pt, pb, calendar.monthrange(pt, pb)[1]))
+        label = nama_bulan(ym)
+    elif mode == "tahun":
+        tahun = list(range(kini.year, _tgl_awal().year - 1, -1))
+        if st.session_state.get("br_tahun") not in tahun:
+            st.session_state["br_tahun"] = kini.year
+        th = st.selectbox("Tahun", tahun, key="br_tahun")
+        a, b = date(th, 1, 1), date(th, 12, 31)
+        prev = (date(th - 1, 1, 1), date(th - 1, 12, 31))
+        label = str(th)
+    else:
+        if "br_custom" not in st.session_state:
+            st.session_state["br_custom"] = (kini - timedelta(days=29), kini)
+        r = st.date_input("Rentang tanggal", key="br_custom", min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY",
+                          help="Pilih tanggal awal lalu tanggal akhir.")
+        if not isinstance(r, (tuple, list)) or len(r) < 2:
+            st.caption("Pilih tanggal akhir untuk melihat ringkasan.")
+            st.stop()
+        a, b = r[0], r[1]
+        n = (b - a).days + 1
+        prev = (a - timedelta(days=n), a - timedelta(days=1))
+        label = _teks_rentang(a, b)
+    return mode, a, b, label, prev
+
+
+def pilih_bulan_beranda() -> str:
+    from keuangan.bantu import daftar_bulan
+    bl = daftar_bulan()
+    if st.session_state.get("br_bulan") not in bl:
+        st.session_state["br_bulan"] = ym_ini()
+    return st.selectbox("Bulan", bl, key="br_bulan", format_func=nama_bulan)
+
+
+def _dalam(a: date, b: date) -> list:
+    x, y = a.isoformat(), b.isoformat()
+    return [t for t in D["transaksi"] if x <= t["tgl"] <= y]
+
+
+def _ringkas(ts: list):
+    masuk = sum(int(t["jumlah"]) for t in ts if t["jenis"] == "masuk")
+    keluar = sum(int(t["jumlah"]) for t in ts if t["jenis"] == "keluar")
+    biaya = sum(int(t.get("biaya", 0) or 0) for t in ts if t["jenis"] == "transfer")
+    return masuk, keluar + biaya
+
+
+def _banding(sekarang: int, lalu: int, naik_baik: bool) -> str:
+    if not lalu:
+        return "belum ada pembanding"
+    p = (sekarang - lalu) / lalu * 100
+    if abs(p) < 0.5:
+        return "sama seperti periode lalu"
+    return f"{'naik' if p > 0 else 'turun'} {abs(p):.0f}% dari periode lalu"
+
+
+def _teratas(ts: list, kunci, n: int = 5):
+    h = {}
+    for t in ts:
+        if t["jenis"] == "keluar":
+            k = kunci(t)
+            if k:
+                h[k] = h.get(k, 0) + int(t["jumlah"])
+    return sorted(h.items(), key=lambda x: -x[1])[:n]
+
+
 def halaman_beranda():
-    ym = pilih_bulan("br_bulan")
+    mode, a, b, label, prev = pilih_periode()
+    ts = _dalam(a, b)
     sembunyi = disembunyikan()
-    masuk, keluar = ringkas_bulan(ym)
+    masuk, keluar = _ringkas(ts)
+    pm, pk = _ringkas(_dalam(*prev))
+    hari = (b - a).days + 1
+    hari_lalu = max(1, (min(b, hari_ini()) - a).days + 1)  # periode berjalan: hitung sampai hari ini saja
     if "ringkasan" not in sembunyi:
         deretan_stat(kartu_stat("Total saldo", rp(total_saldo()), "semua dompet aktif", "g" if total_saldo() >= 0 else "m"),
-                     kartu_stat("Pemasukan", rp(masuk), nama_bulan(ym), "g"),
-                     kartu_stat("Pengeluaran", rp(keluar), nama_bulan(ym), "m"),
+                     kartu_stat("Pemasukan", rp(masuk), _banding(masuk, pm, True), "g"),
+                     kartu_stat("Pengeluaran", rp(keluar), _banding(keluar, pk, False), "m"),
                      kartu_stat("Selisih", rp(masuk - keluar), "ditabung" if masuk >= keluar else "defisit",
                                 "g" if masuk >= keluar else "m"))
+        st.caption(f"{label} · {hari} hari · {len(ts)} transaksi · rata-rata pengeluaran {rp(round(keluar / hari_lalu))} per hari")
     if "perhatian" not in sembunyi:
         with st.container(key="kartu_perhatian"):
             st.markdown("**Perlu perhatian**")
@@ -70,7 +187,8 @@ def halaman_beranda():
     with c1:
         if "anggaran" not in sembunyi:
             with st.container(key="kartu_g_br_anggaran"):
-                st.markdown("**Anggaran**")
+                ym = b.strftime("%Y-%m")
+                st.markdown(f"**Anggaran, {nama_bulan(ym)}**")
                 dt = status_anggaran(ym)[:6]
                 if not dt:
                     st.caption("Belum ada anggaran.")
@@ -94,22 +212,55 @@ def halaman_beranda():
     with d1:
         if "g_kategori" not in sembunyi:
             with st.container(key="kartu_g_br_kat"):
-                st.markdown(f"**Pengeluaran per kategori, {nama_bulan(ym)}**")
-                data = per_kategori(ym, "keluar", gabung=True)
+                st.markdown(f"**Pengeluaran per kategori, {label}**")
+                data = dict(_teratas(ts, lambda t: akar(t.get("kategori", "")), 99))
                 if data:
                     st.bar_chart(pd.DataFrame({"Kategori": [nama_kat(k) for k in data], "Jumlah": list(data.values())}).set_index("Kategori"),
                                  color="#d64545", horizontal=True)
                 else:
-                    st.caption("Belum ada pengeluaran bulan ini.")
+                    st.caption("Belum ada pengeluaran pada periode ini.")
     with d2:
         if "g_tren" not in sembunyi:
             with st.container(key="kartu_g_br_tren"):
-                st.markdown("**6 bulan terakhir**")
-                bln = [geser_bulan(ym_ini(), -i) for i in range(5, -1, -1)]
-                label = [nama_bulan(b)[:3] + " " + b[2:4] for b in bln]
-                st.bar_chart(pd.DataFrame({"Bulan": label, "Pemasukan": [ringkas_bulan(b)[0] for b in bln],
-                                           "Pengeluaran": [ringkas_bulan(b)[1] for b in bln]}).set_index("Bulan"),
+                bulanan = mode == "tahun" or hari > 62
+                st.markdown(f"**Pemasukan dan pengeluaran {'per bulan' if bulanan else 'per hari'}**")
+                if bulanan:
+                    kunci_g = {}
+                    y, m = a.year, a.month
+                    while (y, m) <= (b.year, b.month):
+                        kunci_g[f"{y:04d}-{m:02d}"] = f"{BLN3[m - 1]} {str(y)[2:]}"
+                        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+                    pot = 7
+                else:
+                    kunci_g = {(a + timedelta(days=i)).isoformat(): (a + timedelta(days=i)).strftime("%d/%m") for i in range(hari)}
+                    pot = 10
+                mm, kk = dict.fromkeys(kunci_g, 0), dict.fromkeys(kunci_g, 0)
+                for tt in ts:
+                    g = tt["tgl"][:pot]
+                    if g in mm:
+                        if tt["jenis"] == "masuk":
+                            mm[g] += int(tt["jumlah"])
+                        elif tt["jenis"] == "keluar":
+                            kk[g] += int(tt["jumlah"])
+                        elif tt["jenis"] == "transfer":
+                            kk[g] += int(tt.get("biaya", 0) or 0)
+                st.bar_chart(pd.DataFrame({"Waktu": list(kunci_g.values()), "Pemasukan": list(mm.values()),
+                                           "Pengeluaran": list(kk.values())}).set_index("Waktu"),
                              color=["#34a874", "#d64545"], stack=False)
+    if "teratas" not in sembunyi:
+        with st.container(key="kartu_g_br_teratas"):
+            st.markdown(f"**Toko dan barang teratas, {label}**")
+            e1, e2 = st.columns(2)
+            for kol, judul, kunci_t, nama in (
+                    (e1, "Toko", lambda t: t.get("toko"), lambda i: (toko_dari(i) or {}).get("nama", "")),
+                    (e2, "Barang", lambda t: t.get("barang"), lambda i: (barang_dari(i) or {}).get("nama", ""))):
+                with kol:
+                    st.caption(judul)
+                    isi = _teratas(ts, kunci_t)
+                    if not isi:
+                        st.caption("Belum ada data pada periode ini.")
+                    for i, jml in isi:
+                        st.markdown(f'<div class="ag"><b>{e(nama(i))}</b><span>{rp(jml)}</span></div>', unsafe_allow_html=True)
     if "terakhir" not in sembunyi:
         with st.container(key="kartu_g_br_terakhir"):
             st.markdown("**Transaksi terakhir**")

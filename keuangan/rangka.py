@@ -40,7 +40,7 @@ LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.or
         '<path d="M19 13.5v11M15.5 16.5c0-1.3 1.5-2 3.5-2s3.5.8 3.5 2.1c0 3.2-7 1.6-7 4.8 0 1.3 1.6 2.1 3.5 2.1s3.5-.8 3.5-2.1" '
         'fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>')
 DESKRIPSI = {
-    "Beranda": "Ringkasan saldo, pemasukan dan pengeluaran bulan ini, hal yang perlu perhatian, dan grafik.",
+    "Beranda": "Ringkasan saldo, pemasukan dan pengeluaran per minggu, bulan, tahun, atau tanggal custom, plus hal yang perlu perhatian dan grafik.",
     "Catat transaksi": "Catat pemasukan, pengeluaran, atau transfer antar dompet dalam beberapa ketukan.",
     "Daftar transaksi": "Cari dan saring semua transaksi, lalu ubah atau hapus kalau ada yang salah.",
     "Toko dan tempat beli": "Daftar toko atau tempat beli beserta lokasinya. Saat mencatat, toko bisa dipilih.",

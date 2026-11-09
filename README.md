@@ -12,6 +12,8 @@ Data disimpan sebagai satu file `data.json` di repositori GitHub privat.
 
 Kategori punya dua tingkat: kategori utama (misalnya Rumah) dan sub kategori (misalnya Listrik). Transaksi boleh memakai keduanya. Anggaran, laporan, dan filter pada kategori utama otomatis mencakup semua sub kategorinya. Data lama tanpa sub kategori tetap terbuka (kategori lama jadi kategori utama).
 
+Beranda: pilih periode Minggu, Bulan, Tahun, atau Tanggal custom. Kartu angka dibandingkan dengan periode sebelumnya, ada rata-rata pengeluaran per hari, grafik harian atau bulanan, serta toko dan barang dengan belanja terbesar.
+
 Barang: saat mencatat pengeluaran/pemasukan, pilih kategori lalu barangnya (daftar barang menyesuaikan kategori; kategori utama menampilkan barang semua sub-nya). Isi banyaknya dan harga satuan, total dihitung otomatis, dan harga barang diperbarui dari transaksi terbaru. Barang belum ada bisa ditambah langsung dari halaman Catat transaksi. Laporan > Barang menampilkan total belanja per barang dan grafik perubahan harga.
 
 Kategori dan Sub kategori dipilih di dua kotak terpisah. Toko / tempat beli dipilih dari daftar (atau ditambah langsung di halaman Catat transaksi); lokasi terisi otomatis dari toko tetapi bisa diubah, dan Waktu beli terisi jam sekarang (WIB). Daftar transaksi bisa difilter per toko dan dicari berdasarkan toko atau lokasi. Laporan > Toko menampilkan kunjungan dan total per toko, serta grafik jam belanja.
