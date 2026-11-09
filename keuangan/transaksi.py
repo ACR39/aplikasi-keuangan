@@ -305,13 +305,12 @@ def halaman_transaksi():
                     selesai_simpan("Transaksi diubah.", edit_tx=None)
             continue
         with st.container(key=f"tx_{t['id']}"):
-            if hanya_lihat():
-                st.markdown(baris_transaksi(t), unsafe_allow_html=True)
-            else:
-                c = st.columns([1, 0.001, 0.001])
-                c[0].markdown(baris_transaksi(t), unsafe_allow_html=True)
-                c[1].button("Ubah", key=f"kedit_{t['id']}", on_click=atur, args=("edit_tx", t["id"]))
-                c[2].button("Hapus", key=f"khapus_{t['id']}", on_click=atur, args=("hapus_tx", t["id"]))
+            st.markdown(baris_transaksi(t), unsafe_allow_html=True)
+            if not hanya_lihat():
+                with st.container(key=f"aksi_{t['id']}"):
+                    c = st.columns(2)
+                    c[0].button("Ubah", key=f"kedit_{t['id']}", on_click=atur, args=("edit_tx", t["id"]))
+                    c[1].button("Hapus", key=f"khapus_{t['id']}", on_click=atur, args=("hapus_tx", t["id"]))
             if t.get("struk") and st.session_state.get("tr_struk"):
                 from keuangan.penyimpanan import ambil_foto
                 img = ambil_foto(t["struk"])

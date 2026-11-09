@@ -314,33 +314,36 @@ def batang(pakai: float, batas: float, tebal: str = "") -> str:
 
 
 def baris_transaksi(t: dict) -> str:
-    """Satu baris transaksi sebagai HTML (ikon, judul, keterangan, nominal)."""
+    """Satu baris transaksi sebagai HTML: ikon, judul, beberapa baris keterangan pendek, nominal."""
     j = t["jenis"]
+    baris = []
     if j == "transfer":
         judul = t.get("catatan") or "Transfer"
-        meta = f'{fmt_iso(t["tgl"])} · {nama_dompet(t["dompet"])} → {nama_dompet(t.get("ke"))}'
+        baris.append(f'{fmt_iso(t["tgl"])} · {nama_dompet(t["dompet"])} → {nama_dompet(t.get("ke"))}')
         if t.get("biaya"):
-            meta += f' · biaya {rp(t["biaya"])}'
+            baris.append(f'Biaya {rp(t["biaya"])}')
         ikon, nom = "⇄", rp(t["jumlah"])
     else:
         judul = t.get("catatan") or teks_barang(t) or nama_kat(t.get("kategori"))
-        meta = f'{fmt_iso(t["tgl"])}{" " + t["waktu"] if t.get("waktu") else ""} · {nama_dompet(t["dompet"])} · {nama_kat(t.get("kategori"))}'
+        baris.append(f'{fmt_iso(t["tgl"])}{" · " + t["waktu"] if t.get("waktu") else ""} · {nama_dompet(t["dompet"])}')
+        baris.append(nama_kat(t.get("kategori")))
         if t.get("catatan") and teks_barang(t):
-            meta += f' · {teks_barang(t)}'
+            baris.append(teks_barang(t))
         if teks_toko(t):
-            meta += f' · {teks_toko(t)}'
+            baris.append(f'📍 {teks_toko(t)}')
         if t.get("grup"):
             n_ = sum(1 for x in D["transaksi"] if x.get("grup") == t["grup"])
-            meta += f" · 🧾 satu struk, {n_} barang" if n_ > 1 else " · 🧾 struk"
+            baris.append(f"🧾 Satu struk, {n_} barang" if n_ > 1 else "🧾 Ada struk")
         elif t.get("struk"):
-            meta += " · 🧾 ada struk"
+            baris.append("🧾 Ada struk")
         ikon = "↓" if j == "masuk" else "↑"
         nom = ("+" if j == "masuk" else "-") + rp(t["jumlah"])
     k = kat_dari(t.get("kategori")) if j != "transfer" else None
     kotak = (f'<div class="ic kat" style="background:{e(k.get("warna", "#9aa0a6"))}">{e(k.get("ikon", "🏷️"))}</div>' if k
              else f'<div class="ic {j}">{ikon}</div>')
-    return (f'<div class="rt">{kotak}<div class="isi"><div class="jd">{e(judul)}</div>'
-            f'<div class="mt">{e(meta)}</div></div><div class="nom {j}">{e(nom)}</div></div>')
+    mt = "".join(f'<div class="mt">{e(x)}</div>' for x in baris)
+    return (f'<div class="rt">{kotak}<div class="isi"><div class="jd">{e(judul)}</div>{mt}</div>'
+            f'<div class="nom {j}">{e(nom)}</div></div>')
 
 
 def tambah_transaksi(jenis, tgl, jumlah, dompet, kategori="", catatan="", ke="", biaya=0, **kait) -> dict:

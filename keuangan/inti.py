@@ -333,6 +333,12 @@ details.rinci > summary{cursor:pointer;list-style:none}details.rinci > summary::
 [class*="st-key-tx_"] [data-testid="stColumn"]:first-child{flex:1 1 auto !important}
 [class*="st-key-tx_"]{background:#fff;border:1px solid #e3e7ee;border-radius:14px;padding:.7rem .9rem .85rem;margin-bottom:.35rem;box-shadow:0 1px 3px rgba(16,24,40,.06);gap:.3rem !important}
 [class*="st-key-tx_"] button{white-space:nowrap}
+[class*="st-key-tx_"] .rt{align-items:flex-start;padding-bottom:.9rem}
+[class*="st-key-aksi_"]{margin-top:.2rem}
+[class*="st-key-tx_"] .rt .mt{line-height:1.35}
+[class*="st-key-tx_"] .rt .nom{font-size:1rem;padding-top:.1rem}
+[class*="st-key-aksi_"] [data-testid="stHorizontalBlock"]{gap:.5rem !important;justify-content:flex-start}
+[class*="st-key-aksi_"] [data-testid="stColumn"]:first-child,[class*="st-key-aksi_"] [data-testid="stColumn"]{flex:0 0 auto !important;width:auto !important}
 [class*="st-key-bayar_"] button{background:#256b4a !important;border-color:#256b4a !important;color:#fff !important;font-weight:600}
 [class*="st-key-bayar_"] button p{color:#fff !important}
 [class*="st-key-lewat_"] button,[class*="st-key-batal_"] button{border:1px solid #6b7280 !important;color:#374151 !important;background:#fff !important}
