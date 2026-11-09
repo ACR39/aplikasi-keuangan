@@ -9,7 +9,8 @@ from keuangan.bantu import (
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
     ringkas_teks, selesai_simpan, tambah_transaksi, versi, daftar_bulan, deretan_stat, kartu_stat,
 )
-from keuangan.struk import baca_baris, editor_kartu, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
+from keuangan.ocr import baca_struk, cocokkan_toko, ke_tabel, mesin_tersedia
+from keuangan.struk import peta_kategori, baca_baris, editor_kartu, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
 from keuangan.inti import (
     D, JENIS, TOKO_IKON, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, hari_ini, iso_ke_date, nama_bulan, rp, sekarang,
 )
@@ -151,30 +152,74 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
 
 
 def form_struk():
-    """Catat satu struk berisi banyak barang sekaligus."""
+    """Catat satu struk berisi banyak barang sekaligus, bisa diisi otomatis dari foto struk."""
     dompet = _pilihan_dompet()
     if not dompet:
         st.warning("Tambah dompet dulu di menu Pengaturan > Dompet.")
         return
     base = f"f_struk_{versi()}"
+    ocr = st.session_state.get("struk_ocr")
+    n_up = st.session_state.get("struk_up_n", 0)
+    mesin = mesin_tersedia()
+    berkas = st.file_uploader("Foto struk, opsional", type=["jpg", "jpeg", "png", "webp"], key=f"f_struk_up_{n_up}",
+                              help="Foto diperkecil otomatis. Di HP bisa langsung memotret. Foto yang sama dilampirkan ke struk ini.")
+    if berkas is not None and mesin:
+        if st.button("📷 Baca isi struk dari foto ini", key=f"{base}_baca"):
+            try:
+                with st.spinner("Membaca struk…"):
+                    hasil = baca_struk(berkas.getvalue(), list(peta_kategori()[0]))
+            except RuntimeError as ex:
+                st.error(str(ex))
+            else:
+                if not hasil["item"]:
+                    st.warning("Tidak ada barang yang terbaca. Coba foto yang lebih jelas dan lurus, atau isi manual di bawah.")
+                else:
+                    st.session_state["struk_ocr"] = hasil
+                    st.session_state["ver"] = versi() + 1
+                    st.rerun()
+    elif berkas is None and not mesin:
+        st.caption("Isi otomatis dari foto struk belum aktif. Cara mengaktifkannya ada di README bagian Baca struk otomatis.")
+    if ocr:
+        st.info(f"Terisi otomatis dari foto struk (mesin {ocr['mesin']}). Periksa setiap barang, harga, dan banyaknya sebelum menyimpan.")
+        if ocr.get("toko") and not cocokkan_toko(ocr["toko"]):
+            st.caption(f"Toko di struk: {ocr['toko']}. Belum ada di daftar toko; tambah di Pengaturan > Toko dan tempat beli bila perlu.")
+        st.button("Kosongkan hasil baca", key=f"{base}_kosong", on_click=lambda: st.session_state.update(struk_ocr=None, ver=versi() + 1))
+    tgl_awal = hari_ini()
+    jam_awal = sekarang().time().replace(second=0, microsecond=0)
+    toko_awal = ""
+    if ocr:
+        try:
+            if ocr.get("tanggal"):
+                tgl_awal = min(max(iso_ke_date(ocr["tanggal"]) or tgl_awal, TGL_MIN), TGL_MAX)
+            if ocr.get("waktu"):
+                jam_awal = jam_t.fromisoformat(ocr["waktu"])
+        except ValueError:
+            pass
+        toko_awal = (cocokkan_toko(ocr.get("toko")) or {}).get("id", "")
     c1, c2 = st.columns(2)
-    tgl = c1.date_input("Tanggal", value=hari_ini(), min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY", key=f"{base}_tgl")
-    w = c2.time_input("Waktu beli", value=sekarang().time().replace(second=0, microsecond=0), step=60, key=f"{base}_w")
+    tgl = c1.date_input("Tanggal", value=tgl_awal, min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY", key=f"{base}_tgl")
+    w = c2.time_input("Waktu beli", value=jam_awal, step=60, key=f"{base}_w")
     c3, c4 = st.columns(2)
     dari = c3.selectbox("Dari dompet", dompet, format_func=f_dompet(), key=f"{base}_dompet")
     tops = [""] + [x["id"] for x in sorted(D["toko"], key=lambda x: (not x.get("favorit"), x["nama"].lower()))]
     if st.session_state.get(f"{base}_toko") not in tops:
         st.session_state.pop(f"{base}_toko", None)
-    toko = c4.selectbox("Toko / tempat beli", tops, format_func=f_toko(), key=f"{base}_toko")
+    toko = c4.selectbox("Toko / tempat beli", tops, index=tops.index(toko_awal) if toko_awal in tops else 0,
+                        format_func=f_toko(), key=f"{base}_toko")
     lokasi = st.text_input("Lokasi", value=(toko_dari(toko) or {}).get("lokasi", ""), max_chars=80, key=f"{base}_lok_{toko}",
                            placeholder="Contoh: Jl. Merdeka, Bandung")
     st.markdown("**Barang di struk**")
     st.caption("Pilih Barang dari daftar, atau kosongkan lalu pilih Kategori. Harga kosong memakai harga terakhir barang.")
-    df = editor_kartu(f"{base}_tbl")
+    df = editor_kartu(f"{base}_tbl", ke_tabel(ocr) if ocr else None)
     baris_ok, _ = baca_baris(df)
-    st.markdown(f"**Total struk: {rp(total_cepat(df))}** · {len(baris_ok)} barang")
-    berkas = st.file_uploader("Foto struk, opsional", type=["jpg", "jpeg", "png", "webp"], key=f"{base}_up",
-                              help="Foto diperkecil otomatis. Di HP bisa langsung memotret.")
+    jumlah_struk = total_cepat(df)
+    st.markdown(f"**Total struk: {rp(jumlah_struk)}** · {len(baris_ok)} barang")
+    if ocr and ocr.get("total"):
+        if ocr["total"] == jumlah_struk:
+            st.caption(f"✅ Cocok dengan total di struk ({rp(ocr['total'])}).")
+        else:
+            st.warning(f"Total di struk {rp(ocr['total'])}, jumlah barang di atas {rp(jumlah_struk)}. "
+                       "Mungkin ada barang yang belum terbaca, atau harga dan banyaknya salah baca. Diskon atau pajak juga bisa membuat selisih.")
     if st.button("Simpan struk", type="primary", key=f"{base}_simpan"):
         baris, salah = baca_baris(df)
         if salah:
@@ -185,7 +230,7 @@ def form_struk():
             struk = proses_foto(berkas, False, "", "struk")
             simpan_struk(baris, tgl, w.strftime("%H:%M"), dari, toko, lokasi.strip(), struk)
             catat("tambah", ringkas_struk(baris, toko))
-            selesai_simpan(f"Struk dicatat: {len(baris)} barang")
+            selesai_simpan(f"Struk dicatat: {len(baris)} barang", struk_ocr=None, struk_up_n=n_up + 1)
 
 
 def halaman_catat():

@@ -6,3 +6,4 @@ pillow>=10.0
 folium>=0.17
 streamlit-folium>=0.22
 streamlit-js-eval>=0.1.7
+pytesseract>=0.3.10

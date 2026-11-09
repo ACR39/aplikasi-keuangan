@@ -35,6 +35,15 @@ Kategori dan Sub kategori dipilih di dua kotak terpisah. Toko / tempat beli dipi
 Saldo dompet tidak disimpan, tetapi dihitung dari saldo awal + semua transaksi, jadi tidak bisa tidak sinkron.
 Transfer tidak dihitung sebagai pemasukan atau pengeluaran; biaya admin transfer dihitung sebagai pengeluaran.
 
+## Baca struk otomatis
+Di Catat transaksi, mode Struk: unggah foto struk lalu tekan **Baca isi struk dari foto ini**. Toko, tanggal, jam, dan daftar barang terisi sendiri; periksa lagi sebelum menyimpan. Total di struk dibandingkan dengan jumlah barang.
+
+Dua mesin, dipilih otomatis:
+- **Claude** (lebih akurat, mengenali diskon): isi `[anthropic] api_key` di secrets. Foto dikirim ke Anthropic dan ada biaya per foto.
+- **Tesseract** (gratis, jalan di server sendiri, hasil lebih kasar): `packages.txt` sudah memuat `tesseract-ocr` dan paket bahasa Indonesia; di komputer sendiri pasang Tesseract dan `pytesseract`.
+
+Tanpa keduanya, formulir struk tetap bisa diisi manual.
+
 ## Memasang (sekali saja)
 1. Buat dua repositori GitHub **privat**: satu untuk kode (isi folder ini), satu untuk data (kosong, contoh `keuangan-data`, sudah ada branch `main` dengan minimal satu commit, misalnya README).
 2. Buat token GitHub (fine-grained) dengan izin **Contents: Read and write** hanya untuk repo data.
