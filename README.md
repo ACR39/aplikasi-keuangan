@@ -6,7 +6,7 @@ Data disimpan sebagai satu file `data.json` di repositori GitHub privat.
 
 ## Menu
 - **Beranda**: total saldo, pemasukan dan pengeluaran bulan terpilih, hal yang perlu perhatian (tagihan jatuh tempo, anggaran hampir atau sudah lewat, utang jatuh tempo, saldo negatif), saldo per dompet, anggaran, target tabungan, grafik. Bagian Beranda bisa disembunyikan di Pengaturan > Tampilan.
-- **Transaksi**: Catat transaksi (pemasukan, pengeluaran, transfer dengan biaya admin), Daftar transaksi (filter bulan, jenis, dompet, kategori, kata kunci; ubah dan hapus), Toko dan tempat beli (daftar toko beserta jenis dan lokasi), Barang dan produk (daftar barang per kategori atau sub kategori, misalnya Indomie di Belanja bahan makanan), Riwayat aktivitas, Tempat sampah (30 hari).
+- **Transaksi**: Catat transaksi (pemasukan, pengeluaran, transfer dengan biaya admin), Daftar transaksi (filter bulan, jenis, dompet, kategori, kata kunci; ubah dan hapus), Riwayat aktivitas. Menu **Pengaturan** memuat Barang dan produk (misalnya Indomie di Belanja bahan makanan), Toko dan tempat beli (nama, jenis, lokasi), dan Tempat sampah (30 hari). Statistik per barang dan per toko ada di Pantau > Laporan.
 - **Pantau**: Anggaran per kategori, Tagihan berulang (tombol Bayar otomatis membuat pengeluaran dan memajukan jatuh tempo), Target tabungan (perkiraan setoran per bulan), Utang-piutang (cicilan, bisa ikut tercatat di dompet), Laporan (bulanan, tren 12 bulan, per dompet).
 - **Pengaturan**: Tampilan, Ekspor dan impor (Excel lengkap, CSV transaksi, impor dari Excel/CSV), Dompet, Kategori (kategori utama + sub kategori dengan ikon dan warna, gabungkan saat menghapus), Cadangan dan pulihkan (unduh JSON, titik pulih dari riwayat commit).
 

@@ -47,7 +47,7 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
         c1, c2 = st.columns(2)
         brg = c1.selectbox("Barang (opsional)", opsi, index=opsi.index(awal["barang"]) if awal.get("barang") in opsi else 0,
                            format_func=f_barang(kat), key=f"{kunci}_brg",
-                           help="Pilih barang agar harga dan jumlahnya tercatat. Tambah barang di menu Barang dan produk.")
+                           help="Pilih barang agar harga dan jumlahnya tercatat. Tambah barang di Pengaturan > Barang dan produk.")
         tops = [""] + [x["id"] for x in sorted(D["toko"], key=lambda x: x["nama"].lower())]
         if awal.get("toko") and awal["toko"] not in tops and toko_dari(awal["toko"]):
             tops.append(awal["toko"])
@@ -55,7 +55,7 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             st.session_state.pop(f"{kunci}_toko", None)
         toko = c2.selectbox("Toko / tempat beli (opsional)", tops, index=tops.index(awal["toko"]) if awal.get("toko") in tops else 0,
                             format_func=f_toko(), key=f"{kunci}_toko",
-                            help="Tambah toko di menu Toko dan tempat beli.")
+                            help="Tambah toko di Pengaturan > Toko dan tempat beli.")
     b = barang_dari(brg) if brg else None
     with st.form(f"{kunci}_f_{brg}_{toko}", clear_on_submit=bersih):
         c1, c2 = st.columns(2)

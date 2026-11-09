@@ -24,7 +24,7 @@ from keuangan.transaksi import halaman_catat, halaman_transaksi
 from keuangan.utang import halaman_utang
 from keuangan.inti import pasang_css
 
-UTAMA = ["Catat transaksi", "Daftar transaksi", "Barang dan produk", "Toko dan tempat beli", "Riwayat aktivitas", "Tempat sampah"]
+UTAMA = ["Catat transaksi", "Daftar transaksi", "Riwayat aktivitas"]
 PANTAU = ["Anggaran", "Tagihan berulang", "Target tabungan", "Utang-piutang", "Laporan"]
 EDIT_SAJA = ("Catat transaksi",)
 MASTER = ["Dompet", "Kategori", "Cadangan dan pulihkan"]
@@ -51,7 +51,7 @@ DESKRIPSI = {
     "Tagihan berulang": "Listrik, internet, langganan: pantau jatuh tempo dan catat pembayaran jadi pengeluaran.",
     "Target tabungan": "Tabungan dengan target dan tenggat, lengkap dengan perkiraan setoran per bulan.",
     "Utang-piutang": "Catat utang dan piutang beserta cicilannya. Bisa ikut tercatat di saldo dompet.",
-    "Laporan": "Ringkasan bulanan, tren 12 bulan, dan arus uang tiap dompet.",
+    "Laporan": "Statistik bulanan, tren 12 bulan, arus tiap dompet, serta belanja per barang dan per toko.",
     "Tampilan": "Pilih bagian Beranda yang ditampilkan.",
     "Ekspor dan impor": "Unduh data ke Excel atau CSV, atau tambah banyak transaksi sekaligus dari file.",
     "Dompet": "Tempat uang disimpan beserta saldo awalnya. Saldo sekarang dihitung otomatis.",
@@ -94,7 +94,7 @@ def peringatan_uji():
 
 
 def pilih_halaman():
-    PENGATURAN = ["Tampilan", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
+    PENGATURAN = ["Tampilan", "Barang dan produk", "Toko dan tempat beli", "Tempat sampah", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
     HALAMAN = ["Beranda"] + menu_utama() + PANTAU + PENGATURAN
     if st.session_state.get("halaman") not in HALAMAN:
         st.session_state.halaman = "Beranda"
