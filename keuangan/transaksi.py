@@ -207,46 +207,6 @@ def halaman_catat():
                                  toko=isi["toko"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk)
             catat("tambah", ringkas_teks(t))
             selesai_simpan(f"Transaksi dicatat: {JENIS[jenis].lower()} {rp(isi['jumlah'])}")
-        if jenis != "transfer" and not struk_mode:
-            kat = st.session_state.get(f"{kunci}_sub") or st.session_state.get(f"{kunci}_kat")
-            with st.expander("Barang belum ada? Tambah di sini"):
-                st.caption(f"Barang akan masuk ke kategori **{nama_kat(kat)}**.")
-                with st.form(f"f_cepat_{kunci}", clear_on_submit=False):
-                    c1, c2, c3 = st.columns([2, 1, 1])
-                    nama = c1.text_input("Nama barang", placeholder="Contoh: Indomie goreng")
-                    satuan = c2.text_input("Satuan", placeholder="bungkus")
-                    harga = c3.number_input("Harga (Rp)", min_value=0, step=500, value=0)
-                    if st.form_submit_button("Tambah barang"):
-                        if not nama.strip() or not kat:
-                            st.error("Isi nama barang.")
-                        elif any(x["nama"].lower() == nama.strip().lower() and x["kategori"] == kat for x in D["barang"]):
-                            st.error("Barang itu sudah ada di kategori ini.")
-                        else:
-                            nb = {"id": baru_id(), "nama": nama.strip(), "kategori": kat, "harga": int(harga), "satuan": satuan.strip()}
-                            D["barang"].append(nb)
-                            catat("barang", f"Tambah barang {nb['nama']} di {nama_kat(kat)}")
-                            nxt = f"f_catat_{jenis}_{versi() + 1}"
-                            selesai_simpan("Barang ditambah.", **{f"{nxt}_kat": akar(kat), f"{nxt}_sub": kat if akar(kat) != kat else "",
-                                                                  f"{nxt}_brg": nb["id"]})
-        if jenis != "transfer":
-            with st.expander("Toko belum ada? Tambah di sini"):
-                with st.form(f"f_toko_cepat_{kunci}", clear_on_submit=False):
-                    c1, c2, c3 = st.columns([2, 1, 2])
-                    nama = c1.text_input("Nama toko", placeholder="Contoh: Indomaret Merdeka")
-                    jt = c2.selectbox("Jenis", list(TOKO_IKON))
-                    lok = c3.text_input("Lokasi", placeholder="Jl. Merdeka, Bandung")
-                    if st.form_submit_button("Tambah toko"):
-                        if not nama.strip():
-                            st.error("Isi nama toko.")
-                        elif any(x["nama"].lower() == nama.strip().lower() and x.get("lokasi", "").lower() == lok.strip().lower()
-                                 for x in D["toko"]):
-                            st.error("Toko itu sudah ada.")
-                        else:
-                            nt = {"id": baru_id(), "nama": nama.strip(), "jenis": jt, "lokasi": lok.strip()}
-                            D["toko"].append(nt)
-                            catat("toko", f"Tambah toko {nt['nama']}")
-                            nxt = f"f_struk_{versi() + 1}" if struk_mode else f"f_catat_{jenis}_{versi() + 1}"
-                            selesai_simpan("Toko ditambah.", **{f"{nxt}_toko": nt["id"]})
     st.markdown("**Terakhir dicatat**")
     terakhir = sorted(D["transaksi"], key=kunci_urut, reverse=True)[:5]
     if not terakhir:

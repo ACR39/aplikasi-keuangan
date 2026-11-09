@@ -50,7 +50,7 @@ def _form(awal: dict | None, titik=None):
                 else:
                     D["toko"].append({"id": baru_id(), **isi})
                 catat("toko", f"{'Ubah' if awal else 'Tambah'} toko {isi['nama']}")
-                selesai_simpan("Toko disimpan.", edit_toko=None, **{f"titik_{awal.get('id') or 'baru'}": "_reset"})
+                selesai_simpan("Toko disimpan.", edit_toko=None, edit_baru_toko=False, **{f"titik_{awal.get('id') or 'baru'}": "_reset"})
 
 
 def _lepas_toko(x: dict):
@@ -104,6 +104,9 @@ def halaman_toko():
     if hanya_lihat():
         return
     edit = next((x for x in D["toko"] if x["id"] == st.session_state.get("edit_toko")), None)
+    if not edit and not st.session_state.get("edit_baru_toko"):
+        st.button("➕ Tambah toko baru", key="tambah_toko_btn", type="primary", on_click=atur, args=("edit_baru_toko", True))
+        return
     with st.container(key="kartu_g_form_tk"):
         st.markdown(f"**{'Ubah toko' if edit else 'Tambah toko'}**")
         kt = (edit or {}).get("id") or "baru"
@@ -113,6 +116,7 @@ def halaman_toko():
         st.markdown("**Titik lokasi**")
         titik = pilih_titik(kt, titik_dari(edit))
         _form(edit, titik)
-        if edit and st.button("Batal ubah", key="batal_ubah_tk"):
+        if st.button("Batal", key="batal_ubah_tk"):
             st.session_state.pop("edit_toko", None)
+            st.session_state["edit_baru_toko"] = False
             st.rerun()

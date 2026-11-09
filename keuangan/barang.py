@@ -65,7 +65,7 @@ def _form(awal: dict | None, kat_awal: str = ""):
                 else:
                     D["barang"].append({"id": baru_id(), **isi})
                 catat("barang", f"{'Ubah' if awal else 'Tambah'} barang {isi['nama']} di {nama_kat(kat)}")
-                selesai_simpan("Barang disimpan.", edit_brg=None)
+                selesai_simpan("Barang disimpan.", edit_brg=None, edit_baru_brg=False)
 
 
 def _lepas_barang(b: dict):
@@ -126,11 +126,15 @@ def halaman_barang():
     if hanya_lihat():
         return
     edit = next((x for x in D["barang"] if x["id"] == st.session_state.get("edit_brg")), None)
+    if not edit and not st.session_state.get("edit_baru_brg"):
+        st.button("➕ Tambah barang baru", key="tambah_brg_btn", type="primary", on_click=atur, args=("edit_baru_brg", True))
+        return
     with st.container(key="kartu_g_form_brg"):
         st.markdown(f"**{'Ubah barang' if edit else 'Tambah barang'}**")
         _form(edit, kat if kat != "semua" else "")
-        if edit and st.button("Batal ubah", key="batal_ubah_brg"):
+        if st.button("Batal", key="batal_ubah_brg"):
             st.session_state.pop("edit_brg", None)
+            st.session_state["edit_baru_brg"] = False
             st.rerun()
         st.caption("Memindahkan barang ke kategori lain tidak mengubah kategori pada transaksi yang sudah tercatat.")
 

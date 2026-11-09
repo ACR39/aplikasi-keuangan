@@ -24,7 +24,7 @@ Daftar belanja (menu Transaksi): buat daftar, tambah barang atau barang langgana
 
 Foto disimpan sebagai berkas terpisah (folder `foto/` di repo GitHub, atau `data_lokal.json.foto/` saat mode uji coba), diperkecil otomatis, dan di data hanya tercatat namanya. Berkas cadangan JSON tidak memuat foto; folder `foto/` di repo sudah menjadi cadangannya.
 
-Barang: saat mencatat pengeluaran/pemasukan, pilih kategori lalu barangnya (daftar barang menyesuaikan kategori; kategori utama menampilkan barang semua sub-nya). Isi banyaknya dan harga satuan, total dihitung otomatis, dan harga barang diperbarui dari transaksi terbaru. Barang belum ada bisa ditambah langsung dari halaman Catat transaksi. Laporan > Barang menampilkan total belanja per barang dan grafik perubahan harga.
+Barang: saat mencatat pengeluaran/pemasukan, pilih kategori lalu barangnya (daftar barang menyesuaikan kategori; kategori utama menampilkan barang semua sub-nya). Isi banyaknya dan harga satuan, total dihitung otomatis, dan harga barang diperbarui dari transaksi terbaru. Barang dan toko ditambah lewat Pengaturan (formulirnya muncul setelah menekan tombol Tambah). Laporan > Barang menampilkan total belanja per barang dan grafik perubahan harga.
 
 Kategori dan Sub kategori dipilih di dua kotak terpisah. Toko / tempat beli dipilih dari daftar (atau ditambah langsung di halaman Catat transaksi); lokasi terisi otomatis dari toko tetapi bisa diubah, dan Waktu beli terisi jam sekarang (WIB). Daftar transaksi bisa difilter per toko dan dicari berdasarkan toko atau lokasi. Laporan > Toko menampilkan kunjungan dan total per toko, serta grafik jam belanja.
 
