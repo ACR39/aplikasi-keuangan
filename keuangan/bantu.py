@@ -194,6 +194,31 @@ def perbarui_harga_barang(id_):
         b["harga"] = int(round(ada[0]["harga_satuan"]))
 
 
+def harga_normal_barang(id_) -> int:
+    """Harga normal (tanpa diskon) dari pembelian terbaru; 0 bila belum ada riwayat harga."""
+    for t in transaksi_barang(id_):
+        if t.get("harga_satuan"):
+            return int(t.get("harga_normal") or t["harga_satuan"])
+    return 0
+
+
+def info_diskon(t: dict):
+    """(persen, hemat_per_satuan, harga_normal) bila transaksi dibeli dengan diskon, kalau tidak None."""
+    hn, hs = int(t.get("harga_normal") or 0), int(t.get("harga_satuan") or 0)
+    if hs and hn > hs:
+        return round((hn - hs) / hn * 100), hn - hs, hn
+    return None
+
+
+def salin_transaksi(id_: str):
+    """Callback tombol Salin: buka Catat transaksi dengan isi dari transaksi ini, tanggal hari ini."""
+    t = next((x for x in D["transaksi"] if x["id"] == id_), None)
+    if not t:
+        return
+    pindah_halaman("Catat transaksi")
+    st.session_state.update({"tr_jenis": t["jenis"], "tr_mode": "satu", "salin_tx": id_, "ver": versi() + 1})
+
+
 def teks_barang(t: dict) -> str:
     """'Indomie × 5 bungkus' atau '' bila transaksi tanpa barang."""
     b = barang_dari(t.get("barang"))
@@ -331,6 +356,9 @@ def baris_transaksi(t: dict) -> str:
             baris.append(teks_barang(t))
         if teks_toko(t):
             baris.append(f'📍 {teks_toko(t)}')
+        d_ = info_diskon(t)
+        if d_:
+            baris.append(f"🏷️ Diskon {d_[0]}% · normal {rp(d_[2])}, bayar {rp(t['harga_satuan'])}")
         if t.get("grup"):
             n_ = sum(1 for x in D["transaksi"] if x.get("grup") == t["grup"])
             baris.append(f"🧾 Satu struk, {n_} barang" if n_ > 1 else "🧾 Ada struk")

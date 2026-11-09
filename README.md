@@ -22,6 +22,10 @@ Satu struk, banyak barang: di Catat transaksi > Pengeluaran pilih "Satu struk, b
 
 Daftar belanja (menu Transaksi): buat daftar, tambah barang atau barang langganan, lihat toko termurah tiap barang dari riwayat dan perkiraan penghematannya, centang yang sudah dibeli, lalu "Selesai belanja, catat" untuk menyimpannya sebagai satu struk. Daftar yang habis masuk ke Daftar selesai dan bisa dipakai lagi.
 
+Salin transaksi: tombol Salin di Daftar transaksi membuka Catat transaksi dengan isi yang sama, tanggal dan jam diganti ke sekarang.
+
+Diskon: saat mencatat barang, isi Harga normal (sebelum diskon) di samping Harga satuan (yang dibayar). Daftar transaksi menampilkan label diskon, dan Laporan > Barang menampilkan grafik harga normal dibanding harga bayar, berapa kali barang dibeli saat diskon, rata-rata diskon, total hemat, dan daftar pembelian diskon. Di mode struk, setiap kartu barang punya isian Harga normal yang sama.
+
 Foto disimpan sebagai berkas terpisah (folder `foto/` di repo GitHub, atau `data_lokal.json.foto/` saat mode uji coba), diperkecil otomatis, dan di data hanya tercatat namanya. Berkas cadangan JSON tidak memuat foto; folder `foto/` di repo sudah menjadi cadangannya.
 
 Barang: saat mencatat pengeluaran/pemasukan, pilih kategori lalu barangnya (daftar barang menyesuaikan kategori; kategori utama menampilkan barang semua sub-nya). Isi banyaknya dan harga satuan, total dihitung otomatis, dan harga barang diperbarui dari transaksi terbaru. Barang dan toko ditambah lewat Pengaturan (formulirnya muncul setelah menekan tombol Tambah). Laporan > Barang menampilkan total belanja per barang dan grafik perubahan harga.

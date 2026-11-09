@@ -5,7 +5,7 @@ import streamlit as st
 
 from keuangan.bantu import (
     barang_dalam, barang_dari, f_barang, perbarui_harga_barang, teks_barang,
-    f_dompet, f_kat, turunan, pilih_kategori, kolom_foto, proses_foto, kat_dari, f_toko, toko_dari, teks_toko, kunci_urut, akar,
+    f_dompet, f_kat, turunan, harga_normal_barang, salin_transaksi, pilih_kategori, kolom_foto, proses_foto, kat_dari, f_toko, toko_dari, teks_toko, kunci_urut, akar,
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
     ringkas_teks, selesai_simpan, tambah_transaksi, versi, daftar_bulan, deretan_stat, kartu_stat,
 )
@@ -83,11 +83,14 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
                             format_func=f_toko(), key=f"{kunci}_toko",
                             help="Tambah toko di Pengaturan > Toko dan tempat beli.")
     b = barang_dari(brg) if brg else None
+    if b:
+        hn_riwayat = harga_normal_barang(brg)
+        st.caption(f"Harga terakhir {rp(b.get('harga') or 0)}" + (f" · harga normal biasanya {rp(hn_riwayat)}" if hn_riwayat else ""))
     with st.form(f"{kunci}_f_{brg}_{toko}", clear_on_submit=False):
         c1, c2 = st.columns(2)
         tgl = c1.date_input("Tanggal", value=iso_ke_date(awal.get("tgl")) or hari_ini(), min_value=TGL_MIN, max_value=TGL_MAX,
                             format="DD/MM/YYYY")
-        qty = hs = 0
+        qty = hs = hn = 0
         if b:
             satuan = f" ({b['satuan']})" if b.get("satuan") else ""
             qty = c2.number_input(f"Banyaknya{satuan}", min_value=0.0, step=1.0, format="%g",
@@ -95,8 +98,10 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             c3, c4 = st.columns(2)
             hs = c3.number_input("Harga satuan (Rp)", min_value=0, step=500,
                                  value=int(awal.get("harga_satuan") or b.get("harga") or 0) if awal.get("barang") == brg else int(b.get("harga") or 0))
-            c4.markdown(f"<div style='padding-top:1.9rem;font-weight:700'>Total: {rp(round(qty * hs))}</div>"
-                        "<div class='sc-ket'>dihitung saat disimpan</div>", unsafe_allow_html=True)
+            hn = c4.number_input("Harga normal (opsional)", min_value=0, step=500,
+                                 value=int(awal.get("harga_normal") or 0) if awal.get("barang") == brg else 0,
+                                 help="Isi harga sebelum diskon kalau barang ini sedang diskon. Harga satuan = harga yang Anda bayar.")
+            st.caption("Total dihitung dari banyaknya × harga satuan saat disimpan. Harga normal hanya untuk mencatat diskon.")
             jumlah = int(round(qty * hs))
             c5, c6 = st.columns(2)
             dari = c5.selectbox("Dari dompet" if jenis == "keluar" else "Ke dompet", dompet,
@@ -140,7 +145,7 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
         st.error("Dompet asal dan tujuan tidak boleh sama.")
         return None
     return {"tgl": tgl, "jumlah": int(jumlah), "dompet": dari, "kategori": kat, "ke": ke, "biaya": int(biaya),
-            "catatan": catatan, "barang": brg, "qty": float(qty) if b else 0, "harga_satuan": int(hs) if b else 0,
+            "catatan": catatan, "barang": brg, "qty": float(qty) if b else 0, "harga_satuan": int(hs) if b else 0, "harga_normal": int(hn) if b and hn > hs else 0,
             "toko": toko, "lokasi": lokasi.strip(), "waktu": waktu,
             "struk_berkas": struk_berkas, "struk_hapus": struk_hapus}
 
@@ -188,7 +193,8 @@ def halaman_catat():
         st.info("Akun ini hanya bisa melihat.")
         return
     with st.container(key="kartu_g_catat"):
-        jenis = st.radio("Jenis", list(JENIS), format_func=JENIS.get, horizontal=True, key="tr_jenis", index=1,
+        st.session_state.setdefault("tr_jenis", "keluar")
+        jenis = st.radio("Jenis", list(JENIS), format_func=JENIS.get, horizontal=True, key="tr_jenis",
                          label_visibility="collapsed")
         kunci = f"f_catat_{jenis}_{versi()}"
         struk_mode = False
@@ -199,14 +205,20 @@ def halaman_catat():
             form_struk()
             isi = None
         else:
-            isi = form_transaksi(kunci, jenis, tombol="Simpan transaksi", bersih=True)
+            awal_salin = {}
+            asal = next((x for x in D["transaksi"] if x["id"] == st.session_state.get("salin_tx")), None)
+            if asal and asal["jenis"] == jenis:
+                awal_salin = {k: v for k, v in asal.items() if k not in ("id", "tgl", "waktu", "struk", "grup", "dibuat", "oleh")}
+                st.info(f"Menyalin transaksi: {ringkas_teks(asal)}. Tanggal dan jam diganti ke sekarang; ubah bagian yang berbeda lalu simpan.")
+                st.button("Batal menyalin", key="batal_salin", on_click=atur, args=("salin_tx", None))
+            isi = form_transaksi(kunci, jenis, awal=awal_salin, tombol="Simpan transaksi", bersih=True)
         if isi:
             struk = proses_foto(isi["struk_berkas"], False, "", "struk")
             t = tambah_transaksi(jenis, isi["tgl"], isi["jumlah"], isi["dompet"], isi["kategori"], isi["catatan"],
                                  isi["ke"], isi["biaya"], barang=isi["barang"], qty=isi["qty"], harga_satuan=isi["harga_satuan"],
-                                 toko=isi["toko"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk)
+                                 harga_normal=isi["harga_normal"], toko=isi["toko"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk)
             catat("tambah", ringkas_teks(t))
-            selesai_simpan(f"Transaksi dicatat: {JENIS[jenis].lower()} {rp(isi['jumlah'])}")
+            selesai_simpan(f"Transaksi dicatat: {JENIS[jenis].lower()} {rp(isi['jumlah'])}", salin_tx=None)
     st.markdown("**Terakhir dicatat**")
     terakhir = sorted(D["transaksi"], key=kunci_urut, reverse=True)[:5]
     if not terakhir:
@@ -286,8 +298,12 @@ def halaman_transaksi():
                               "catatan": isi["catatan"].strip()})
                     if isi["barang"]:
                         t.update({"barang": isi["barang"], "qty": isi["qty"], "harga_satuan": isi["harga_satuan"]})
+                        if isi["harga_normal"]:
+                            t["harga_normal"] = isi["harga_normal"]
+                        else:
+                            t.pop("harga_normal", None)
                     else:
-                        for kk in ("barang", "qty", "harga_satuan"):
+                        for kk in ("barang", "qty", "harga_satuan", "harga_normal"):
                             t.pop(kk, None)
                     if t["jenis"] == "transfer":
                         t["ke"], t["biaya"] = isi["ke"], isi["biaya"]
@@ -308,9 +324,10 @@ def halaman_transaksi():
             st.markdown(baris_transaksi(t), unsafe_allow_html=True)
             if not hanya_lihat():
                 with st.container(key=f"aksi_{t['id']}"):
-                    c = st.columns(2)
+                    c = st.columns(3)
                     c[0].button("Ubah", key=f"kedit_{t['id']}", on_click=atur, args=("edit_tx", t["id"]))
-                    c[1].button("Hapus", key=f"khapus_{t['id']}", on_click=atur, args=("hapus_tx", t["id"]))
+                    c[1].button("Salin", key=f"ksalin_{t['id']}", on_click=salin_transaksi, args=(t["id"],))
+                    c[2].button("Hapus", key=f"khapus_{t['id']}", on_click=atur, args=("hapus_tx", t["id"]))
             if t.get("struk") and st.session_state.get("tr_struk"):
                 from keuangan.penyimpanan import ambil_foto
                 img = ambil_foto(t["struk"])

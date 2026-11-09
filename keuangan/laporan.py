@@ -3,10 +3,10 @@ import pandas as pd
 import streamlit as st
 
 from keuangan.bantu import (
-    daftar_bulan, transaksi_barang, transaksi_toko,    akar, ikon_kat,    deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_dompet, nama_kat, per_kategori, pilih_bulan,
+    info_diskon, daftar_bulan, transaksi_barang, transaksi_toko,    akar, ikon_kat,    deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_dompet, nama_kat, per_kategori, pilih_bulan,
     ringkas_bulan, saldo_dompet, transaksi_bulan, ym_ini, batang,
 )
-from keuangan.inti import D, nama_bulan, rp
+from keuangan.inti import D, fmt_iso, nama_bulan, rp
 
 
 def _tabel_kategori(ym: str, jenis: str):
@@ -122,25 +122,47 @@ def _barang():
         qty = sum(float(t.get("qty") or 0) for t in ts)
         total = sum(t["jumlah"] for t in ts)
         ada[b["id"]] = b
-        baris.append({"Barang": b["nama"], "Kategori": nama_kat(b["kategori"]), "Kali dibeli": len(ts), "Banyaknya": round(qty, 2),
-                      "Total (Rp)": total, "Harga rata-rata": round(total / qty) if qty else 0, "Harga terakhir": int(ts[0].get("harga_satuan") or 0)})
+        disk = [t for t in ts if info_diskon(t)]
+        hemat = sum(info_diskon(t)[1] * float(t.get("qty") or 0) for t in disk)
+        baris.append({"Barang": b["nama"], "Kategori": nama_kat(b["kategori"]), "Kali dibeli": len(ts), "Saat diskon": f"{len(disk)}/{len(ts)}",
+                      "Banyaknya": round(qty, 2), "Total (Rp)": total, "Hemat (Rp)": round(hemat),
+                      "Harga rata-rata": round(total / qty) if qty else 0, "Harga terakhir": int(ts[0].get("harga_satuan") or 0)})
     if not baris:
         st.info("Belum ada transaksi yang memakai barang pada periode ini. Pilih barang saat mencatat transaksi.")
         return
     df = pd.DataFrame(baris).sort_values("Total (Rp)", ascending=False).set_index("Barang")
-    st.dataframe(df.style.format({"Total (Rp)": "{:,.0f}".format, "Harga rata-rata": "{:,.0f}".format, "Harga terakhir": "{:,.0f}".format,
+    st.dataframe(df.style.format({"Total (Rp)": "{:,.0f}".format, "Hemat (Rp)": "{:,.0f}".format, "Harga rata-rata": "{:,.0f}".format, "Harga terakhir": "{:,.0f}".format,
                                   "Banyaknya": "{:g}".format}), width="stretch")
     with st.container(key="kartu_g_lp_harga"):
         pilih = st.selectbox("Lihat perubahan harga", list(ada), format_func=lambda i: ada[i]["nama"], key="lp_barang_harga")
         titik = sorted([t for t in transaksi_barang(pilih) if t.get("harga_satuan")], key=lambda t: (t["tgl"], t.get("dibuat", "")))
         if len(titik) >= 2:
-            st.line_chart(pd.DataFrame({"Tanggal": [t["tgl"] for t in titik], "Harga satuan": [t["harga_satuan"] for t in titik]}).set_index("Tanggal"),
-                          color="#3b82c4")
+            ada_diskon = any(info_diskon(t) for t in titik)
+            data_g = {"Tanggal": [t["tgl"] for t in titik], "Harga bayar": [t["harga_satuan"] for t in titik]}
+            if ada_diskon:
+                data_g["Harga normal"] = [int(t.get("harga_normal") or t["harga_satuan"]) for t in titik]
+            st.line_chart(pd.DataFrame(data_g).set_index("Tanggal"), color=["#3b82c4", "#9aa0a6"] if ada_diskon else "#3b82c4")
             naik = titik[-1]["harga_satuan"] - titik[0]["harga_satuan"]
             st.caption(f"Dari {rp(titik[0]['harga_satuan'])} menjadi {rp(titik[-1]['harga_satuan'])} ({'naik' if naik > 0 else 'turun' if naik < 0 else 'tetap'}"
                        f"{' ' + rp(abs(naik)) if naik else ''}).")
         else:
             st.caption("Grafik harga muncul setelah barang ini dibeli minimal dua kali.")
+        disk_b = [t for t in transaksi_barang(pilih) if info_diskon(t) and (bulan == "semua" or t["tgl"][:7] == bulan)]
+        semua_b = [t for t in transaksi_barang(pilih) if t.get("harga_satuan") and (bulan == "semua" or t["tgl"][:7] == bulan)]
+        if semua_b:
+            st.markdown("**Beli saat diskon atau tidak**")
+            hemat_b = sum(info_diskon(t)[1] * float(t.get("qty") or 0) for t in disk_b)
+            rata = round(sum(info_diskon(t)[0] for t in disk_b) / len(disk_b)) if disk_b else 0
+            st.markdown(f"Dari **{len(semua_b)}** kali beli, **{len(disk_b)}** kali saat diskon"
+                        + (f" (rata-rata diskon {rata}%, total hemat {rp(round(hemat_b))})." if disk_b else ". Belum ada pembelian dengan diskon tercatat."))
+            if disk_b:
+                from keuangan.bantu import toko_dari
+                st.dataframe(pd.DataFrame([{"Tanggal": fmt_iso(t["tgl"]), "Toko": (toko_dari(t.get("toko")) or {}).get("nama", ""),
+                                            "Harga normal": int(t["harga_normal"]), "Bayar": int(t["harga_satuan"]),
+                                            "Diskon": f"{info_diskon(t)[0]}%", "Banyaknya": float(t.get("qty") or 0)} for t in disk_b]),
+                             hide_index=True, width="stretch")
+            else:
+                st.caption("Isi Harga normal saat mencatat pembelian yang sedang diskon, supaya terlihat di sini.")
         per = {}
         for t in transaksi_barang(pilih):
             if t.get("harga_satuan"):
