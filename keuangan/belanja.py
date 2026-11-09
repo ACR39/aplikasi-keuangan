@@ -7,7 +7,7 @@ from keuangan.bantu import (
 )
 from keuangan.inti import D, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, hari_ini, rp, sekarang
 from keuangan.struk import (
-    baca_baris, editor_baris, peta_barang, peta_kategori, ringkas_struk, simpan_struk, termurah, total_baris,
+    baca_baris, editor_baris, editor_kartu, peta_barang, peta_kategori, ringkas_struk, simpan_struk, termurah, total_baris,
 )
 
 
@@ -105,8 +105,7 @@ def _panel_selesai(l: dict):
     awal["Harga satuan"] = awal["Harga satuan"].astype("Int64")
     base = f"bl_f_{l['id']}_{versi()}"
     st.caption("Sesuaikan jumlah dan harga sesuai struk. Barang yang bukan dari daftar barang perlu Kategori.")
-    df = editor_baris(awal, f"{base}_tbl", nonaktif=("Barang",))
-    df = df.reset_index(drop=True)
+    df = editor_kartu(f"{base}_tbl", awal, tetap=True)
     baris_ok, _ = baca_baris(df)
     st.markdown(f"**Total: {rp(total_baris(baris_ok))}** · {len(baris_ok)} barang")
     c1, c2 = st.columns(2)

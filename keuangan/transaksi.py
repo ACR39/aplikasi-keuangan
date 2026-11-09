@@ -9,7 +9,7 @@ from keuangan.bantu import (
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
     ringkas_teks, selesai_simpan, tambah_transaksi, versi, daftar_bulan, deretan_stat, kartu_stat,
 )
-from keuangan.struk import baca_baris, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
+from keuangan.struk import baca_baris, editor_kartu, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
 from keuangan.inti import (
     D, JENIS, TOKO_IKON, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, hari_ini, iso_ke_date, nama_bulan, rp, sekarang,
 )
@@ -164,8 +164,8 @@ def form_struk():
     lokasi = st.text_input("Lokasi", value=(toko_dari(toko) or {}).get("lokasi", ""), max_chars=80, key=f"{base}_lok_{toko}",
                            placeholder="Contoh: Jl. Merdeka, Bandung")
     st.markdown("**Barang di struk**")
-    st.caption("Klik baris kosong untuk mengisi. Pilih Barang dari daftar, atau kosongkan lalu pilih Kategori. Tambah baris dengan tombol + di bawah tabel.")
-    df = editor_baris(tabel_kosong(), f"{base}_tbl")
+    st.caption("Pilih Barang dari daftar, atau kosongkan lalu pilih Kategori. Harga kosong memakai harga terakhir barang.")
+    df = editor_kartu(f"{base}_tbl")
     baris_ok, _ = baca_baris(df)
     st.markdown(f"**Total struk: {rp(total_cepat(df))}** · {len(baris_ok)} barang")
     berkas = st.file_uploader("Foto struk, opsional", type=["jpg", "jpeg", "png", "webp"], key=f"{base}_up",

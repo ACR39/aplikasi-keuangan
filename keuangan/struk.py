@@ -136,3 +136,70 @@ def simpan_struk(baris: list, tgl, waktu: str, dompet: str, toko: str, lokasi: s
 def ringkas_struk(baris: list, toko: str) -> str:
     t = toko_dari(toko)
     return f"Struk {len(baris)} barang {rp(total_baris(baris))}" + (f" di {t['nama']}" if t else "")
+
+
+# ---------------------------------------------------------------- editor berbentuk kartu (ramah HP)
+def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = False) -> pd.DataFrame:
+    """Satu kartu per barang: pilih Barang (atau Kategori), banyaknya, harga. Kembalikan DataFrame berkolom KOLOM
+    supaya bisa dibaca baca_baris(). `tetap` = barang dan kategori hasil isian awal tidak bisa diganti."""
+    id_b, lab_b = peta_barang()
+    id_k, lab_k = peta_kategori()
+    sk = f"{kunci}_ids"
+    if sk not in st.session_state:
+        n = 0
+        ids = []
+        for r in (awal.to_dict("records") if awal is not None and len(awal) else [{}]):
+            ids.append(n)
+            st.session_state[f"{kunci}_{n}_brg"] = r.get("Barang") if r.get("Barang") in id_b else ""
+            st.session_state[f"{kunci}_{n}_kat"] = r.get("Kategori") if r.get("Kategori") in id_k else ""
+            st.session_state[f"{kunci}_{n}_ket"] = r.get("Keterangan") if isinstance(r.get("Keterangan"), str) else ""
+            st.session_state[f"{kunci}_{n}_qty"] = float(r["Banyaknya"]) if not _kosong(r.get("Banyaknya")) else 1.0
+            st.session_state[f"{kunci}_{n}_hrg"] = int(r["Harga satuan"]) if not _kosong(r.get("Harga satuan")) else 0
+            n += 1
+        st.session_state[sk] = ids
+        st.session_state[f"{kunci}_next"] = n
+    ids = st.session_state[sk]
+    opsi_b = [""] + list(id_b)
+    opsi_k = [""] + list(id_k)
+    baris = []
+    hapus = None
+    for no, rid in enumerate(ids, start=1):
+        k = f"{kunci}_{rid}"
+        for suf, ops in (("brg", opsi_b), ("kat", opsi_k)):
+            if st.session_state.get(f"{k}_{suf}") not in ops:
+                st.session_state[f"{k}_{suf}"] = ""
+        with st.container(border=True, key=f"kartu_g_item_{k}"):
+            h1, h2 = st.columns([6, 1])
+            h1.markdown(f"**Barang {no}**")
+            if not tetap and len(ids) > 1 and h2.button("🗑", key=f"{k}_del", help="Hapus barang ini"):
+                hapus = rid
+            brg = st.selectbox("Barang", opsi_b, key=f"{k}_brg", disabled=tetap and bool(st.session_state.get(f"{k}_brg")),
+                               format_func=lambda i: i or "(pilih dari daftar barang)")
+            kat = ket = ""
+            if not brg:
+                kat = st.selectbox("Kategori (untuk barang di luar daftar)", opsi_k, key=f"{k}_kat",
+                                   disabled=tetap and bool(st.session_state.get(f"{k}_kat")),
+                                   format_func=lambda i: i or "(pilih kategori)")
+                ket = st.text_input("Nama / keterangan", key=f"{k}_ket", max_chars=60)
+            c1, c2 = st.columns(2)
+            qty = c1.number_input("Banyaknya", min_value=0.0, step=1.0, format="%g", key=f"{k}_qty")
+            hrg = c2.number_input("Harga satuan (Rp)", min_value=0, step=500, key=f"{k}_hrg")
+            b = barang_dari(id_b.get(brg)) if brg else None
+            efektif = int(hrg) or int((b or {}).get("harga", 0) or 0)
+            if b and not hrg:
+                st.caption(f"Harga kosong, memakai harga terakhir {rp(efektif)}.")
+            if efektif and qty:
+                st.caption(f"Subtotal: {rp(round(qty * efektif))}")
+        baris.append({"Barang": brg or None, "Kategori": kat or None, "Keterangan": ket,
+                      "Banyaknya": qty, "Harga satuan": int(hrg) if hrg else None})
+    if hapus is not None:
+        st.session_state[sk] = [i for i in ids if i != hapus]
+        st.rerun()
+    if not tetap and st.button("➕ Tambah barang", key=f"{kunci}_tambah"):
+        st.session_state[f"{kunci}_{st.session_state[f'{kunci}_next']}_qty"] = 1.0
+        st.session_state[sk] = ids + [st.session_state[f"{kunci}_next"]]
+        st.session_state[f"{kunci}_next"] += 1
+        st.rerun()
+    df = pd.DataFrame(baris, columns=KOLOM)
+    df["Harga satuan"] = df["Harga satuan"].astype("Int64")
+    return df
