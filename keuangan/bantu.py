@@ -168,7 +168,7 @@ def toko_dari(id_):
 
 
 def f_toko(tambahan: dict | None = None):
-    m = {x["id"]: x["nama"] + (f' · {x["lokasi"]}' if x.get("lokasi") else "") for x in D["toko"]}
+    m = {x["id"]: ("★ " if x.get("favorit") else "") + x["nama"] + (f' · {x["lokasi"]}' if x.get("lokasi") else "") for x in D["toko"]}
     m[""] = "(tanpa toko)"
     m.update(tambahan or {})
     return lambda i: m.get(i, "(toko dihapus)")
@@ -329,6 +329,8 @@ def baris_transaksi(t: dict) -> str:
             meta += f' · {teks_barang(t)}'
         if teks_toko(t):
             meta += f' · {teks_toko(t)}'
+        if t.get("struk"):
+            meta += " · 🧾 ada struk"
         ikon = "↓" if j == "masuk" else "↑"
         nom = ("+" if j == "masuk" else "-") + rp(t["jumlah"])
     k = kat_dari(t.get("kategori")) if j != "transfer" else None
@@ -382,3 +384,77 @@ def pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_su
     sub = c2.selectbox("Sub kategori", anak, index=anak.index(sub_awal) if sub_awal in anak else 0,
                        format_func=lambda i: nama_sub.get(i, "(dihapus)"), key=f"{kunci}_sub")
     return sub or kat
+
+
+# ---------------------------------------------------------------- foto
+@st.cache_data(show_spinner=False, max_entries=300)
+def _thumb(id_: str, sisi: int = 96) -> str:
+    import base64
+    import io
+
+    from PIL import Image
+    from keuangan.penyimpanan import ambil_foto
+    mentah = ambil_foto(id_)
+    if not mentah:
+        return ""
+    im = Image.open(io.BytesIO(mentah)).convert("RGB")
+    im.thumbnail((sisi * 2, sisi * 2))
+    out = io.BytesIO()
+    im.save(out, "JPEG", quality=70)
+    return "data:image/jpeg;base64," + base64.b64encode(out.getvalue()).decode("ascii")
+
+
+def ikon_foto(id_, fallback: str, warna: str = "#256b4a22") -> str:
+    """HTML kotak ikon bulat: foto kecil kalau ada, kalau tidak emoji."""
+    uri = _thumb(id_) if id_ else ""
+    if uri:
+        return f'<div class="ic kat" style="background:#fff center/cover no-repeat url({uri})"></div>'
+    return f'<div class="ic kat" style="background:{html.escape(warna)}">{html.escape(fallback)}</div>'
+
+
+def kolom_foto(label: str, kunci: str, saat_ubah: str = "", jenis: str = "barang"):
+    """Isian foto di dalam form. Kembalikan (id_foto_baru_atau_lama, hapus_flag_dipakai). Gagal simpan -> tampilkan error, id lama."""
+    berkas = st.file_uploader(label, type=["jpg", "jpeg", "png", "webp"], key=f"{kunci}_up",
+                              help="Foto diperkecil otomatis. Di HP bisa langsung memotret.")
+    hapus = False
+    if saat_ubah:
+        uri = _thumb(saat_ubah)
+        if uri:
+            st.markdown(f'<img src="{uri}" style="height:64px;border-radius:10px"> <span class="sc-ket">foto saat ini</span>', unsafe_allow_html=True)
+        hapus = st.checkbox("Hapus foto ini", key=f"{kunci}_hapus")
+    return berkas, hapus
+
+
+def proses_foto(berkas, hapus: bool, lama: str, jenis: str = "barang") -> str:
+    """Terapkan pilihan foto. Kembalikan id foto yang berlaku ('' bila tidak ada)."""
+    from keuangan.penyimpanan import hapus_foto, simpan_foto
+    if berkas is not None:
+        try:
+            baru = simpan_foto(berkas.getvalue(), jenis)
+        except Exception as ex:
+            st.error(f"Foto gagal disimpan: {ex}")
+            return lama
+        if lama:
+            hapus_foto(lama)
+        return baru
+    if hapus and lama:
+        hapus_foto(lama)
+        return ""
+    return lama
+
+
+def link_aman(url: str) -> str:
+    """Kembalikan url hanya bila diawali http:// atau https://, kalau tidak ''."""
+    u = (url or "").strip()
+    return u if u.lower().startswith(("http://", "https://")) else ""
+
+
+def sisa_hari_teks(s: str) -> str:
+    """'kedaluwarsa 3 hari lagi', 'hari ini', atau 'sudah lewat 2 hari'."""
+    from keuangan.inti import sisa_hari
+    n = sisa_hari(s)
+    if n is None:
+        return ""
+    if n < 0:
+        return f"sudah lewat {-n} hari ({fmt_iso(s)})"
+    return "kedaluwarsa hari ini" if n == 0 else f"kedaluwarsa {n} hari lagi ({fmt_iso(s)})"

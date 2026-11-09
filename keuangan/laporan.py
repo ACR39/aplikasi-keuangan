@@ -141,6 +141,24 @@ def _barang():
                        f"{' ' + rp(abs(naik)) if naik else ''}).")
         else:
             st.caption("Grafik harga muncul setelah barang ini dibeli minimal dua kali.")
+        per = {}
+        for t in transaksi_barang(pilih):
+            if t.get("harga_satuan"):
+                per.setdefault(t.get("toko") or "", []).append(t)
+        if len(per) >= 1:
+            from keuangan.bantu import toko_dari
+            baris_t = []
+            for k, ts_ in per.items():
+                hs_ = [int(x["harga_satuan"]) for x in ts_]
+                baris_t.append({"Toko": (toko_dari(k) or {}).get("nama", "(tanpa toko)"), "Dibeli": len(ts_),
+                                "Harga terakhir": hs_[0], "Rata-rata": round(sum(hs_) / len(hs_)), "Termurah": min(hs_)})
+            dft = pd.DataFrame(baris_t).sort_values("Rata-rata").set_index("Toko")
+            st.markdown("**Harga per toko**")
+            st.dataframe(dft.style.format("{:,.0f}".format, subset=["Harga terakhir", "Rata-rata", "Termurah"]), width="stretch")
+            ada_toko = dft[dft.index != "(tanpa toko)"]
+            if len(ada_toko) >= 2:
+                st.caption(f"Rata-rata termurah di {ada_toko.index[0]} ({rp(ada_toko.iloc[0]['Rata-rata'])}); "
+                           f"termahal di {ada_toko.index[-1]} ({rp(ada_toko.iloc[-1]['Rata-rata'])}).")
 
 
 def _toko():

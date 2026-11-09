@@ -27,14 +27,18 @@ def excel_lengkap() -> bytes:
     out = io.BytesIO()
     with pd.ExcelWriter(out, engine="openpyxl") as w:
         tabel_transaksi().to_excel(w, sheet_name="Transaksi", index=False)
-        pd.DataFrame([{"Barang": b["nama"], "Kategori": nama_kat(b["kategori"]), "Satuan": b.get("satuan", ""), "Harga terakhir": b.get("harga", 0),
+        pd.DataFrame([{"Barang": b["nama"], "Kategori": nama_kat(b["kategori"]), "Merek": b.get("merek", ""), "Ukuran": b.get("ukuran", ""),
+                       "Barcode": b.get("barcode", ""), "Satuan": b.get("satuan", ""), "Harga terakhir": b.get("harga", 0),
+                       "Kedaluwarsa": b.get("kedaluwarsa", ""), "Langganan": "ya" if b.get("langganan") else "", "Catatan": b.get("catatan", ""),
                        "Kali dibeli": len(transaksi_barang(b["id"])), "Total belanja": sum(t["jumlah"] for t in transaksi_barang(b["id"]))}
-                      for b in D["barang"]], columns=["Barang", "Kategori", "Satuan", "Harga terakhir", "Kali dibeli", "Total belanja"]
+                      for b in D["barang"]], columns=["Barang", "Kategori", "Merek", "Ukuran", "Barcode", "Satuan", "Harga terakhir", "Kedaluwarsa",
+                                                      "Langganan", "Catatan", "Kali dibeli", "Total belanja"]
                      ).to_excel(w, sheet_name="Barang", index=False)
-        pd.DataFrame([{"Toko": x["nama"], "Jenis": x.get("jenis", ""), "Lokasi": x.get("lokasi", ""),
-                       "Kunjungan": len(transaksi_toko(x["id"])),
+        pd.DataFrame([{"Toko": x["nama"], "Jenis": x.get("jenis", ""), "Lokasi": x.get("lokasi", ""), "Peta": x.get("peta", ""),
+                       "Jam buka": x.get("jam_buka", ""), "Telepon": x.get("telepon", ""), "Favorit": "ya" if x.get("favorit") else "",
+                       "Catatan": x.get("catatan", ""), "Kunjungan": len(transaksi_toko(x["id"])),
                        "Total belanja": sum(t["jumlah"] for t in transaksi_toko(x["id"]) if t["jenis"] == "keluar")}
-                      for x in D["toko"]], columns=["Toko", "Jenis", "Lokasi", "Kunjungan", "Total belanja"]
+                      for x in D["toko"]], columns=["Toko", "Jenis", "Lokasi", "Peta", "Jam buka", "Telepon", "Favorit", "Catatan", "Kunjungan", "Total belanja"]
                      ).to_excel(w, sheet_name="Toko", index=False)
         pd.DataFrame([{"Dompet": d["nama"], "Jenis": d.get("jenis", ""), "Saldo awal": d.get("saldo_awal", 0),
                        "Saldo sekarang": saldo_dompet(d["id"]), "Diarsipkan": "ya" if d.get("arsip") else ""}

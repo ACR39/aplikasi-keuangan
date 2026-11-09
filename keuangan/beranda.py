@@ -7,10 +7,10 @@ import streamlit as st
 
 from keuangan.anggaran import status_anggaran
 from keuangan.bantu import (
-    atur, baris_transaksi, batang, ikon_kat, kunci_urut, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
+    atur, sisa_hari_teks, baris_transaksi, batang, ikon_kat, kunci_urut, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
     pindah_halaman, saldo_dompet, total_saldo, ym_ini, akar, barang_dari, toko_dari,
 )
-from keuangan.inti import D, TGL_MAX, TGL_MIN, fmt_iso, hanya_lihat, hari_ini, nama_bulan, rp
+from keuangan.inti import D, TGL_MAX, TGL_MIN, sisa_hari, fmt_iso, hanya_lihat, hari_ini, nama_bulan, rp
 from keuangan.tabungan import terkumpul
 from keuangan.tagihan import status_tagihan, tagihan_mendekat
 from keuangan.utang import jatuh_tempo_dekat, sisa
@@ -37,6 +37,10 @@ def _perhatian() -> list:
             baris.append(f'🔴 Anggaran <b>{e(nama_kat(a["kategori"]))}</b> terlewati: {rp(pakai)} dari {rp(a["batas"])}')
         elif persen >= 80:
             baris.append(f'🟡 Anggaran <b>{e(nama_kat(a["kategori"]))}</b> sudah {persen:.0f}% ({rp(pakai)} dari {rp(a["batas"])})')
+    for b_ in D["barang"]:
+        n_ = sisa_hari(b_.get("kedaluwarsa"))
+        if n_ is not None and n_ <= 14:
+            baris.append(f'⏳ <b>{e(b_["nama"])}</b> {e(sisa_hari_teks(b_["kedaluwarsa"]))}')
     for d in dompet_aktif():
         if saldo_dompet(d["id"]) < 0 and d.get("jenis") != "Kartu kredit":
             baris.append(f'⚠️ Saldo dompet <b>{e(d["nama"])}</b> negatif: {rp(saldo_dompet(d["id"]))}. Cek transaksi atau saldo awalnya.')

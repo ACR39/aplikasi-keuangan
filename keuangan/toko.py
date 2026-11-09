@@ -1,26 +1,44 @@
 """Toko dan tempat beli: daftar toko (nama, jenis, lokasi) yang dipilih saat mencatat transaksi."""
 import streamlit as st
 
-from keuangan.bantu import atur, catat, e, selesai_simpan, transaksi_toko, versi
+from keuangan.bantu import atur, catat, e, ikon_foto, kolom_foto, link_aman, proses_foto, selesai_simpan, transaksi_toko, versi
 from keuangan.inti import D, TOKO_IKON, baru_id, fmt_iso, hanya_lihat, rp
 
 
 def _form(awal: dict | None):
     awal = awal or {}
-    with st.form(f"f_toko_{versi()}_{awal.get('id', 'baru')}", clear_on_submit=not awal):
+    with st.form(f"f_toko_{versi()}_{awal.get('id', 'baru')}", clear_on_submit=False):
         c1, c2 = st.columns(2)
         nama = c1.text_input("Nama toko", value=awal.get("nama", ""), placeholder="Contoh: Indomaret Merdeka")
         jenis_list = list(TOKO_IKON)
         jenis = c2.selectbox("Jenis", jenis_list, index=jenis_list.index(awal["jenis"]) if awal.get("jenis") in jenis_list else 0)
         lokasi = st.text_input("Lokasi, opsional", value=awal.get("lokasi", ""), max_chars=80, placeholder="Jl. Merdeka, Bandung")
+        with st.expander("Rincian lain: peta, jam buka, telepon, foto", expanded=bool(awal.get("peta") or awal.get("telepon") or awal.get("foto"))):
+            peta = st.text_input("Tautan peta (Google Maps)", value=awal.get("peta", ""), placeholder="https://maps.app.goo.gl/...",
+                                 help="Buka Google Maps, pilih Bagikan, lalu tempel tautannya di sini.")
+            r1, r2 = st.columns(2)
+            jam_buka = r1.text_input("Jam buka", value=awal.get("jam_buka", ""), max_chars=40, placeholder="08.00 - 21.00")
+            telepon = r2.text_input("Telepon", value=awal.get("telepon", ""), max_chars=25)
+            catatan_t = st.text_input("Catatan", value=awal.get("catatan", ""), max_chars=120)
+            favorit = st.checkbox("Toko favorit (tampil paling atas)", value=bool(awal.get("favorit")))
+            berkas, hapus_f = kolom_foto("Foto toko", f"ft_{awal.get('id', 'baru')}", awal.get("foto", ""), "toko")
         if st.form_submit_button("Simpan perubahan" if awal else "Tambah toko", type="primary"):
             if not nama.strip():
                 st.error("Isi nama toko.")
+            elif peta.strip() and not link_aman(peta):
+                st.error("Tautan peta harus diawali http:// atau https://")
             elif any(x["nama"].strip().lower() == nama.strip().lower() and x.get("lokasi", "").strip().lower() == lokasi.strip().lower()
                      and x["id"] != awal.get("id") for x in D["toko"]):
                 st.error("Toko itu sudah ada.")
             else:
                 isi = {"nama": nama.strip(), "jenis": jenis, "lokasi": lokasi.strip()}
+                foto = proses_foto(berkas, hapus_f, awal.get("foto", ""), "toko")
+                for k_, v_ in (("peta", peta.strip()), ("jam_buka", jam_buka.strip()), ("telepon", telepon.strip()),
+                               ("catatan", catatan_t.strip()), ("favorit", bool(favorit)), ("foto", foto)):
+                    if v_:
+                        isi[k_] = v_
+                    else:
+                        awal.pop(k_, None)
                 if awal:
                     awal.update(isi)
                 else:
@@ -37,6 +55,8 @@ def _lepas_toko(x: dict):
                 t["catatan"] = x["nama"]
             t.pop("toko", None)
     D["toko"] = [y for y in D["toko"] if y["id"] != x["id"]]
+    from keuangan.penyimpanan import hapus_foto
+    hapus_foto(x.get("foto", ""))
 
 
 def halaman_toko():
@@ -46,14 +66,20 @@ def halaman_toko():
         q = c2.text_input("Cari nama atau lokasi", key="tk_q", placeholder="Ketik kata kunci").strip().lower()
     daftar = [x for x in D["toko"] if (jn == "semua" or x.get("jenis") == jn) and q in f'{x["nama"]} {x.get("lokasi", "")}'.lower()]
     st.caption(f"{len(daftar)} toko" + ("" if daftar else ". Belum ada, tambahkan di bawah (atau langsung dari menu Catat transaksi)."))
-    for x in sorted(daftar, key=lambda x: x["nama"].lower()):
+    for x in sorted(daftar, key=lambda x: (not x.get("favorit"), x["nama"].lower())):
         pakai = transaksi_toko(x["id"])
         total = sum(t["jumlah"] for t in pakai if t["jenis"] == "keluar")
-        ket = x.get("jenis", "Lainnya") + (f' · {e(x["lokasi"])}' if x.get("lokasi") else "")
+        ket = ("★ " if x.get("favorit") else "") + x.get("jenis", "Lainnya") + (f' · {e(x["lokasi"])}' if x.get("lokasi") else "")
+        if x.get("jam_buka"):
+            ket += f' · 🕒 {e(x["jam_buka"])}'
+        if x.get("telepon"):
+            ket += f' · 📞 {e(x["telepon"])}'
+        if link_aman(x.get("peta", "")):
+            ket += f' · <a href="{e(x["peta"].strip())}" target="_blank" rel="noopener noreferrer">📍 Buka di peta</a>'
         ket += f" · dikunjungi {len(pakai)}×" + (f" · total {rp(total)} · terakhir {fmt_iso(pakai[0]['tgl'])}" if pakai else "")
         with st.container(key=f"tx_tk_{x['id']}"):
             kolom = st.columns([1] + ([0.001, 0.001] if not hanya_lihat() else []))
-            kolom[0].markdown(f'<div class="rt"><div class="ic kat" style="background:#256b4a22">{TOKO_IKON.get(x.get("jenis"), "📍")}</div>'
+            kolom[0].markdown(f'<div class="rt">{ikon_foto(x.get("foto"), TOKO_IKON.get(x.get("jenis"), "📍"))}'
                               f'<div class="isi"><div class="jd">{e(x["nama"])}</div><div class="mt">{ket}</div></div></div>',
                               unsafe_allow_html=True)
             if not hanya_lihat():

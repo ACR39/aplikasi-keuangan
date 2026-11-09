@@ -145,3 +145,88 @@ def commit(pesan_ok: str | None = None) -> bool:
     if pesan_ok:
         st.toast(pesan_ok, icon="✅")
     return True
+
+
+# ---------------------------------------------------------------- foto (berkas terpisah, bukan di data.json)
+import io
+import posixpath
+
+UKURAN_FOTO = {"barang": (480, 72), "toko": (480, 72), "struk": (1280, 66)}
+
+
+def _jalur_foto(id_: str) -> str:
+    c = cfg_github()
+    return posixpath.join(posixpath.dirname(c["path"]), "foto", f"{id_}.jpg") if c else os.path.join(FILE_LOKAL + ".foto", f"{id_}.jpg")
+
+
+def kecilkan_foto(mentah: bytes, jenis: str = "barang") -> bytes:
+    """Perkecil dan kompres foto jadi JPEG supaya ringan disimpan."""
+    from PIL import Image, ImageOps
+    sisi, mutu = UKURAN_FOTO.get(jenis, UKURAN_FOTO["barang"])
+    im = ImageOps.exif_transpose(Image.open(io.BytesIO(mentah)))
+    if im.mode in ("RGBA", "LA", "P"):
+        im = im.convert("RGBA")
+        latar = Image.new("RGB", im.size, "white")
+        latar.paste(im, mask=im.split()[-1])
+        im = latar
+    else:
+        im = im.convert("RGB")
+    im.thumbnail((sisi, sisi))
+    out = io.BytesIO()
+    im.save(out, "JPEG", quality=mutu, optimize=True)
+    return out.getvalue()
+
+
+def simpan_foto(mentah: bytes, jenis: str = "barang") -> str:
+    """Simpan foto, kembalikan id-nya (nama berkas tanpa .jpg). Melempar error bila gagal."""
+    import uuid
+    data = kecilkan_foto(mentah, jenis)
+    id_ = uuid.uuid4().hex[:12]
+    c = cfg_github()
+    if c:
+        r = requests.put(_gh_url(c, _jalur_foto(id_)), headers=_gh_headers(c), timeout=40,
+                         json={"message": f"Tambah foto {id_}", "branch": c["branch"],
+                               "content": base64.b64encode(data).decode("ascii")})
+        r.raise_for_status()
+    else:
+        os.makedirs(FILE_LOKAL + ".foto", exist_ok=True)
+        with open(_jalur_foto(id_), "wb") as f:
+            f.write(data)
+    ambil_foto.clear()
+    return id_
+
+
+@st.cache_data(show_spinner=False, max_entries=200)
+def ambil_foto(id_: str, _tambah: int = 0):
+    """Isi foto (bytes) atau None bila tidak ada."""
+    if not id_:
+        return None
+    c = cfg_github()
+    try:
+        if c:
+            r = requests.get(_gh_url(c, _jalur_foto(id_)), timeout=30, params={"ref": c["branch"]},
+                             headers={**_gh_headers(c), "Accept": "application/vnd.github.raw+json"})
+            return r.content if r.status_code == 200 else None
+        with open(_jalur_foto(id_), "rb") as f:
+            return f.read()
+    except Exception:
+        return None
+
+
+def hapus_foto(id_: str):
+    """Hapus berkas foto (diam-diam bila gagal)."""
+    if not id_:
+        return
+    c = cfg_github()
+    try:
+        if c:
+            u = _gh_url(c, _jalur_foto(id_))
+            r = requests.get(u, headers=_gh_headers(c), params={"ref": c["branch"]}, timeout=20)
+            if r.status_code == 200:
+                requests.delete(u, headers=_gh_headers(c), timeout=30,
+                                json={"message": f"Hapus foto {id_}", "branch": c["branch"], "sha": r.json()["sha"]})
+        elif os.path.exists(_jalur_foto(id_)):
+            os.remove(_jalur_foto(id_))
+    except Exception:
+        pass
+    ambil_foto.clear()
