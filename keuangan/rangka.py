@@ -9,6 +9,7 @@ from keuangan.anggaran import halaman_anggaran
 from keuangan.bantu import atur, pindah_halaman
 from keuangan.barang import halaman_barang
 from keuangan.toko import halaman_toko
+from keuangan.belanja import halaman_belanja
 from keuangan.beranda import halaman_beranda
 from keuangan.cadangan import halaman_cadangan, halaman_pulih
 from keuangan.ekspor import halaman_ekspor, halaman_impor
@@ -24,11 +25,11 @@ from keuangan.transaksi import halaman_catat, halaman_transaksi
 from keuangan.utang import halaman_utang
 from keuangan.inti import pasang_css
 
-UTAMA = ["Catat transaksi", "Daftar transaksi", "Riwayat aktivitas"]
+UTAMA = ["Catat transaksi", "Daftar belanja", "Daftar transaksi", "Riwayat aktivitas"]
 PANTAU = ["Anggaran", "Tagihan berulang", "Target tabungan", "Utang-piutang", "Laporan"]
 EDIT_SAJA = ("Catat transaksi",)
 MASTER = ["Dompet", "Kategori", "Cadangan dan pulihkan"]
-IKON = {"Beranda": "home", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Riwayat aktivitas": "history",
+IKON = {"Beranda": "home", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Tagihan berulang": "event_repeat", "Target tabungan": "savings",
         "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export",
         "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
@@ -43,6 +44,7 @@ DESKRIPSI = {
     "Beranda": "Ringkasan saldo, pemasukan dan pengeluaran per minggu, bulan, tahun, atau tanggal custom, plus hal yang perlu perhatian dan grafik.",
     "Catat transaksi": "Catat pemasukan, pengeluaran, atau transfer antar dompet dalam beberapa ketukan.",
     "Daftar transaksi": "Cari dan saring semua transaksi, lalu ubah atau hapus kalau ada yang salah.",
+    "Daftar belanja": "Rencanakan belanja, lihat toko termurah, centang saat membeli, lalu catat jadi satu struk.",
     "Toko dan tempat beli": "Daftar toko atau tempat beli beserta lokasinya. Saat mencatat, toko bisa dipilih.",
     "Barang dan produk": "Daftar barang per kategori atau sub kategori. Saat mencatat, barang bisa dipilih sesuai kategorinya.",
     "Riwayat aktivitas": "Semua perubahan data yang tercatat otomatis, lengkap dengan siapa dan kapan.",
@@ -161,6 +163,8 @@ def tampilkan_halaman(halaman):
         halaman_barang()
     elif halaman == "Toko dan tempat beli":
         halaman_toko()
+    elif halaman == "Daftar belanja":
+        halaman_belanja()
     elif halaman == "Riwayat aktivitas":
         halaman_aktivitas()
     elif halaman == "Tempat sampah":

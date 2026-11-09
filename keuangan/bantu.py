@@ -329,7 +329,10 @@ def baris_transaksi(t: dict) -> str:
             meta += f' · {teks_barang(t)}'
         if teks_toko(t):
             meta += f' · {teks_toko(t)}'
-        if t.get("struk"):
+        if t.get("grup"):
+            n_ = sum(1 for x in D["transaksi"] if x.get("grup") == t["grup"])
+            meta += f" · 🧾 satu struk, {n_} barang" if n_ > 1 else " · 🧾 struk"
+        elif t.get("struk"):
             meta += " · 🧾 ada struk"
         ikon = "↓" if j == "masuk" else "↑"
         nom = ("+" if j == "masuk" else "-") + rp(t["jumlah"])
@@ -425,9 +428,19 @@ def kolom_foto(label: str, kunci: str, saat_ubah: str = "", jenis: str = "barang
     return berkas, hapus
 
 
+def hapus_foto_bebas(id_: str):
+    """Hapus berkas foto hanya bila tidak dipakai catatan lain (satu struk dipakai banyak transaksi)."""
+    from keuangan.penyimpanan import hapus_foto
+    pakai = sum(1 for t in D["transaksi"] if t.get("struk") == id_) + sum(1 for x in D["barang"] if x.get("foto") == id_) \
+        + sum(1 for x in D["toko"] if x.get("foto") == id_)
+    if pakai <= 1:  # satu = catatan yang sedang diubah itu sendiri
+        hapus_foto(id_)
+
+
 def proses_foto(berkas, hapus: bool, lama: str, jenis: str = "barang") -> str:
     """Terapkan pilihan foto. Kembalikan id foto yang berlaku ('' bila tidak ada)."""
-    from keuangan.penyimpanan import hapus_foto, simpan_foto
+    from keuangan.penyimpanan import simpan_foto
+    hapus_foto = hapus_foto_bebas
     if berkas is not None:
         try:
             baru = simpan_foto(berkas.getvalue(), jenis)

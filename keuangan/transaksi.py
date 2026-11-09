@@ -9,6 +9,7 @@ from keuangan.bantu import (
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
     ringkas_teks, selesai_simpan, tambah_transaksi, versi, daftar_bulan, deretan_stat, kartu_stat,
 )
+from keuangan.struk import baca_baris, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
 from keuangan.inti import (
     D, JENIS, TOKO_IKON, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, hari_ini, iso_ke_date, nama_bulan, rp, sekarang,
 )
@@ -144,6 +145,44 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             "struk_berkas": struk_berkas, "struk_hapus": struk_hapus}
 
 
+def form_struk():
+    """Catat satu struk berisi banyak barang sekaligus."""
+    dompet = _pilihan_dompet()
+    if not dompet:
+        st.warning("Tambah dompet dulu di menu Pengaturan > Dompet.")
+        return
+    base = f"f_struk_{versi()}"
+    c1, c2 = st.columns(2)
+    tgl = c1.date_input("Tanggal", value=hari_ini(), min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY", key=f"{base}_tgl")
+    w = c2.time_input("Waktu beli", value=sekarang().time().replace(second=0, microsecond=0), step=60, key=f"{base}_w")
+    c3, c4 = st.columns(2)
+    dari = c3.selectbox("Dari dompet", dompet, format_func=f_dompet(), key=f"{base}_dompet")
+    tops = [""] + [x["id"] for x in sorted(D["toko"], key=lambda x: (not x.get("favorit"), x["nama"].lower()))]
+    if st.session_state.get(f"{base}_toko") not in tops:
+        st.session_state.pop(f"{base}_toko", None)
+    toko = c4.selectbox("Toko / tempat beli", tops, format_func=f_toko(), key=f"{base}_toko")
+    lokasi = st.text_input("Lokasi", value=(toko_dari(toko) or {}).get("lokasi", ""), max_chars=80, key=f"{base}_lok_{toko}",
+                           placeholder="Contoh: Jl. Merdeka, Bandung")
+    st.markdown("**Barang di struk**")
+    st.caption("Klik baris kosong untuk mengisi. Pilih Barang dari daftar, atau kosongkan lalu pilih Kategori. Tambah baris dengan tombol + di bawah tabel.")
+    df = editor_baris(tabel_kosong(), f"{base}_tbl")
+    baris_ok, _ = baca_baris(df)
+    st.markdown(f"**Total struk: {rp(total_cepat(df))}** · {len(baris_ok)} barang")
+    berkas = st.file_uploader("Foto struk, opsional", type=["jpg", "jpeg", "png", "webp"], key=f"{base}_up",
+                              help="Foto diperkecil otomatis. Di HP bisa langsung memotret.")
+    if st.button("Simpan struk", type="primary", key=f"{base}_simpan"):
+        baris, salah = baca_baris(df)
+        if salah:
+            st.error("\n\n".join(salah))
+        elif not baris:
+            st.error("Isi minimal satu barang.")
+        else:
+            struk = proses_foto(berkas, False, "", "struk")
+            simpan_struk(baris, tgl, w.strftime("%H:%M"), dari, toko, lokasi.strip(), struk)
+            catat("tambah", ringkas_struk(baris, toko))
+            selesai_simpan(f"Struk dicatat: {len(baris)} barang")
+
+
 def halaman_catat():
     if hanya_lihat():
         st.info("Akun ini hanya bisa melihat.")
@@ -152,7 +191,15 @@ def halaman_catat():
         jenis = st.radio("Jenis", list(JENIS), format_func=JENIS.get, horizontal=True, key="tr_jenis", index=1,
                          label_visibility="collapsed")
         kunci = f"f_catat_{jenis}_{versi()}"
-        isi = form_transaksi(kunci, jenis, tombol="Simpan transaksi", bersih=True)
+        struk_mode = False
+        if jenis == "keluar":
+            struk_mode = st.radio("Cara catat", ["satu", "struk"], horizontal=True, key="tr_mode",
+                                  format_func=lambda m: "Satu barang" if m == "satu" else "Satu struk, banyak barang") == "struk"
+        if struk_mode:
+            form_struk()
+            isi = None
+        else:
+            isi = form_transaksi(kunci, jenis, tombol="Simpan transaksi", bersih=True)
         if isi:
             struk = proses_foto(isi["struk_berkas"], False, "", "struk")
             t = tambah_transaksi(jenis, isi["tgl"], isi["jumlah"], isi["dompet"], isi["kategori"], isi["catatan"],
@@ -160,7 +207,7 @@ def halaman_catat():
                                  toko=isi["toko"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk)
             catat("tambah", ringkas_teks(t))
             selesai_simpan(f"Transaksi dicatat: {JENIS[jenis].lower()} {rp(isi['jumlah'])}")
-        if jenis != "transfer":
+        if jenis != "transfer" and not struk_mode:
             kat = st.session_state.get(f"{kunci}_sub") or st.session_state.get(f"{kunci}_kat")
             with st.expander("Barang belum ada? Tambah di sini"):
                 st.caption(f"Barang akan masuk ke kategori **{nama_kat(kat)}**.")
@@ -198,7 +245,7 @@ def halaman_catat():
                             nt = {"id": baru_id(), "nama": nama.strip(), "jenis": jt, "lokasi": lok.strip()}
                             D["toko"].append(nt)
                             catat("toko", f"Tambah toko {nt['nama']}")
-                            nxt = f"f_catat_{jenis}_{versi() + 1}"
+                            nxt = f"f_struk_{versi() + 1}" if struk_mode else f"f_catat_{jenis}_{versi() + 1}"
                             selesai_simpan("Toko ditambah.", **{f"{nxt}_toko": nt["id"]})
     st.markdown("**Terakhir dicatat**")
     terakhir = sorted(D["transaksi"], key=kunci_urut, reverse=True)[:5]

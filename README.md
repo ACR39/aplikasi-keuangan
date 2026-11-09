@@ -18,6 +18,10 @@ Rincian barang: barcode (bisa dicari langsung di halaman Catat, cocok dengan pem
 
 Titik lokasi toko: ketuk peta (OpenStreetMap, gratis tanpa kunci API) atau tekan Pakai lokasi saya sekarang saat berada di toko. Titik disimpan sebagai koordinat, tombol Titik di peta membuka Google Maps ke koordinat itu, dan toggle Lihat semua toko di peta menampilkan semua pin. Lokasi saat ini butuh HTTPS dan izin lokasi di browser (Streamlit Cloud sudah HTTPS).
 
+Satu struk, banyak barang: di Catat transaksi > Pengeluaran pilih "Satu struk, banyak barang", isi tabel barang (pilih Barang atau Kategori, banyaknya, harga; harga kosong memakai harga terakhir), lalu simpan. Tiap baris menjadi satu transaksi biasa yang berbagi tanggal, waktu, toko, lokasi, dompet, dan foto struk, jadi semua laporan tetap bekerja.
+
+Daftar belanja (menu Transaksi): buat daftar, tambah barang atau barang langganan, lihat toko termurah tiap barang dari riwayat dan perkiraan penghematannya, centang yang sudah dibeli, lalu "Selesai belanja, catat" untuk menyimpannya sebagai satu struk. Daftar yang habis masuk ke Daftar selesai dan bisa dipakai lagi.
+
 Foto disimpan sebagai berkas terpisah (folder `foto/` di repo GitHub, atau `data_lokal.json.foto/` saat mode uji coba), diperkecil otomatis, dan di data hanya tercatat namanya. Berkas cadangan JSON tidak memuat foto; folder `foto/` di repo sudah menjadi cadangannya.
 
 Barang: saat mencatat pengeluaran/pemasukan, pilih kategori lalu barangnya (daftar barang menyesuaikan kategori; kategori utama menampilkan barang semua sub-nya). Isi banyaknya dan harga satuan, total dihitung otomatis, dan harga barang diperbarui dari transaksi terbaru. Barang belum ada bisa ditambah langsung dari halaman Catat transaksi. Laporan > Barang menampilkan total belanja per barang dan grafik perubahan harga.

@@ -55,7 +55,7 @@ def halaman_pulih():
             st.error(f"Versi ini tidak bisa dibuka: {ex}")
             return
         st.markdown("**Perbandingan** (sekarang → versi ini)")
-        for lab, kunci in (("Transaksi", "transaksi"), ("Barang", "barang"), ("Toko", "toko"), ("Dompet", "dompet"), ("Kategori", "kategori"), ("Anggaran", "anggaran"),
+        for lab, kunci in (("Transaksi", "transaksi"), ("Barang", "barang"), ("Toko", "toko"), ("Daftar belanja", "belanja"), ("Dompet", "dompet"), ("Kategori", "kategori"), ("Anggaran", "anggaran"),
                            ("Tagihan", "tagihan"), ("Target tabungan", "tabungan"), ("Utang-piutang", "utang"), ("Tempat sampah", "sampah")):
             st.markdown(f'<div class="perhatian"><b>{lab}</b>: {len(D.get(kunci, []))} → {len(lama.get(kunci, []))}</div>', unsafe_allow_html=True)
         if json.dumps(lama, sort_keys=True) == json.dumps(D.data, sort_keys=True):
