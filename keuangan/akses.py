@@ -98,7 +98,7 @@ def js_cookie(nilai: str, detik: int, nama: str = COOKIE):
 
 
 def keluar():
-    for k in ("user", "masuk", "data", "sha"):
+    for k in ("user", "masuk", "data", "sha", "terkunci", "dari_cookie"):
         st.session_state.pop(k, None)
     st.session_state.hapus_cookie = True
     st.session_state.cookie_dicek = True
@@ -132,6 +132,7 @@ def cek_login():
         except Exception:
             u = None
         if u:
+            st.session_state.dari_cookie = True
             st.session_state.user = {"username": u, "nama": akun[u].get("nama", u),
                                      "peran": akun[u].get("peran", "pengisi")}
             st.rerun()

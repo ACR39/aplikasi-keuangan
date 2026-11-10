@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from keuangan.bantu import kunci_urut, toko_dari, transaksi_toko, barang_dari, catat, nama_dompet, nama_kat, perbarui_harga_barang, saldo_dompet, selesai_simpan, transaksi_barang
+from keuangan.anggaran import TIPE_AG, label_ag, tipe_ag
 from keuangan.inti import D, JENIS, baru_id, hanya_lihat, sekarang
 
 KOLOM = ["Tanggal", "Jenis", "Jumlah", "Dompet", "Ke dompet", "Biaya admin", "Kategori", "Catatan", "Barang", "Banyaknya", "Harga satuan", "Toko", "Lokasi", "Waktu"]
@@ -43,7 +44,7 @@ def excel_lengkap() -> bytes:
         pd.DataFrame([{"Dompet": d["nama"], "Jenis": d.get("jenis", ""), "Saldo awal": d.get("saldo_awal", 0),
                        "Saldo sekarang": saldo_dompet(d["id"]), "Diarsipkan": "ya" if d.get("arsip") else ""}
                       for d in D["dompet"]]).to_excel(w, sheet_name="Dompet", index=False)
-        pd.DataFrame([{"Kategori": nama_kat(a["kategori"]), "Batas per bulan": a["batas"]} for a in D["anggaran"]],
+        pd.DataFrame([{"Jenis": TIPE_AG[tipe_ag(a)], "Nama": label_ag(a), "Batas per bulan": a["batas"]} for a in D["anggaran"]],
                      columns=["Kategori", "Batas per bulan"]).to_excel(w, sheet_name="Anggaran", index=False)
         pd.DataFrame([{"Tagihan": t["nama"], "Jumlah": t["jumlah"], "Berulang": t["tiap"], "Jatuh tempo": t["berikut"],
                        "Dompet": nama_dompet(t["dompet"]), "Aktif": "ya" if t.get("aktif", True) else ""} for t in D["tagihan"]],

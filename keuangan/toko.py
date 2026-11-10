@@ -2,7 +2,7 @@
 import streamlit as st
 
 from keuangan.bantu import atur, catat, e, ikon_foto, kolom_foto, link_aman, proses_foto, selesai_simpan, transaksi_toko, versi
-from keuangan.peta import peta_semua, pilih_titik, titik_dari, url_peta
+from keuangan.peta import peta_semua, pilih_titik, proses_gps, terdekat, teks_jarak, titik_dari, tombol_gps, url_peta
 from keuangan.inti import D, TOKO_IKON, baru_id, fmt_iso, hanya_lihat, rp
 
 
@@ -65,11 +65,32 @@ def _lepas_toko(x: dict):
     hapus_foto(x.get("foto", ""))
 
 
+def _toko_terdekat():
+    """Tombol dan daftar toko tersimpan terdekat dari posisi pengguna."""
+    if not any(titik_dari(x) for x in D["toko"]):
+        return
+    pos = proses_gps("tk_dekat")
+    if pos:
+        st.session_state["tk_posisi"] = pos
+    tombol_gps("tk_dekat")
+    pos = st.session_state.get("tk_posisi")
+    if not pos:
+        return
+    with st.container(border=True, key="kartu_g_tk_dekat"):
+        st.markdown("**Toko terdekat dari Anda**")
+        for x, km in terdekat(pos, D["toko"]):
+            tautan = f"https://www.google.com/maps/dir/?api=1&destination={titik_dari(x)[0]:.6f},{titik_dari(x)[1]:.6f}&origin={pos[0]:.6f},{pos[1]:.6f}"
+            st.markdown(f'{TOKO_IKON.get(x.get("jenis"), "📍")} **{e(x["nama"])}** · {teks_jarak(km)} · '
+                        f'<a href="{e(tautan)}" target="_blank" rel="noopener noreferrer">Rute</a>', unsafe_allow_html=True)
+        st.button("Sembunyikan", key="tk_dekat_tutup", on_click=lambda: st.session_state.update(tk_posisi=None))
+
+
 def halaman_toko():
     with st.container(key="kartu_filter"):
         c1, c2 = st.columns(2)
         jn = c1.selectbox("Jenis", ["semua"] + list(TOKO_IKON), key="tk_jenis", format_func=lambda j: "Semua jenis" if j == "semua" else j)
         q = c2.text_input("Cari nama atau lokasi", key="tk_q", placeholder="Ketik kata kunci").strip().lower()
+    _toko_terdekat()
     daftar = [x for x in D["toko"] if (jn == "semua" or x.get("jenis") == jn) and q in f'{x["nama"]} {x.get("lokasi", "")}'.lower()]
     st.caption(f"{len(daftar)} toko" + ("" if daftar else ". Belum ada, tambahkan di bawah (atau langsung dari menu Catat transaksi)."))
     if any(titik_dari(x) for x in D["toko"]) and st.toggle("Lihat semua toko di peta", key="tk_peta"):

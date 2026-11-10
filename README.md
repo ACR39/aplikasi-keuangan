@@ -7,7 +7,7 @@ Data disimpan sebagai satu file `data.json` di repositori GitHub privat.
 ## Menu
 - **Beranda**: total saldo, pemasukan dan pengeluaran bulan terpilih, hal yang perlu perhatian (tagihan jatuh tempo, anggaran hampir atau sudah lewat, utang jatuh tempo, saldo negatif), saldo per dompet, anggaran, target tabungan, grafik. Bagian Beranda bisa disembunyikan di Pengaturan > Tampilan.
 - **Transaksi**: Catat transaksi (pemasukan, pengeluaran, transfer dengan biaya admin), Daftar transaksi (filter bulan, jenis, dompet, kategori, kata kunci; ubah dan hapus), Riwayat aktivitas. Menu **Pengaturan** memuat Barang dan produk (misalnya Indomie di Belanja bahan makanan), Toko dan tempat beli (nama, jenis, lokasi), dan Tempat sampah (30 hari). Statistik per barang dan per toko ada di Pantau > Laporan.
-- **Pantau**: Anggaran per kategori, Tagihan berulang (tombol Bayar otomatis membuat pengeluaran dan memajukan jatuh tempo), Target tabungan (perkiraan setoran per bulan), Utang-piutang (cicilan, bisa ikut tercatat di dompet), Laporan (bulanan, tren 12 bulan, per dompet).
+- **Pantau**: Anggaran per kategori, Transaksi berulang (tombol Bayar otomatis membuat pengeluaran dan memajukan jatuh tempo), Target tabungan (perkiraan setoran per bulan), Utang-piutang (cicilan, bisa ikut tercatat di dompet), Laporan (bulanan, tren 12 bulan, per dompet).
 - **Pengaturan**: Tampilan, Ekspor dan impor (Excel lengkap, CSV transaksi, impor dari Excel/CSV), Dompet, Kategori (kategori utama + sub kategori dengan ikon dan warna, gabungkan saat menghapus), Cadangan dan pulihkan (unduh JSON, titik pulih dari riwayat commit).
 
 Kategori punya dua tingkat: kategori utama (misalnya Rumah) dan sub kategori (misalnya Listrik). Transaksi boleh memakai keduanya. Anggaran, laporan, dan filter pada kategori utama otomatis mencakup semua sub kategorinya. Data lama tanpa sub kategori tetap terbuka (kategori lama jadi kategori utama).
@@ -34,6 +34,57 @@ Kategori dan Sub kategori dipilih di dua kotak terpisah. Toko / tempat beli dipi
 
 Saldo dompet tidak disimpan, tetapi dihitung dari saldo awal + semua transaksi, jadi tidak bisa tidak sinkron.
 Transfer tidak dihitung sebagai pemasukan atau pengeluaran; biaya admin transfer dihitung sebagai pengeluaran.
+
+## Pengingat stok habis
+Dari jarak antar pembelian sebuah barang (median, minimal 3 kali beli di hari berbeda, rata-rata jeda 2 sampai 120 hari), aplikasi memperkirakan kapan waktunya beli lagi. Barang yang sudah waktunya (atau sekitar 2 hari lagi) muncul di Perlu perhatian di Beranda dan di panel **Waktunya beli lagi** pada Daftar belanja, dengan tombol **Tambah ke daftar** (banyaknya mengikuti kebiasaan beli) atau **Jangan ingatkan**. Barang yang sudah ada di daftar belanja aktif tidak diingatkan lagi.
+
+## Hapus struk sekaligus dan cek struk dobel
+Di kartu struk (Daftar transaksi) ada **Hapus seluruh struk**: semua barangnya pindah ke Tempat sampah sekaligus. Saat menyimpan struk, aplikasi memperingatkan bila sudah ada struk dengan foto yang sama, atau toko, tanggal, dan total yang sama; centang "Ini struk yang berbeda, tetap simpan" bila memang berbeda.
+
+## Perbandingan bulan ke bulan
+Laporan > Bulanan > **Dibanding bulan lalu**: total pengeluaran dan kategori yang paling berubah (naik atau turun), beserta barang dan toko yang paling menjelaskan perubahannya. Untuk bulan berjalan, bulan lalu dibandingkan sampai tanggal yang sama supaya adil.
+
+## Anggaran per toko atau barang
+Di Anggaran, pilih **Batasi per** Kategori, Toko, atau Barang. Misalnya "Kopi susu maksimal Rp 300 ribu per bulan" atau "Toko Kopi Kenangan maksimal Rp 500 ribu". Anggaran toko dan barang menghitung semua pengeluaran bulan itu yang tercatat dengan toko atau barang tersebut, tampil di Beranda dan Perlu perhatian seperti anggaran kategori, dan ikut di ekspor Excel.
+
+## Ringkasan mingguan
+Kartu di Beranda (bisa disembunyikan di Pengaturan > Tampilan) dengan pilihan **Pekan lalu** atau **Pekan ini**: total pengeluaran dan perbandingannya dengan pekan sebelumnya (atau rentang yang sama), pemasukan, jumlah transaksi dan struk, tiga kategori terbesar, hari paling boros, hemat dari diskon, dan barang yang harganya naik 10% atau lebih dari biasanya.
+
+## Grafik harga per barang
+Laporan > Barang > Lihat perubahan harga: satu garis per toko dengan rentang 3 bulan, 6 bulan, 1 tahun, atau semua; belah ketupat hitam menandai pembelian saat diskon; garis putus-putus rata-rata; kartu termurah, rata-rata, termahal, dan harga terakhir.
+
+## Batas pengeluaran harian
+Di Anggaran, buka **Batas pengeluaran harian** dan isi jatah per hari (0 untuk mematikan). Beranda menampilkan kartu **Jatah hari ini** (terpakai, sisa, dan jumlah hari bulan ini yang melewati batas), memberi peringatan di Perlu perhatian saat sudah 80% atau lewat, dan setelah mencatat pengeluaran hari ini muncul sisa jatahnya. Kartu bisa disembunyikan di Pengaturan > Tampilan.
+
+## Toko terdekat
+Untuk toko yang sudah punya titik lokasi: di Toko dan tempat beli ada tombol **Toko terdekat dari saya** (daftar terurut jarak dengan tautan Rute). Di Catat transaksi (satu barang maupun struk) tombol **Pilih toko terdekat** langsung memilih toko tersimpan dalam 500 m dari posisi Anda. Browser meminta izin lokasi; posisi tidak disimpan.
+
+## Belajar dari koreksi baca struk
+Bila Anda memperbaiki hasil baca (mengganti Barang, mengubah nama, atau memilih toko yang benar) lalu menyimpan struk, aplikasi mengingat pasangan "tulisan di struk → pilihan Anda" dan memakainya di struk berikutnya. Contohnya "iii paHLAWAN SM Lan" langsung dipilihkan ke toko Pahlawan. Daftar koreksi dan tombol **Lupakan semua koreksi** ada di Pengaturan > Mesin baca struk. Koreksi tersimpan di data (maks. 300 per jenis).
+
+## Struk jadi satu kartu
+Di Daftar transaksi, barang dari satu struk (minimal 2) digabung jadi satu kartu: toko, tanggal, jam, total, jumlah barang, dan hemat diskon. Tekan "Lihat N barang" untuk membuka tiap barang beserta tombol Ubah, Salin, dan Hapus. Foto struk tampil sekali di kartu.
+
+## Transaksi berulang
+Menu ini (dulu Tagihan berulang) kini bisa untuk pengeluaran dan pemasukan (gaji dll.). Centang **Catat otomatis saat jatuh tempo** supaya transaksinya dicatat sendiri saat aplikasi dibuka pada atau setelah tanggal jatuh tempo; yang terlewat beberapa periode dicatat semua dengan tanggal aslinya (maksimal 12 periode sekali jalan). Tanpa centang, tetap pakai tombol Bayar atau Terima dan muncul sebagai pengingat di Beranda.
+
+## Templat transaksi
+Tekan **Salin** pada transaksi mana pun, lalu buka **Simpan sebagai templat** dan beri nama. Di Catat transaksi muncul **⚡ Templat**: **Catat sekarang** (tanggal hari ini, jam sekarang) atau **Isi form** bila ada yang mau diubah dulu.
+
+## Toko paling hemat untuk daftar belanja
+Di Daftar belanja, buka **Toko mana yang paling hemat?**: perkiraan total bila semua dibeli di satu toko, dari harga terakhir tiap barang di toko itu (barang yang belum pernah dibeli di sana dihitung dengan perkiraan di daftar). Hanya toko yang harganya diketahui untuk minimal separuh barang yang ditampilkan. Tombol **Pakai toko ini** memilihnya sebagai rencana toko.
+
+## Peringatan harga
+Saat mencatat satu struk atau menyusun daftar belanja, tiap barang dibandingkan dengan riwayat harganya (median 5 pembelian terakhir): kotak kuning bila lebih mahal 10% atau lebih, hijau bila lebih murah 10% atau lebih, plus info bila toko lain pernah menjual lebih murah. Di form satu barang, peringatan muncul sebagai catatan setelah disimpan (karena isian form tidak berubah langsung saat diketik).
+
+## Tes mesin baca struk
+Pengaturan > Mesin baca struk menampilkan mesin yang aktif sesuai urutan dan tombol **Tes koneksi** untuk tiap mesin (memakai struk contoh buatan aplikasi). Berguna untuk tahu mesin mana yang kena batas pemakaian atau salah kunci.
+
+## Diskon di struk
+Di tiap barang ada kolom **Harga normal** (isi bila barang itu diskon; harga satuan = yang dibayar). Untuk voucher atau diskon total, isi **Potongan seluruh struk**: dibagi ke tiap barang sebanding harganya dan tercatat sebagai diskon.
+
+## Tambah barang lewat barcode
+Di Pengaturan > Barang dan produk > Tambah barang baru, buka **Isi dari barcode**: foto barcode dengan kamera HP (atau unggah foto, atau ketik angkanya), lalu tekan **Baca dan isi form**. Kalau barcode sudah ada di data Anda, aplikasi memberi tahu dan menawarkan membuka barang itu. Kalau belum, nama, merek, ukuran, dan foto dicari di Open Food Facts (database terbuka, tanpa kunci) dan mengisi form untuk Anda periksa. Cakupan produk Indonesia belum lengkap; bila tidak ketemu, hanya barcode yang terisi.
 
 ## Baca struk otomatis
 Di Catat transaksi, mode Struk: unggah foto struk lalu tekan **Baca isi struk dari foto ini**. Toko, tanggal, jam, dan daftar barang terisi sendiri; periksa lagi sebelum menyimpan. Total di struk dibandingkan dengan jumlah barang.
@@ -73,3 +124,16 @@ Tanggal `2026-03-15` atau `15/03/2026`; angka boleh `1.250.000`. Contoh file bis
 `app.py` memanggil `keuangan/rangka.py`. Satu modul per bagian: `inti` (gaya, format, data kosong), `akses` (login), `penyimpanan` (GitHub/lokal),
 `bantu` (saldo, bulan, tanggal berulang), `beranda`, `transaksi`, `anggaran`, `tagihan`, `tabungan`, `utang`, `laporan`, `master`,
 `ekspor`, `cadangan`, `aktivitas`, `tampilan`, `pwa`.
+
+## Fitur tambahan (gelombang terbaru)
+
+- **Cadangan otomatis**: Cadangan dan pulihkan > Cadangan > "Cadangan otomatis ke Excel". Pilih jadwal (harian sampai bulanan). Saat admin membuka aplikasi dan sudah waktunya, berkas Excel dan JSON disimpan di folder `cadangan/` repo data (10 terakhir). Ada juga tombol "Cadangkan sekarang".
+- **Prakiraan akhir bulan**: kartu di Beranda berisi perkiraan total pengeluaran bulan ini (laju 14 hari terakhir + tagihan yang belum dicatat), batas harian yang aman, dan anggaran yang diperkirakan terlewati. Bisa disembunyikan di Pengaturan > Tampilan.
+- **Patungan**: Catat transaksi > Pengeluaran > "Patungan". Bagianmu jadi pengeluaran, bagian tiap teman jadi piutang (uang keluar dompet = total tagihan). Pembagian rata atau diatur sendiri.
+- **Pencarian**: menu Pencarian di Utama, mencari transaksi, barang, toko, daftar belanja, utang-piutang, dan tagihan (angka 3 digit ke atas dicocokkan ke jumlah).
+- **Ubah banyak**: di Daftar transaksi, panel "Ubah banyak sekaligus" mengganti kategori, dompet, atau toko untuk transaksi terpilih atau seluruh hasil filter.
+- **Impor mutasi rekening**: Ekspor dan impor > Mutasi rekening. Kolom dikenali otomatis (satu kolom bertanda atau debit/kredit), kategori diusulkan dari catatan yang pernah dipakai, transaksi yang tampaknya sudah ada tidak dicentang.
+- **Mode gelap otomatis**: bila belum pernah memilih, tema mengikuti perangkat. Pilihan manual tetap diingat. Aplikasi sudah bisa dipasang ke layar utama (PWA) lewat menu peramban "Tambahkan ke layar utama".
+- **Kunci PIN**: Pengaturan > Tampilan > Kunci PIN (4–12 angka, per akun, disimpan sebagai hash). Aplikasi terkunci saat dibuka ulang di perangkat yang masih tersambung, atau lewat tombol Kunci di menu samping. 5 salah = tunggu 60 detik.
+- **Harga per satuan**: Laporan > Per satuan membandingkan harga per 100 g / 100 ml / buah antar barang sekategori dari "Ukuran / isi kemasan" (contoh: 85 g, 1 liter, 2 x 250 ml, isi 12).
+- **Laporan akhir tahun**: Laporan > Akhir tahun. Ringkasan, grafik per bulan, kategori dan toko teratas, barang tersering, rekor, perbandingan dengan tahun lalu, dan unduhan HTML (cetak ke PDF dari peramban).

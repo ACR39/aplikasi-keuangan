@@ -11,27 +11,29 @@ from keuangan.barang import halaman_barang
 from keuangan.toko import halaman_toko
 from keuangan.belanja import halaman_belanja
 from keuangan.beranda import halaman_beranda
-from keuangan.cadangan import halaman_cadangan, halaman_pulih
+from keuangan.cari import halaman_cari
+from keuangan.cadangan import cadangan_otomatis, halaman_cadangan, halaman_pulih
 from keuangan.ekspor import halaman_ekspor, halaman_impor
 from keuangan.inti import CSS_GELAP, CSS_TAMBAH_GELAP, D, adalah_admin, cfg_github, data_kosong, hanya_lihat
 from keuangan.laporan import halaman_laporan
+from keuangan.ocr import halaman_mesin
 from keuangan.master import halaman_dompet, halaman_kategori
 from keuangan.penyimpanan import muat_ke_sesi
 from keuangan.pwa import pasang_pwa
 from keuangan.tabungan import halaman_tabungan
-from keuangan.tagihan import halaman_tagihan
+from keuangan.tagihan import catat_otomatis, halaman_tagihan
 from keuangan.tampilan import halaman_tampilan
 from keuangan.transaksi import halaman_catat, halaman_transaksi
 from keuangan.utang import halaman_utang
 from keuangan.inti import pasang_css
 
-UTAMA = ["Catat transaksi", "Daftar belanja", "Daftar transaksi", "Riwayat aktivitas"]
-PANTAU = ["Anggaran", "Tagihan berulang", "Target tabungan", "Utang-piutang", "Laporan"]
+UTAMA = ["Pencarian", "Catat transaksi", "Daftar belanja", "Daftar transaksi", "Riwayat aktivitas"]
+PANTAU = ["Anggaran", "Transaksi berulang", "Target tabungan", "Utang-piutang", "Laporan"]
 EDIT_SAJA = ("Catat transaksi",)
 MASTER = ["Dompet", "Kategori", "Cadangan dan pulihkan"]
-IKON = {"Beranda": "home", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
-        "Tempat sampah": "delete", "Anggaran": "donut_small", "Tagihan berulang": "event_repeat", "Target tabungan": "savings",
-        "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export",
+IKON = {"Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
+        "Tempat sampah": "delete", "Anggaran": "donut_small", "Transaksi berulang": "event_repeat", "Target tabungan": "savings",
+        "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner",
         "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
 LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">'
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
@@ -41,6 +43,7 @@ LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.or
         '<path d="M19 13.5v11M15.5 16.5c0-1.3 1.5-2 3.5-2s3.5.8 3.5 2.1c0 3.2-7 1.6-7 4.8 0 1.3 1.6 2.1 3.5 2.1s3.5-.8 3.5-2.1" '
         'fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>')
 DESKRIPSI = {
+    "Pencarian": "Satu kotak untuk mencari transaksi, barang, toko, daftar belanja, utang-piutang, dan tagihan.",
     "Beranda": "Ringkasan saldo, pemasukan dan pengeluaran per minggu, bulan, tahun, atau tanggal custom, plus hal yang perlu perhatian dan grafik.",
     "Catat transaksi": "Catat pemasukan, pengeluaran, atau transfer antar dompet dalam beberapa ketukan.",
     "Daftar transaksi": "Cari dan saring semua transaksi, lalu ubah atau hapus kalau ada yang salah.",
@@ -50,11 +53,12 @@ DESKRIPSI = {
     "Riwayat aktivitas": "Semua perubahan data yang tercatat otomatis, lengkap dengan siapa dan kapan.",
     "Tempat sampah": "Transaksi yang dihapus disimpan 30 hari di sini, bisa dipulihkan sebelum hilang permanen.",
     "Anggaran": "Batas pengeluaran per kategori tiap bulan, dengan peringatan saat hampir atau sudah terlewati.",
-    "Tagihan berulang": "Listrik, internet, langganan: pantau jatuh tempo dan catat pembayaran jadi pengeluaran.",
+    "Transaksi berulang": "Listrik, internet, langganan, gaji: pantau jatuh tempo, catat dengan satu ketukan, atau catat otomatis.",
     "Target tabungan": "Tabungan dengan target dan tenggat, lengkap dengan perkiraan setoran per bulan.",
     "Utang-piutang": "Catat utang dan piutang beserta cicilannya. Bisa ikut tercatat di saldo dompet.",
     "Laporan": "Statistik bulanan, tren 12 bulan, arus tiap dompet, serta belanja per barang dan per toko.",
     "Tampilan": "Pilih bagian Beranda yang ditampilkan.",
+    "Mesin baca struk": "Lihat mesin pembaca foto struk yang aktif dan uji apakah tiap mesin berfungsi.",
     "Ekspor dan impor": "Unduh data ke Excel atau CSV, atau tambah banyak transaksi sekaligus dari file.",
     "Dompet": "Tempat uang disimpan beserta saldo awalnya. Saldo sekarang dihitung otomatis.",
     "Kategori": "Kelompok pemasukan dan pengeluaran. Ubah nama atau gabungkan yang ganda.",
@@ -82,9 +86,13 @@ def siapkan_sesi():
         D.setdefault(kunci, awal)
     if "gelap" not in st.session_state:
         try:
-            st.session_state.gelap = st.context.cookies.get(COOKIE_TEMA, "") == "gelap"
+            pilihan = st.context.cookies.get(COOKIE_TEMA, "")
+            # belum pernah memilih: ikuti tema perangkat
+            st.session_state.gelap = (pilihan == "gelap") if pilihan else (st.context.theme.type == "dark")
         except Exception:
             st.session_state.gelap = False
+    from keuangan.pin import cek_pin
+    cek_pin()
     if st.session_state.gelap:
         st.markdown(CSS_GELAP + CSS_TAMBAH_GELAP, unsafe_allow_html=True)
 
@@ -96,7 +104,7 @@ def peringatan_uji():
 
 
 def pilih_halaman():
-    PENGATURAN = ["Tampilan", "Barang dan produk", "Toko dan tempat beli", "Tempat sampah", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
+    PENGATURAN = ["Tampilan", "Barang dan produk", "Toko dan tempat beli", "Tempat sampah", "Mesin baca struk", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
     HALAMAN = ["Beranda"] + menu_utama() + PANTAU + PENGATURAN
     if st.session_state.get("halaman") not in HALAMAN:
         st.session_state.halaman = "Beranda"
@@ -128,6 +136,9 @@ def tampilkan_sidebar(halaman, PENGATURAN):
         st.toggle("Mode gelap", key="gelap", on_change=atur, args=("tema_ubah", True))
         if st.session_state.pop("tema_ubah", False):
             js_cookie("gelap" if st.session_state.gelap else "terang", 31536000, COOKIE_TEMA)
+        from keuangan.pin import kunci_sekarang, punya_pin
+        if punya_pin():
+            st.button("Kunci", key="nav_kunci", width="stretch", icon=":material/lock:", on_click=kunci_sekarang)
         if st.button("Muat ulang", key="nav_muat", width="stretch", icon=":material/refresh:",
                      help="Ambil data terbaru dari penyimpanan"):
             muat_ke_sesi()
@@ -155,6 +166,8 @@ def tampilkan_kepala(halaman, PENGATURAN):
 def tampilkan_halaman(halaman):
     if halaman == "Beranda":
         halaman_beranda()
+    elif halaman == "Pencarian":
+        halaman_cari()
     elif halaman == "Catat transaksi":
         halaman_catat()
     elif halaman == "Daftar transaksi":
@@ -171,7 +184,7 @@ def tampilkan_halaman(halaman):
         halaman_sampah()
     elif halaman == "Anggaran":
         halaman_anggaran()
-    elif halaman == "Tagihan berulang":
+    elif halaman == "Transaksi berulang":
         halaman_tagihan()
     elif halaman == "Target tabungan":
         halaman_tabungan()
@@ -181,15 +194,20 @@ def tampilkan_halaman(halaman):
         halaman_laporan()
     elif halaman == "Tampilan":
         halaman_tampilan()
+    elif halaman == "Mesin baca struk":
+        halaman_mesin()
     elif halaman == "Ekspor dan impor":
         if hanya_lihat():
             halaman_ekspor()
         else:
-            t1, t2 = st.tabs(["Ekspor", "Impor"])
+            t1, t2, t3 = st.tabs(["Ekspor", "Impor", "Mutasi rekening"])
             with t1:
                 halaman_ekspor()
             with t2:
                 halaman_impor()
+            with t3:
+                from keuangan.mutasi import halaman_mutasi
+                halaman_mutasi()
     elif adalah_admin() and halaman == "Dompet":
         halaman_dompet()
     elif adalah_admin() and halaman == "Kategori":
@@ -207,6 +225,8 @@ def jalankan():
     pasang_pwa()
     siapkan_sesi()
     peringatan_uji()
+    catat_otomatis()
+    cadangan_otomatis()
     PENGATURAN, halaman = pilih_halaman()
     tampilkan_sidebar(halaman, PENGATURAN)
     tampilkan_kepala(halaman, PENGATURAN)

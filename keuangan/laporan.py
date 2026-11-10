@@ -33,6 +33,69 @@ def _tabel_kategori(ym: str, jenis: str):
     st.caption("Ketuk satu kategori untuk melihat rincian sub kategorinya.")
 
 
+def _penyebab(ym: str, prev: str, kat: str, batas_hari: int, naik: bool) -> str:
+    """Barang atau toko yang paling menjelaskan perubahan satu kategori (searah dengan perubahannya)."""
+    from keuangan.bantu import barang_dari, toko_dari
+
+    def kumpul(bulan, kunci, nilai):
+        h = {}
+        for x in transaksi_bulan(bulan):
+            if x["jenis"] == "keluar" and akar(x.get("kategori", "")) == kat and (bulan == ym or int(x["tgl"][8:10]) <= batas_hari):
+                k = kunci(x)
+                if k:
+                    h[k] = h.get(k, 0) + int(x["jumlah"])
+        return h
+    bagian = []
+    for judul, kunci, nama in (("barang", lambda x: x.get("barang") or (x.get("catatan") or "").strip().lower(),
+                                lambda k: (barang_dari(k) or {}).get("nama") or k.capitalize()),
+                               ("toko", lambda x: x.get("toko"), lambda k: (toko_dari(k) or {}).get("nama", ""))):
+        now, lalu = kumpul(ym, kunci, None), kumpul(prev, kunci, None)
+        selisih = {k: now.get(k, 0) - lalu.get(k, 0) for k in set(now) | set(lalu)}
+        if not selisih:
+            continue
+        k = max(selisih, key=lambda z: selisih[z]) if naik else min(selisih, key=lambda z: selisih[z])
+        if selisih[k] and (selisih[k] > 0) == naik and nama(k):
+            bagian.append(f"{nama(k)} ({'+' if selisih[k] > 0 else '-'}{rp(abs(selisih[k]))})")
+    return " dan ".join(bagian)
+
+
+def _banding_bulan(ym: str):
+    """Kategori pengeluaran yang naik atau turun dibanding bulan sebelumnya, beserta penyebab terbesarnya."""
+    from keuangan.inti import hari_ini
+    prev = geser_bulan(ym, -1)
+    sebagian = ym == ym_ini()
+    hari = hari_ini().day if sebagian else 31
+    now = per_kategori(ym, "keluar", gabung=True)
+    lalu = {}
+    for x in transaksi_bulan(prev):
+        if x["jenis"] == "keluar" and int(x["tgl"][8:10]) <= hari:
+            k = akar(x.get("kategori", ""))
+            lalu[k] = lalu.get(k, 0) + int(x["jumlah"])
+    with st.container(key="kartu_g_lp_banding"):
+        st.markdown(f"**Dibanding bulan lalu** ({nama_bulan(prev)}{f', sampai tanggal {hari}' if sebagian else ''})")
+        if not lalu:
+            st.caption("Belum ada pengeluaran pada bulan pembanding.")
+            return
+        tn, tl = sum(now.values()), sum(lalu.values())
+        if tl:
+            p = (tn - tl) / tl * 100
+            st.caption(f"Total pengeluaran {rp(tn)} vs {rp(tl)}: " + (f"{'naik' if p > 0 else 'turun'} {abs(p):.0f}%" if abs(p) >= 0.5 else "hampir sama") + ".")
+        baris = sorted(((k, now.get(k, 0), lalu.get(k, 0)) for k in set(now) | set(lalu)), key=lambda z: -abs(z[1] - z[2]))
+        tampil = [b for b in baris if b[1] != b[2]][:6]
+        if not tampil:
+            st.caption("Tidak ada perubahan antar kategori.")
+        for k, n, l in tampil:
+            d = n - l
+            naik = d > 0
+            warna = "#c0392b" if naik else "#1e8e5a"
+            pct = f" ({d / l * 100:+.0f}%)" if l else " (baru)"
+            sebab = _penyebab(ym, prev, k, hari, naik)
+            st.markdown(f'<div class="perhatian"><div class="ag"><b>{ikon_kat(k)}{e(nama_kat(k))}</b>'
+                        f'<span>{rp(n)} <small>vs {rp(l)}</small></span></div>'
+                        f'<div style="color:{warna};font-size:.9rem">{"▲ naik" if naik else "▼ turun"} {rp(abs(d))}{pct}'
+                        f'{"<br><span style=color:#555>Terbesar dari: " + e(sebab) + "</span>" if sebab else ""}</div></div>', unsafe_allow_html=True)
+
+
 def _bulanan():
     ym = pilih_bulan("lp_bulan")
     masuk, keluar = ringkas_bulan(ym)
@@ -49,6 +112,7 @@ def _bulanan():
         with st.container(key="kartu_g_lp_masuk"):
             st.markdown("**Pemasukan per kategori**")
             _tabel_kategori(ym, "masuk")
+    _banding_bulan(ym)
     with st.container(key="kartu_g_lp_harian"):
         st.markdown("**Pengeluaran harian**")
         per_hari = {}
@@ -111,6 +175,42 @@ def _dompet():
     st.caption(f"Arus tiap dompet pada {nama_bulan(ym)}. Satuan rupiah.")
 
 
+def _grafik_harga(id_: str):
+    """Grafik harga bayar satu barang dari waktu ke waktu: satu garis per toko, belah ketupat untuk pembelian saat diskon."""
+    import altair as alt
+    from datetime import date, timedelta
+    from keuangan.bantu import toko_dari
+    semua = sorted([x for x in transaksi_barang(id_) if x.get("harga_satuan")], key=lambda x: (x["tgl"], x.get("dibuat", "")))
+    rentang = st.radio("Rentang grafik", ["3 bulan", "6 bulan", "1 tahun", "Semua"], horizontal=True, index=3, key=f"lp_rentang_{id_}")
+    hari = {"3 bulan": 92, "6 bulan": 183, "1 tahun": 365}.get(rentang)
+    titik = [x for x in semua if not hari or x["tgl"] >= (date.today() - timedelta(days=hari)).isoformat()]
+    if len(titik) < 2:
+        st.caption("Grafik harga muncul setelah barang ini dibeli minimal dua kali pada rentang ini.")
+        return
+    nama = lambda k: (toko_dari(k) or {}).get("nama", "(tanpa toko)") if k else "(tanpa toko)"
+    df = pd.DataFrame([{"Tanggal": pd.to_datetime(x["tgl"]), "Harga bayar": int(x["harga_satuan"]), "Toko": nama(x.get("toko")),
+                        "Harga normal": int(x.get("harga_normal") or x["harga_satuan"]), "Diskon": bool(info_diskon(x))} for x in titik])
+    harga = df["Harga bayar"]
+    rata = round(harga.mean())
+    termurah, termahal = df.loc[harga.idxmin()], df.loc[harga.idxmax()]
+    selisih = (harga.iloc[-1] - rata) / rata * 100 if rata else 0
+    deretan_stat(kartu_stat("Termurah", rp(int(termurah["Harga bayar"])), termurah["Toko"], "g"),
+                 kartu_stat("Rata-rata", rp(rata), f"{len(df)} pembelian"),
+                 kartu_stat("Termahal", rp(int(termahal["Harga bayar"])), termahal["Toko"], "m"),
+                 kartu_stat("Terakhir", rp(int(harga.iloc[-1])), f"{selisih:+.0f}% dari rata-rata", "m" if selisih > 5 else "g" if selisih < -5 else ""))
+    dasar = alt.Chart(df).encode(x=alt.X("Tanggal:T", title=None), y=alt.Y("Harga bayar:Q", title="Harga (Rp)", scale=alt.Scale(zero=False)),
+                                 color=alt.Color("Toko:N", legend=alt.Legend(orient="bottom", title=None)),
+                                 tooltip=[alt.Tooltip("Tanggal:T", format="%d/%m/%Y"), "Toko:N", alt.Tooltip("Harga bayar:Q", format=",.0f"),
+                                          alt.Tooltip("Harga normal:Q", format=",.0f"), "Diskon:N"])
+    garis = dasar.mark_line(point=alt.OverlayMarkDef(filled=True, size=60))
+    tanda = dasar.transform_filter("datum.Diskon").mark_point(shape="diamond", size=220, filled=False, stroke="#111", strokeWidth=2)
+    acuan = alt.Chart(pd.DataFrame({"y": [rata]})).mark_rule(strokeDash=[5, 4], color="#8a8f98").encode(y="y:Q")
+    st.altair_chart((garis + tanda + acuan).properties(height=280), width="stretch")
+    st.caption("Tiap warna satu toko. Belah ketupat hitam: dibeli saat diskon. Garis putus-putus: rata-rata." +
+               (f" Naik {rp(int(harga.iloc[-1] - harga.iloc[0]))} sejak pembelian pertama pada rentang ini." if harga.iloc[-1] > harga.iloc[0]
+                else f" Turun {rp(int(harga.iloc[0] - harga.iloc[-1]))} sejak pembelian pertama pada rentang ini." if harga.iloc[-1] < harga.iloc[0] else ""))
+
+
 def _barang():
     bulan = st.selectbox("Periode", ["semua"] + daftar_bulan(), key="lp_bulan_b",
                          format_func=lambda b: "Semua waktu" if b == "semua" else nama_bulan(b))
@@ -135,18 +235,7 @@ def _barang():
                                   "Banyaknya": "{:g}".format}), width="stretch")
     with st.container(key="kartu_g_lp_harga"):
         pilih = st.selectbox("Lihat perubahan harga", list(ada), format_func=lambda i: ada[i]["nama"], key="lp_barang_harga")
-        titik = sorted([t for t in transaksi_barang(pilih) if t.get("harga_satuan")], key=lambda t: (t["tgl"], t.get("dibuat", "")))
-        if len(titik) >= 2:
-            ada_diskon = any(info_diskon(t) for t in titik)
-            data_g = {"Tanggal": [t["tgl"] for t in titik], "Harga bayar": [t["harga_satuan"] for t in titik]}
-            if ada_diskon:
-                data_g["Harga normal"] = [int(t.get("harga_normal") or t["harga_satuan"]) for t in titik]
-            st.line_chart(pd.DataFrame(data_g).set_index("Tanggal"), color=["#3b82c4", "#9aa0a6"] if ada_diskon else "#3b82c4")
-            naik = titik[-1]["harga_satuan"] - titik[0]["harga_satuan"]
-            st.caption(f"Dari {rp(titik[0]['harga_satuan'])} menjadi {rp(titik[-1]['harga_satuan'])} ({'naik' if naik > 0 else 'turun' if naik < 0 else 'tetap'}"
-                       f"{' ' + rp(abs(naik)) if naik else ''}).")
-        else:
-            st.caption("Grafik harga muncul setelah barang ini dibeli minimal dua kali.")
+        _grafik_harga(pilih)
         disk_b = [t for t in transaksi_barang(pilih) if info_diskon(t) and (bulan == "semua" or t["tgl"][:7] == bulan)]
         semua_b = [t for t in transaksi_barang(pilih) if t.get("harga_satuan") and (bulan == "semua" or t["tgl"][:7] == bulan)]
         if semua_b:
@@ -216,7 +305,7 @@ def _toko():
 
 
 def halaman_laporan():
-    t1, t2, t3, t4, t5 = st.tabs(["Bulanan", "Tren", "Per dompet", "Barang", "Toko"])
+    t1, t2, t3, t4, t5, t6, t7 = st.tabs(["Bulanan", "Tren", "Per dompet", "Barang", "Toko", "Per satuan", "Akhir tahun"])
     with t1:
         _bulanan()
     with t2:
@@ -227,3 +316,9 @@ def halaman_laporan():
         _barang()
     with t5:
         _toko()
+    with t6:
+        from keuangan.satuan_harga import halaman_per_satuan
+        halaman_per_satuan()
+    with t7:
+        from keuangan.tahun import halaman_tahun
+        halaman_tahun()

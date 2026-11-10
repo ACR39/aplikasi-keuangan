@@ -6,6 +6,7 @@ import streamlit as st
 from keuangan.bantu import (
     ikon_foto, kolom_foto, proses_foto, sisa_hari_teks, pilih_kategori, akar, atur, catat, e, f_kat, ikon_kat, kategori_jenis, nama_kat, selesai_simpan, transaksi_barang, turunan, versi,
 )
+from keuangan.barcode import baca_barcode, cari_produk
 from keuangan.inti import D, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, iso_ke_date, rp
 
 
@@ -13,8 +14,59 @@ def semua_kategori() -> list:
     return [k["id"] for j in ("keluar", "masuk") for k in kategori_jenis(j)]
 
 
+class _Berkas:
+    """Pembungkus byte supaya bisa dipakai proses_foto seperti file unggahan."""
+    def __init__(self, data: bytes):
+        self._d = data
+
+    def getvalue(self) -> bytes:
+        return self._d
+
+
+def _blok_barcode(kk: str, awal: dict):
+    """Pindai atau ketik barcode, lalu isi form dari data barang sendiri atau Open Food Facts."""
+    with st.expander("📷 Isi dari barcode: pindai atau ketik", expanded=False):
+        foto = st.camera_input("Arahkan kamera ke barcode", key=f"{kk}_cam")
+        unggah = st.file_uploader("Atau unggah foto barcode", type=["jpg", "jpeg", "png", "webp"], key=f"{kk}_bcup")
+        ketik = st.text_input("Atau ketik angka barcode", max_chars=32, key=f"{kk}_bcket", placeholder="Contoh: 8992388101011")
+        if not st.button("Baca dan isi form", key=f"{kk}_bcgo"):
+            return
+        kode = ketik.strip()
+        sumber = foto or unggah
+        if not kode and sumber is not None:
+            try:
+                kode = baca_barcode(sumber.getvalue())
+            except Exception as ex:
+                st.error(f"Foto tidak bisa dibaca: {ex}")
+                return
+            if not kode:
+                st.warning("Barcode tidak terbaca. Dekatkan, pastikan terang dan tajam, atau ketik angkanya.")
+                return
+        if not kode:
+            st.warning("Ambil foto barcode atau ketik angkanya dulu.")
+            return
+        ada = next((x for x in D["barang"] if x.get("barcode", "").strip() == kode and x["id"] != awal.get("id")), None)
+        if ada:
+            st.info(f"Barcode {kode} sudah ada: **{ada['nama']}**. Tidak perlu ditambah lagi.")
+            st.button("Ubah barang itu", key=f"{kk}_bcubah", on_click=lambda: st.session_state.update(edit_brg=ada["id"], edit_baru_brg=False, brg_isi=None))
+            return
+        try:
+            with st.spinner("Mencari data produk…"):
+                p = cari_produk(kode)
+        except Exception as ex:
+            st.warning(f"Pencarian produk gagal ({ex}). Barcode tetap diisi, sisanya isi manual.")
+            p = None
+        isi = {"barcode": kode, **(p or {})}
+        st.session_state["brg_isi"] = isi
+        st.session_state["brg_pesan"] = (f"Barcode {kode} ditemukan: {p['nama']}. Periksa lalu simpan." if p
+                                         else f"Barcode {kode} terisi, tapi datanya tidak ada di Open Food Facts. Isi nama dan lainnya manual.")
+        st.session_state["ver"] = versi() + 1
+        st.rerun()
+
+
 def _form(awal: dict | None, kat_awal: str = ""):
     awal = awal or {}
+    pra = {} if awal else (st.session_state.get("brg_isi") or {})
     if not semua_kategori():
         st.warning("Belum ada kategori. Tambah dulu di Pengaturan > Kategori.")
         return
@@ -24,19 +76,22 @@ def _form(awal: dict | None, kat_awal: str = ""):
     jenis = st.radio("Jenis kategori", ["keluar", "masuk"], index=0 if jenis == "keluar" else 1, horizontal=True,
                      format_func=lambda j: "Pengeluaran" if j == "keluar" else "Pemasukan", key=f"{kk}_jenis")
     kat = pilih_kategori(f"{kk}_{jenis}", jenis, pil if any(k["id"] == pil and k["jenis"] == jenis for k in D["kategori"]) else "")
+    if st.session_state.get("brg_pesan"):
+        st.success(st.session_state["brg_pesan"])
+    _blok_barcode(kk, awal)
     with st.form(f"{kk}_{kat}", clear_on_submit=False):
-        nama = st.text_input("Nama barang", value=awal.get("nama", ""), placeholder="Contoh: Indomie goreng")
+        nama = st.text_input("Nama barang", value=awal.get("nama") or pra.get("nama", ""), placeholder="Contoh: Indomie goreng")
         c3, c4 = st.columns(2)
         satuan = c3.text_input("Satuan, opsional", value=awal.get("satuan", ""), placeholder="bungkus, kg, liter")
         harga = c4.number_input("Harga satuan (Rp), opsional", min_value=0, step=500, value=int(awal.get("harga", 0) or 0),
                                 help="Terisi otomatis saat mencatat. Harga ikut diperbarui dari transaksi terbaru barang ini.")
-        with st.expander("Rincian lain: barcode, merek, ukuran, kedaluwarsa, foto", expanded=bool(awal.get("barcode") or awal.get("merek") or awal.get("foto"))):
+        with st.expander("Rincian lain: barcode, merek, ukuran, kedaluwarsa, foto", expanded=bool(awal.get("barcode") or awal.get("merek") or awal.get("foto") or pra)):
             r1, r2 = st.columns(2)
-            barcode = r1.text_input("Barcode / kode produk", value=awal.get("barcode", ""), max_chars=32,
+            barcode = r1.text_input("Barcode / kode produk", value=awal.get("barcode") or pra.get("barcode", ""), max_chars=32,
                                     help="Ketik, tempel, atau scan dengan pembaca barcode USB/Bluetooth. Di halaman Catat, barcode bisa dicari langsung.")
-            merek = r2.text_input("Merek", value=awal.get("merek", ""), max_chars=40, placeholder="Indofood")
+            merek = r2.text_input("Merek", value=awal.get("merek") or pra.get("merek", ""), max_chars=40, placeholder="Indofood")
             r3, r4 = st.columns(2)
-            ukuran = r3.text_input("Ukuran / isi kemasan", value=awal.get("ukuran", ""), max_chars=30, placeholder="85 g, 1 liter")
+            ukuran = r3.text_input("Ukuran / isi kemasan", value=awal.get("ukuran") or pra.get("ukuran", ""), max_chars=30, placeholder="85 g, 1 liter")
             exp = r4.date_input("Kedaluwarsa, opsional", value=iso_ke_date(awal.get("kedaluwarsa")), min_value=TGL_MIN, max_value=TGL_MAX,
                                 format="DD/MM/YYYY", help="Tanggal kedaluwarsa stok terbaru. Pengingat muncul di Beranda saat sudah dekat.")
             langganan = st.checkbox("Barang langganan (dibeli rutin)", value=bool(awal.get("langganan")))
@@ -52,6 +107,8 @@ def _form(awal: dict | None, kat_awal: str = ""):
                 st.error("Barang itu sudah ada di kategori ini.")
             else:
                 isi = {"nama": nama.strip(), "kategori": kat, "satuan": satuan.strip(), "harga": int(harga)}
+                if berkas is None and not awal.get("foto") and pra.get("foto_bytes") and pra.get("barcode") == barcode.strip():
+                    berkas = _Berkas(pra["foto_bytes"])
                 foto = proses_foto(berkas, hapus_f, awal.get("foto", ""), "barang")
                 for k_, v_ in (("barcode", barcode.strip()), ("merek", merek.strip()), ("ukuran", ukuran.strip()),
                                ("kedaluwarsa", exp.isoformat() if exp else ""), ("langganan", bool(langganan)),
@@ -65,7 +122,7 @@ def _form(awal: dict | None, kat_awal: str = ""):
                 else:
                     D["barang"].append({"id": baru_id(), **isi})
                 catat("barang", f"{'Ubah' if awal else 'Tambah'} barang {isi['nama']} di {nama_kat(kat)}")
-                selesai_simpan("Barang disimpan.", edit_brg=None, edit_baru_brg=False)
+                selesai_simpan("Barang disimpan.", edit_brg=None, edit_baru_brg=False, brg_isi=None, brg_pesan=None)
 
 
 def _lepas_barang(b: dict):
@@ -135,6 +192,7 @@ def halaman_barang():
         if st.button("Batal", key="batal_ubah_brg"):
             st.session_state.pop("edit_brg", None)
             st.session_state["edit_baru_brg"] = False
+            st.session_state["brg_isi"] = st.session_state["brg_pesan"] = None
             st.rerun()
         st.caption("Memindahkan barang ke kategori lain tidak mengubah kategori pada transaksi yang sudah tercatat.")
 

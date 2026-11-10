@@ -5,12 +5,14 @@ import streamlit as st
 
 from keuangan.bantu import (
     barang_dalam, barang_dari, f_barang, perbarui_harga_barang, teks_barang,
-    f_dompet, f_kat, turunan, harga_normal_barang, salin_transaksi, pilih_kategori, kolom_foto, proses_foto, kat_dari, f_toko, toko_dari, teks_toko, kunci_urut, akar,
+    f_dompet, f_kat, turunan, harga_normal_barang, tampil_peringatan_harga, peringatan_harga, salin_transaksi, pilih_kategori, kolom_foto, proses_foto, kat_dari, f_toko, toko_dari, teks_toko, kunci_urut, akar,
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
-    ringkas_teks, selesai_simpan, tambah_transaksi, versi, daftar_bulan, deretan_stat, kartu_stat,
+    ringkas_teks, info_diskon, e, selesai_simpan, tambah_transaksi, versi, daftar_bulan, deretan_stat, kartu_stat,
 )
-from keuangan.ocr import baca_struk, cocokkan_toko, ke_tabel, mesin_tersedia
-from keuangan.struk import peta_kategori, baca_baris, editor_kartu, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
+from keuangan.anggaran import teks_jatah
+from keuangan.peta import proses_gps, terdekat, titik_dari, tombol_gps
+from keuangan.ocr import baca_struk, cocokkan_toko, pelajari, ke_tabel, mesin_tersedia
+from keuangan.struk import struk_serupa, peta_kategori, baca_baris, terapkan_potongan, editor_kartu, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
 from keuangan.inti import (
     D, JENIS, TOKO_IKON, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, hari_ini, iso_ke_date, nama_bulan, rp, sekarang,
 )
@@ -23,6 +25,19 @@ def _pilihan_dompet(termasuk: str = "") -> list:
     if termasuk and termasuk not in ids and dompet_dari(termasuk):
         ids.append(termasuk)
     return ids
+
+
+def _isi_toko_terdekat(sk: str, kunci_toko: str):
+    """Bila tombol lokasi ditekan, pilihkan toko tersimpan terdekat (maks 500 m). Panggil SEBELUM selectbox toko."""
+    pos = proses_gps(sk)
+    if not pos:
+        return
+    ter = terdekat(pos, D["toko"], 1)
+    if ter and ter[0][1] <= 0.5:
+        st.session_state[kunci_toko] = ter[0][0]["id"]
+        st.toast(f"Toko terdekat: {ter[0][0]['nama']}", icon="📍")
+    else:
+        st.toast("Tidak ada toko tersimpan dalam 500 m dari sini.", icon="📍")
 
 
 def _cari_barcode(kunci: str, jenis: str):
@@ -75,6 +90,9 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
         brg = c1.selectbox("Barang (opsional)", opsi, index=opsi.index(awal["barang"]) if awal.get("barang") in opsi else 0,
                            format_func=f_barang(kat), key=f"{kunci}_brg",
                            help="Pilih barang agar harga dan jumlahnya tercatat. Tambah barang di Pengaturan > Barang dan produk.")
+        ada_titik = any(titik_dari(x) for x in D["toko"])
+        if ada_titik:
+            _isi_toko_terdekat(f"{kunci}_gps", f"{kunci}_toko")
         tops = [""] + [x["id"] for x in sorted(D["toko"], key=lambda x: (not x.get("favorit"), x["nama"].lower()))]
         if awal.get("toko") and awal["toko"] not in tops and toko_dari(awal["toko"]):
             tops.append(awal["toko"])
@@ -83,6 +101,9 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
         toko = c2.selectbox("Toko / tempat beli (opsional)", tops, index=tops.index(awal["toko"]) if awal.get("toko") in tops else 0,
                             format_func=f_toko(), key=f"{kunci}_toko",
                             help="Tambah toko di Pengaturan > Toko dan tempat beli.")
+        if ada_titik:
+            with c2:
+                tombol_gps(f"{kunci}_gps", "📍 Pilih toko terdekat")
     b = barang_dari(brg) if brg else None
     if b:
         hn_riwayat = harga_normal_barang(brg)
@@ -203,11 +224,17 @@ def form_struk():
     w = c2.time_input("Waktu beli", value=jam_awal, step=60, key=f"{base}_w")
     c3, c4 = st.columns(2)
     dari = c3.selectbox("Dari dompet", dompet, format_func=f_dompet(), key=f"{base}_dompet")
+    ada_titik = any(titik_dari(x) for x in D["toko"])
+    if ada_titik:
+        _isi_toko_terdekat(f"{base}_gps", f"{base}_toko")
     tops = [""] + [x["id"] for x in sorted(D["toko"], key=lambda x: (not x.get("favorit"), x["nama"].lower()))]
     if st.session_state.get(f"{base}_toko") not in tops:
         st.session_state.pop(f"{base}_toko", None)
     toko = c4.selectbox("Toko / tempat beli", tops, index=tops.index(toko_awal) if toko_awal in tops else 0,
                         format_func=f_toko(), key=f"{base}_toko")
+    if ada_titik:
+        with c4:
+            tombol_gps(f"{base}_gps", "📍 Pilih toko terdekat")
     lokasi = st.text_input("Lokasi", value=(toko_dari(toko) or {}).get("lokasi", ""), max_chars=80, key=f"{base}_lok_{toko}",
                            placeholder="Contoh: Jl. Merdeka, Bandung")
     st.markdown("**Barang di struk**")
@@ -215,6 +242,11 @@ def form_struk():
     df = editor_kartu(f"{base}_tbl", ke_tabel(ocr) if ocr else None)
     baris_ok, _ = baca_baris(df)
     jumlah_struk = total_cepat(df)
+    potongan = st.number_input("Potongan seluruh struk (Rp), opsional", min_value=0, step=500, key=f"{base}_pot",
+                               help="Voucher atau diskon total di struk. Dibagi ke tiap barang sebanding harganya, jadi tercatat sebagai diskon.")
+    if potongan:
+        st.caption(f"Jumlah barang {rp(jumlah_struk)}, dikurangi potongan {rp(min(potongan, jumlah_struk))}.")
+        jumlah_struk = max(0, jumlah_struk - int(potongan))
     st.markdown(f"**Total struk: {rp(jumlah_struk)}** · {len(baris_ok)} barang")
     if ocr and ocr.get("total"):
         if ocr["total"] == jumlah_struk:
@@ -222,17 +254,89 @@ def form_struk():
         else:
             st.warning(f"Total di struk {rp(ocr['total'])}, jumlah barang di atas {rp(jumlah_struk)}. "
                        "Mungkin ada barang yang belum terbaca, atau harga dan banyaknya salah baca. Diskon atau pajak juga bisa membuat selisih.")
+    import hashlib
+    foto_hash = hashlib.sha1(berkas.getvalue()).hexdigest() if berkas is not None else ""
+    dobel = struk_serupa(tgl.isoformat(), toko, jumlah_struk, foto_hash) if baris_ok else None
+    lanjut = True
+    if dobel:
+        sama_foto = foto_hash and dobel[0].get("foto_hash") == foto_hash
+        st.warning(f"⚠️ Mungkin struk dobel: sudah ada struk {'dengan foto yang sama' if sama_foto else 'serupa'} "
+                   f"({teks_toko(dobel[0]) or 'tanpa toko'}, {fmt_iso(dobel[0]['tgl'])}, "
+                   f"{rp(sum(int(x['jumlah']) for x in dobel))}, {len(dobel)} barang).")
+        lanjut = st.checkbox("Ini struk yang berbeda, tetap simpan", key=f"{base}_lanjut")
     if st.button("Simpan struk", type="primary", key=f"{base}_simpan"):
         baris, salah = baca_baris(df)
         if salah:
             st.error("\n\n".join(salah))
         elif not baris:
             st.error("Isi minimal satu barang.")
+        elif not lanjut:
+            st.error("Struk ini kemungkinan dobel. Centang pilihan di atas bila memang struk yang berbeda.")
         else:
             struk = proses_foto(berkas, False, "", "struk")
-            simpan_struk(baris, tgl, w.strftime("%H:%M"), dari, toko, lokasi.strip(), struk)
+            baris = terapkan_potongan(baris, potongan)
+            n_belajar = pelajari(ocr, baris, toko) if ocr else 0
+            simpan_struk(baris, tgl, w.strftime("%H:%M"), dari, toko, lokasi.strip(), struk, foto_hash=foto_hash)
             catat("tambah", ringkas_struk(baris, toko))
-            selesai_simpan(f"Struk dicatat: {len(baris)} barang", struk_ocr=None, struk_up_n=n_up + 1)
+            selesai_simpan(f"Struk dicatat: {len(baris)} barang" + (f" · {n_belajar} koreksi dipelajari" if n_belajar else "") + (f" · {teks_jatah()}" if tgl == hari_ini() and teks_jatah() else ""), struk_ocr=None, struk_up_n=n_up + 1)
+
+
+TPL_KUNCI = ("jenis", "dompet", "kategori", "jumlah", "catatan", "ke", "biaya", "barang", "qty", "harga_satuan", "harga_normal", "toko", "lokasi")
+
+
+def _asal_salin():
+    """Sumber isian salin: transaksi, atau templat bila kuncinya diawali 'tpl:'."""
+    k = st.session_state.get("salin_tx") or ""
+    if k.startswith("tpl:"):
+        return next((x for x in D["templat"] if x["id"] == k[4:]), None), True
+    return next((x for x in D["transaksi"] if x["id"] == k), None), False
+
+
+def _catat_dari_templat(tp: dict):
+    """Catat langsung dari templat: tanggal hari ini, jam sekarang."""
+    if not dompet_dari(tp["dompet"]):
+        st.error("Dompet pada templat ini sudah tidak ada. Hapus templatnya lalu buat lagi.")
+        return
+    extra = {k: tp[k] for k in ("barang", "qty", "harga_satuan", "harga_normal", "toko", "lokasi") if tp.get(k)}
+    t = tambah_transaksi(tp["jenis"], hari_ini(), tp["jumlah"], tp["dompet"], tp.get("kategori", ""), tp.get("catatan", ""),
+                         tp.get("ke", ""), tp.get("biaya", 0), waktu=sekarang().strftime("%H:%M"), **extra)
+    catat("tambah", f"{ringkas_teks(t)} (dari templat {tp['nama']})")
+    selesai_simpan(f"Dicatat dari templat {tp['nama']}: {rp(tp['jumlah'])}")
+
+
+def _panel_templat(jenis: str):
+    daftar = [x for x in D["templat"] if x["jenis"] == jenis]
+    if not daftar:
+        return
+    with st.expander(f"⚡ Templat ({len(daftar)})"):
+        st.caption("Catat sekarang memakai tanggal hari ini. Isi form bila ada yang ingin diubah dulu.")
+        for tp in daftar:
+            with st.container(border=True, key=f"kartu_g_tpl_{tp['id']}"):
+                st.markdown(f"**{e(tp['nama'])}** · {rp(tp['jumlah'])}")
+                st.caption(ringkas_teks(tp))
+                a, b, c = st.columns(3)
+                a.button("Catat sekarang", key=f"tpl_cat_{tp['id']}", type="primary", on_click=_catat_dari_templat, args=(tp,))
+                b.button("Isi form", key=f"tpl_isi_{tp['id']}", on_click=atur, args=("salin_tx", "tpl:" + tp["id"]))
+                if c.button("Hapus", key=f"tpl_del_{tp['id']}"):
+                    D["templat"] = [x for x in D["templat"] if x["id"] != tp["id"]]
+                    catat("tambah", f"Hapus templat {tp['nama']}")
+                    selesai_simpan("Templat dihapus.")
+
+
+def _simpan_templat(asal: dict):
+    """Form kecil: simpan transaksi yang sedang disalin sebagai templat."""
+    with st.expander("⭐ Simpan sebagai templat"):
+        awal = (asal.get("catatan") or nama_kat(asal.get("kategori")) or "Templat")[:40]
+        nama = st.text_input("Nama templat", value=awal, max_chars=40, key=f"tpl_nama_{asal['id']}")
+        if st.button("Simpan templat", key=f"tpl_simpan_{asal['id']}"):
+            if not nama.strip():
+                st.error("Isi nama templat.")
+            elif any(x["nama"].lower() == nama.strip().lower() and x["jenis"] == asal["jenis"] for x in D["templat"]):
+                st.error("Sudah ada templat dengan nama itu.")
+            else:
+                D["templat"].append({"id": baru_id(), "nama": nama.strip(), **{k: asal[k] for k in TPL_KUNCI if asal.get(k)}})
+                catat("tambah", f"Buat templat {nama.strip()}")
+                selesai_simpan(f"Templat {nama.strip()} disimpan.")
 
 
 def halaman_catat():
@@ -246,26 +350,38 @@ def halaman_catat():
         kunci = f"f_catat_{jenis}_{versi()}"
         struk_mode = False
         if jenis == "keluar":
-            struk_mode = st.radio("Cara catat", ["satu", "struk"], horizontal=True, key="tr_mode",
-                                  format_func=lambda m: "Satu barang" if m == "satu" else "Satu struk, banyak barang") == "struk"
-        if struk_mode:
+            cara = st.radio("Cara catat", ["satu", "struk", "patungan"], horizontal=True, key="tr_mode",
+                            format_func=lambda m: {"satu": "Satu barang", "struk": "Satu struk, banyak barang", "patungan": "Patungan"}[m])
+            struk_mode = cara == "struk"
+        if jenis == "keluar" and st.session_state.get("tr_mode") == "patungan":
+            from keuangan.patungan import form_patungan
+            form_patungan()
+            isi = None
+        elif struk_mode:
             form_struk()
             isi = None
         else:
             awal_salin = {}
-            asal = next((x for x in D["transaksi"] if x["id"] == st.session_state.get("salin_tx")), None)
+            _panel_templat(jenis)
+            asal, dari_templat = _asal_salin()
             if asal and asal["jenis"] == jenis:
-                awal_salin = {k: v for k, v in asal.items() if k not in ("id", "tgl", "waktu", "struk", "grup", "dibuat", "oleh")}
-                st.info(f"Menyalin transaksi: {ringkas_teks(asal)}. Tanggal dan jam diganti ke sekarang; ubah bagian yang berbeda lalu simpan.")
+                awal_salin = {k: v for k, v in asal.items() if k not in ("id", "tgl", "waktu", "struk", "grup", "dibuat", "oleh", "nama")}
+                st.info(f"{'Memakai templat ' + asal['nama'] if dari_templat else 'Menyalin transaksi'}: {ringkas_teks(asal)}. "
+                        "Tanggal dan jam diganti ke sekarang; ubah bagian yang berbeda lalu simpan.")
                 st.button("Batal menyalin", key="batal_salin", on_click=atur, args=("salin_tx", None))
+                if not dari_templat:
+                    _simpan_templat(asal)
             isi = form_transaksi(kunci, jenis, awal=awal_salin, tombol="Simpan transaksi", bersih=True)
         if isi:
             struk = proses_foto(isi["struk_berkas"], False, "", "struk")
+            ph = peringatan_harga(isi["barang"], isi["harga_satuan"]) if jenis == "keluar" and isi["barang"] else None
             t = tambah_transaksi(jenis, isi["tgl"], isi["jumlah"], isi["dompet"], isi["kategori"], isi["catatan"],
                                  isi["ke"], isi["biaya"], barang=isi["barang"], qty=isi["qty"], harga_satuan=isi["harga_satuan"],
                                  harga_normal=isi["harga_normal"], toko=isi["toko"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk)
             catat("tambah", ringkas_teks(t))
-            selesai_simpan(f"Transaksi dicatat: {JENIS[jenis].lower()} {rp(isi['jumlah'])}", salin_tx=None)
+            selesai_simpan(f"Transaksi dicatat: {JENIS[jenis].lower()} {rp(isi['jumlah'])}"
+                           + (f" · {'⚠️' if ph[0] == 'mahal' else '✅'} {ph[1]}" if ph else "")
+                           + (f" · {teks_jatah()}" if jenis == "keluar" and isi["tgl"] == hari_ini() and teks_jatah() else ""), salin_tx=None)
     st.markdown("**Terakhir dicatat**")
     terakhir = sorted(D["transaksi"], key=kunci_urut, reverse=True)[:5]
     if not terakhir:
@@ -316,6 +432,139 @@ def _hapus(t: dict):
     selesai_simpan("Transaksi dihapus (ada di Tempat sampah).", hapus_tx=None)
 
 
+def _tampil_tx(t: dict, edit_id, hapus_id, foto: bool = True):
+    """Satu transaksi: kartu, tombol Ubah/Salin/Hapus, dan form ubah bila sedang diubah."""
+    if edit_id == t["id"]:
+        with st.container(key=f"kartu_g_edit_{t['id']}"):
+            st.markdown(f"**Ubah {JENIS[t['jenis']].lower()}**")
+            isi = form_transaksi(f"f_edit_{t['id']}", t["jenis"], awal=t, tombol="Simpan perubahan")
+            if st.button("Batal", key=f"batal_e_{t['id']}"):
+                st.session_state.pop("edit_tx", None)
+                st.rerun()
+            if isi:
+                lama = ringkas_teks(t)
+                barang_lama = t.get("barang")
+                t.update({"tgl": isi["tgl"].isoformat(), "jumlah": isi["jumlah"], "dompet": isi["dompet"],
+                          "catatan": isi["catatan"].strip()})
+                if isi["barang"]:
+                    t.update({"barang": isi["barang"], "qty": isi["qty"], "harga_satuan": isi["harga_satuan"]})
+                    if isi["harga_normal"]:
+                        t["harga_normal"] = isi["harga_normal"]
+                    else:
+                        t.pop("harga_normal", None)
+                else:
+                    for kk in ("barang", "qty", "harga_satuan", "harga_normal"):
+                        t.pop(kk, None)
+                if t["jenis"] == "transfer":
+                    t["ke"], t["biaya"] = isi["ke"], isi["biaya"]
+                else:
+                    t["kategori"] = isi["kategori"]
+                    isi["struk"] = proses_foto(isi["struk_berkas"], isi["struk_hapus"], t.get("struk", ""), "struk")
+                    for kk in ("toko", "lokasi", "waktu", "struk"):
+                        if isi[kk]:
+                            t[kk] = isi[kk]
+                        else:
+                            t.pop(kk, None)
+                for bid in {barang_lama, t.get("barang")} - {None, ""}:
+                    perbarui_harga_barang(bid)
+                catat("ubah", f"{lama} → {ringkas_teks(t)}")
+                selesai_simpan("Transaksi diubah.", edit_tx=None)
+        return
+    with st.container(key=f"tx_{t['id']}"):
+        st.markdown(baris_transaksi(t), unsafe_allow_html=True)
+        if not hanya_lihat():
+            with st.container(key=f"aksi_{t['id']}"):
+                c = st.columns(3)
+                c[0].button("Ubah", key=f"kedit_{t['id']}", on_click=atur, args=("edit_tx", t["id"]))
+                c[1].button("Salin", key=f"ksalin_{t['id']}", on_click=salin_transaksi, args=(t["id"],))
+                c[2].button("Hapus", key=f"khapus_{t['id']}", on_click=atur, args=("hapus_tx", t["id"]))
+        if t.get("struk") and foto and st.session_state.get("tr_struk"):
+            from keuangan.penyimpanan import ambil_foto
+            img = ambil_foto(t["struk"])
+            if img:
+                st.image(img, width=260, caption="Struk")
+        if hapus_id == t["id"]:
+            st.warning(f"Hapus transaksi ini? ({ringkas_teks(t)}) Bisa dipulihkan dari Tempat sampah selama 30 hari.")
+            a, b, _ = st.columns([1, 1, 4])
+            if a.button("Ya, hapus", key=f"ya_h_{t['id']}", type="primary"):
+                _hapus(t)
+            b.button("Batal", key=f"batal_h_{t['id']}", on_click=atur, args=("hapus_tx", None))
+
+
+def _hapus_struk(g: str):
+    """Pindahkan semua barang satu struk ke Tempat sampah sekaligus."""
+    semua = [x for x in D["transaksi"] if x.get("grup") == g]
+    if not semua:
+        return
+    D["transaksi"] = [x for x in D["transaksi"] if x.get("grup") != g]
+    for x in semua:
+        D["sampah"].append({"id": baru_id(), "transaksi": x, "dihapus": hari_ini().isoformat()})
+    for b in {x["barang"] for x in semua if x.get("barang")}:
+        perbarui_harga_barang(b)
+    catat("hapus", f"Struk {len(semua)} barang {rp(sum(int(x['jumlah']) for x in semua))}"
+                   + (f" di {teks_toko(semua[0])}" if teks_toko(semua[0]) else ""))
+    selesai_simpan(f"Struk dihapus: {len(semua)} barang (ada di Tempat sampah).", hapus_grup=None)
+
+
+def _kartu_struk(isi: list, edit_id, hapus_id):
+    """Satu kartu untuk satu struk (beberapa barang); barangnya bisa dibuka."""
+    isi = sorted(isi, key=lambda x: x.get("dibuat", ""))
+    t0 = isi[0]
+    total = sum(x["jumlah"] for x in isi)
+    hemat = 0
+    for x in isi:
+        d = info_diskon(x)
+        if d:
+            hemat += d[1] * (x.get("qty") or 1)
+    nama = teks_toko(t0) or "Struk belanja"
+    waktu = f" · {t0['waktu']}" if t0.get("waktu") else ""
+    with st.container(key=f"tx_g_{t0['grup']}"):
+        st.markdown(
+            f'<div class="rt"><div class="ic keluar">🧾</div><div class="isi"><div class="jd">{e(nama)}</div>'
+            f'<div class="mt">{fmt_iso(t0["tgl"])}{waktu} · {e(nama_dompet(t0["dompet"]))}<br>{len(isi)} barang'
+            f'{" · 🏷️ hemat " + rp(round(hemat)) if hemat else ""}</div></div>'
+            f'<div class="nom keluar">{rp(total)}</div></div>', unsafe_allow_html=True)
+        if t0.get("struk") and st.session_state.get("tr_struk"):
+            from keuangan.penyimpanan import ambil_foto
+            img = ambil_foto(t0["struk"])
+            if img:
+                st.image(img, width=260, caption="Struk")
+        buka = any(x["id"] in (edit_id, hapus_id) for x in isi)
+        with st.expander(f"Lihat {len(isi)} barang", expanded=buka):
+            for x in isi:
+                _tampil_tx(x, edit_id, hapus_id, foto=False)
+        if not hanya_lihat():
+            g = t0["grup"]
+            if st.session_state.get("hapus_grup") == g:
+                semua = [x for x in D["transaksi"] if x.get("grup") == g]
+                st.warning(f"Hapus seluruh struk ini ({len(semua)} barang, {rp(sum(int(x['jumlah']) for x in semua))})? "
+                           "Semua barangnya masuk Tempat sampah.")
+                a, b, _ = st.columns([2, 1, 2])
+                if a.button("Ya, hapus struk", key=f"ya_grup_{g}", type="primary"):
+                    _hapus_struk(g)
+                b.button("Batal", key=f"batal_grup_{g}", on_click=atur, args=("hapus_grup", None))
+            else:
+                st.button("🗑 Hapus seluruh struk", key=f"hapus_grup_{g}", on_click=atur, args=("hapus_grup", g))
+
+
+def _satuan_tampil(hasil: list) -> list:
+    """Kelompokkan transaksi satu struk (grup sama, minimal 2) jadi satu satuan tampil."""
+    per = {}
+    for t in hasil:
+        if t.get("grup"):
+            per.setdefault(t["grup"], []).append(t)
+    satuan, terlihat = [], set()
+    for t in hasil:
+        g = t.get("grup")
+        if g and len(per[g]) > 1:
+            if g not in terlihat:
+                terlihat.add(g)
+                satuan.append(per[g])
+        else:
+            satuan.append([t])
+    return satuan
+
+
 def halaman_transaksi():
     hasil = _filter()
     masuk = sum(t["jumlah"] for t in hasil if t["jenis"] == "masuk")
@@ -326,68 +575,21 @@ def halaman_transaksi():
     if not hasil:
         st.info("Tidak ada transaksi yang cocok." if D["transaksi"] else "Belum ada transaksi. Mulai dari menu Catat transaksi.")
         return
+    if not hanya_lihat():
+        from keuangan.massal import panel_massal
+        panel_massal(hasil)
     if any(x.get("struk") for x in hasil):
         st.toggle("Tampilkan foto struk", key="tr_struk")
     batas = st.session_state.get("tr_batas", HALAMAN_ISI)
     edit_id, hapus_id = st.session_state.get("edit_tx"), st.session_state.get("hapus_tx")
-    for t in hasil[:batas]:
-        if edit_id == t["id"]:
-            with st.container(key=f"kartu_g_edit_{t['id']}"):
-                st.markdown(f"**Ubah {JENIS[t['jenis']].lower()}**")
-                isi = form_transaksi(f"f_edit_{t['id']}", t["jenis"], awal=t, tombol="Simpan perubahan")
-                if st.button("Batal", key=f"batal_e_{t['id']}"):
-                    st.session_state.pop("edit_tx", None)
-                    st.rerun()
-                if isi:
-                    lama = ringkas_teks(t)
-                    barang_lama = t.get("barang")
-                    t.update({"tgl": isi["tgl"].isoformat(), "jumlah": isi["jumlah"], "dompet": isi["dompet"],
-                              "catatan": isi["catatan"].strip()})
-                    if isi["barang"]:
-                        t.update({"barang": isi["barang"], "qty": isi["qty"], "harga_satuan": isi["harga_satuan"]})
-                        if isi["harga_normal"]:
-                            t["harga_normal"] = isi["harga_normal"]
-                        else:
-                            t.pop("harga_normal", None)
-                    else:
-                        for kk in ("barang", "qty", "harga_satuan", "harga_normal"):
-                            t.pop(kk, None)
-                    if t["jenis"] == "transfer":
-                        t["ke"], t["biaya"] = isi["ke"], isi["biaya"]
-                    else:
-                        t["kategori"] = isi["kategori"]
-                        isi["struk"] = proses_foto(isi["struk_berkas"], isi["struk_hapus"], t.get("struk", ""), "struk")
-                        for kk in ("toko", "lokasi", "waktu", "struk"):
-                            if isi[kk]:
-                                t[kk] = isi[kk]
-                            else:
-                                t.pop(kk, None)
-                    for bid in {barang_lama, t.get("barang")} - {None, ""}:
-                        perbarui_harga_barang(bid)
-                    catat("ubah", f"{lama} → {ringkas_teks(t)}")
-                    selesai_simpan("Transaksi diubah.", edit_tx=None)
-            continue
-        with st.container(key=f"tx_{t['id']}"):
-            st.markdown(baris_transaksi(t), unsafe_allow_html=True)
-            if not hanya_lihat():
-                with st.container(key=f"aksi_{t['id']}"):
-                    c = st.columns(3)
-                    c[0].button("Ubah", key=f"kedit_{t['id']}", on_click=atur, args=("edit_tx", t["id"]))
-                    c[1].button("Salin", key=f"ksalin_{t['id']}", on_click=salin_transaksi, args=(t["id"],))
-                    c[2].button("Hapus", key=f"khapus_{t['id']}", on_click=atur, args=("hapus_tx", t["id"]))
-            if t.get("struk") and st.session_state.get("tr_struk"):
-                from keuangan.penyimpanan import ambil_foto
-                img = ambil_foto(t["struk"])
-                if img:
-                    st.image(img, width=260, caption="Struk")
-            if hapus_id == t["id"]:
-                st.warning(f"Hapus transaksi ini? ({ringkas_teks(t)}) Bisa dipulihkan dari Tempat sampah selama 30 hari.")
-                a, b, _ = st.columns([1, 1, 4])
-                if a.button("Ya, hapus", key=f"ya_h_{t['id']}", type="primary"):
-                    _hapus(t)
-                b.button("Batal", key=f"batal_h_{t['id']}", on_click=atur, args=("hapus_tx", None))
-    if len(hasil) > batas:
+    satuan = _satuan_tampil(hasil)
+    for u in satuan[:batas]:
+        if len(u) > 1:
+            _kartu_struk(u, edit_id, hapus_id)
+        else:
+            _tampil_tx(u[0], edit_id, hapus_id)
+    if len(satuan) > batas:
         st.write("")
-        if st.button(f"Tampilkan lebih banyak ({len(hasil) - batas} lagi)", key="tr_lagi"):
+        if st.button(f"Tampilkan lebih banyak ({len(satuan) - batas} lagi)", key="tr_lagi"):
             st.session_state.tr_batas = batas + HALAMAN_ISI
             st.rerun()

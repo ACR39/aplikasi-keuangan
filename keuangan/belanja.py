@@ -3,11 +3,12 @@ import pandas as pd
 import streamlit as st
 
 from keuangan.bantu import (
-    atur, barang_dari, catat, dompet_aktif, e, f_dompet, f_toko, proses_foto, selesai_simpan, toko_dari, versi,
+    atur, barang_dari, tampil_peringatan_harga, catat, dompet_aktif, e, f_dompet, f_toko, proses_foto, selesai_simpan, toko_dari, versi,
 )
 from keuangan.inti import D, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, hari_ini, rp, sekarang
+from keuangan.stok import panel_stok
 from keuangan.struk import (
-    baca_baris, editor_baris, editor_kartu, peta_barang, peta_kategori, ringkas_struk, simpan_struk, termurah, total_baris,
+    baca_baris, bandingkan_toko, editor_baris, editor_kartu, peta_barang, peta_kategori, ringkas_struk, simpan_struk, termurah, total_baris,
 )
 
 
@@ -143,6 +144,89 @@ def _panel_selesai(l: dict):
     b.button("Tutup", key=f"{base}_x", on_click=atur, args=(f"bl_selesai_{l['id']}", False))
 
 
+def _kartu_item(l: dict, kunci: str) -> list:
+    """Satu kartu per barang di daftar belanja (ramah HP). Kembalikan daftar item seperti l['item']."""
+    _, lab_b = peta_barang()
+    sk = f"{kunci}_ids"
+    if sk not in st.session_state:
+        ids = []
+        for n, it in enumerate(l["item"]):
+            ids.append(n)
+            st.session_state[f"{kunci}_{n}_brg"] = it.get("barang") if it.get("barang") in lab_b else ""
+            st.session_state[f"{kunci}_{n}_ket"] = it.get("nama", "")
+            st.session_state[f"{kunci}_{n}_qty"] = float(it.get("qty") or 1)
+            st.session_state[f"{kunci}_{n}_hrg"] = int(it.get("harga") or 0)
+            st.session_state[f"{kunci}_{n}_beli"] = bool(it.get("beli"))
+        st.session_state[sk] = ids
+        st.session_state[f"{kunci}_next"] = len(ids)
+    ids = st.session_state[sk]
+    opsi = [""] + list(lab_b)
+    hasil, hapus = [], None
+    if not ids:
+        st.caption("Belum ada barang. Tekan Tambah barang di bawah.")
+    for rid in ids:
+        k = f"{kunci}_{rid}"
+        if st.session_state.get(f"{k}_brg") not in opsi:
+            st.session_state[f"{k}_brg"] = ""
+        with st.container(border=True, key=f"kartu_g_bi_{k}"):
+            h1, h2 = st.columns([6, 1])
+            beli = h1.checkbox("Sudah dibeli", key=f"{k}_beli")
+            if h2.button("🗑", key=f"{k}_del", help="Hapus barang ini"):
+                hapus = rid
+            brg = st.selectbox("Barang", opsi, key=f"{k}_brg", format_func=lambda i: lab_b.get(i, "(pilih dari daftar barang)") if i else "(pilih dari daftar barang)")
+            ket = ""
+            if not brg:
+                ket = st.text_input("Nama barang (di luar daftar)", key=f"{k}_ket", max_chars=60)
+            c1, c2 = st.columns(2)
+            qty = c1.number_input("Banyaknya", min_value=0.0, step=1.0, format="%g", key=f"{k}_qty")
+            hrg = c2.number_input("Perkiraan harga (Rp)", min_value=0, step=500, key=f"{k}_hrg",
+                                  help="Kosong = harga terakhir barang.")
+            b = barang_dari(brg) if brg else None
+            efektif = int(hrg) or int((b or {}).get("harga") or 0)
+            if b:
+                tm = termurah(b["id"])
+                if tm:
+                    st.caption(f"Termurah: {tm[0]} · {rp(tm[1])}")
+                if efektif:
+                    tampil_peringatan_harga(b["id"], efektif)
+            if efektif and qty:
+                st.caption(f"Subtotal: {rp(round(qty * efektif))}")
+        if brg or ket.strip():
+            hasil.append({"barang": brg or "", "nama": "" if brg else ket.strip(),
+                          "qty": float(qty) if qty > 0 else 1.0, "harga": int(hrg), "beli": bool(beli)})
+    if hapus is not None:
+        st.session_state[sk] = [i for i in ids if i != hapus]
+        st.rerun()
+    if st.button("➕ Tambah barang", key=f"{kunci}_tambah"):
+        n = st.session_state[f"{kunci}_next"]
+        st.session_state[f"{kunci}_{n}_qty"] = 1.0
+        st.session_state[sk] = ids + [n]
+        st.session_state[f"{kunci}_next"] = n + 1
+        st.rerun()
+    return hasil
+
+
+def _banding_toko(items: list, biasa: int, kunci: str):
+    """Toko mana yang paling hemat untuk seluruh daftar ini."""
+    if len(items) < 2:
+        return
+    hasil = bandingkan_toko(items)
+    with st.expander("🏪 Toko mana yang paling hemat?"):
+        if not hasil:
+            st.caption("Belum cukup riwayat harga. Perbandingan muncul setelah barang di daftar pernah dicatat dengan toko, "
+                       "minimal separuh barang di toko yang sama.")
+            return
+        st.caption("Perkiraan total bila semua dibeli di satu toko, memakai harga terakhir di toko itu. Barang yang belum pernah "
+                   f"dibeli di sana dihitung dengan perkiraan harga di daftar. Perkiraan daftar sekarang: {rp(biasa)}.")
+        for i, h in enumerate(hasil[:4], start=1):
+            with st.container(border=True, key=f"kartu_g_bt_{kunci}_{h['toko']}"):
+                selisih = biasa - h["total"]
+                ket = f"hemat {rp(selisih)}" if selisih > 0 else f"lebih mahal {rp(-selisih)}" if selisih < 0 else "sama dengan perkiraan"
+                st.markdown(f"**{i}. {e(h['nama'])}** · {rp(h['total'])} · {ket}")
+                st.caption(f"Harga diketahui untuk {h['ada']} dari {h['n']} barang.")
+                st.button("Pakai toko ini", key=f"{kunci}_pt_{h['toko']}", on_click=atur, args=(f"{kunci}_toko", h["toko"]))
+
+
 def _satu_daftar(l: dict):
     kunci = f"bl_{l['id']}_{st.session_state.get('bl_ver_' + l['id'], 0)}"
     c1, c2 = st.columns(2)
@@ -161,25 +245,13 @@ def _satu_daftar(l: dict):
                 selesai_simpan(f"{len(baru)} barang langganan ditambah.", **{f"bl_ver_{l['id']}": st.session_state.get("bl_ver_" + l["id"], 0) + 1})
             else:
                 st.info("Tidak ada barang langganan baru. Tandai barang sebagai langganan di Pengaturan > Barang dan produk.")
-    st.caption("Klik baris kosong untuk menambah barang. Pilih dari daftar barang, atau tulis di Keterangan untuk barang bebas. Centang Beli saat sudah dimasukkan ke keranjang.")
-    df = st.data_editor(
-        _tabel_item(l), key=f"{kunci}_tbl", num_rows="dynamic", hide_index=True, width="stretch",
-        disabled=["Termurah"], column_order=["Beli", "Barang", "Keterangan", "Banyaknya", "Perkiraan harga", "Termurah"],
-        column_config={
-            "Beli": st.column_config.CheckboxColumn("Beli", default=False),
-            "Barang": st.column_config.SelectboxColumn("Barang", options=list(peta_barang()[0])),
-            "Keterangan": st.column_config.TextColumn("Keterangan", max_chars=60),
-            "Banyaknya": st.column_config.NumberColumn("Banyaknya", min_value=0.01, step=1.0, default=1.0, format="%g"),
-            "Perkiraan harga": st.column_config.NumberColumn("Perkiraan harga", min_value=0, step=100, format="%d",
-                                                             help="Kosong = harga terakhir barang."),
-            "Termurah": st.column_config.TextColumn("Termurah (dari riwayat)"),
-        })
-    item_baru = _item_dari_tabel(df)
+    item_baru = _kartu_item(l, kunci)
     biasa, murah, n = _taksir(item_baru)
     dibeli = sum(1 for it in item_baru if it["beli"])
     st.markdown(f"**Perkiraan total: {rp(biasa)}** · {len(item_baru)} barang · {dibeli} sudah dicentang")
     if n and murah < biasa:
         st.caption(f"Kalau tiap barang dibeli di toko termurahnya, perkiraan {rp(murah)} (hemat {rp(biasa - murah)}).")
+    _banding_toko(item_baru, biasa, kunci)
     a, b, c, _ = st.columns([1, 1.4, 1, 2])
     if a.button("Simpan", type="primary", key=f"{kunci}_simpan"):
         l["item"], l["toko"] = item_baru, toko
@@ -218,6 +290,7 @@ def halaman_belanja():
                          hide_index=True, width="stretch")
         else:
             with st.container(key=f"kartu_g_bl_{l['id']}"):
+                panel_stok(l)
                 _satu_daftar(l)
     else:
         st.info("Belum ada daftar belanja. Buat satu di bawah.")

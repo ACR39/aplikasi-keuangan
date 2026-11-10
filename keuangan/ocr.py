@@ -17,7 +17,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-from keuangan.inti import D
+from keuangan.inti import D, hanya_lihat
 
 MODEL_BAWAAN = "claude-sonnet-5-5"
 URL_API = "https://api.anthropic.com/v1/messages"
@@ -271,9 +271,22 @@ def _mirip(a: str, b: str) -> float:
     return difflib.SequenceMatcher(None, a, b).ratio()
 
 
+def _norm(s) -> str:
+    """Huruf kecil, tanda baca dan spasi ganda dibuang: kunci untuk mengingat koreksi."""
+    return re.sub(r"[^a-z0-9]+", " ", str(s or "").lower()).strip()
+
+
+def _koreksi(bagian: str) -> dict:
+    return (D.get("pengaturan", {}).get("koreksi_ocr") or {}).get(bagian, {})
+
+
 def cocokkan_barang(nama: str):
-    """Barang dari daftar yang paling mirip (skor >= 0.72) atau None. Hanya barang kategori pengeluaran."""
-    from keuangan.bantu import kat_dari
+    """Barang dari daftar yang paling mirip (skor >= 0.72) atau None. Hanya barang kategori pengeluaran.
+    Koreksi yang pernah Anda buat untuk tulisan yang sama dipakai lebih dulu."""
+    from keuangan.bantu import barang_dari, kat_dari
+    ingat = barang_dari(_koreksi("barang").get(_norm(nama)))
+    if ingat:
+        return ingat
     terbaik, skor = None, 0.0
     for b in D["barang"]:
         k = kat_dari(b["kategori"])
@@ -286,6 +299,10 @@ def cocokkan_barang(nama: str):
 
 
 def cocokkan_toko(nama: str):
+    from keuangan.bantu import toko_dari
+    ingat = toko_dari(_koreksi("toko").get(_norm(nama)))
+    if ingat:
+        return ingat
     terbaik, skor = None, 0.0
     for x in D["toko"]:
         s = _mirip(nama or "", x["nama"])
@@ -305,9 +322,141 @@ def ke_tabel(hasil: dict) -> pd.DataFrame:
         b = cocokkan_barang(it["nama"])
         kat = it.get("kategori") if it.get("kategori") in id_k else bawaan
         baris.append({"Barang": lab_b.get(b["id"]) if b else None, "Kategori": None if b else kat,
-                      "Keterangan": "" if b else it["nama"], "Banyaknya": float(it["qty"]),
+                      "Keterangan": "" if b else _koreksi("nama").get(_norm(it["nama"]), it["nama"]), "Asal": it["nama"],
+                      "Banyaknya": float(it["qty"]),
                       "Harga satuan": int(it["harga_satuan"]), "Harga normal": int(it["harga_normal"]) if it.get("harga_normal") else None})
-    df = pd.DataFrame(baris, columns=["Barang", "Kategori", "Keterangan", "Banyaknya", "Harga satuan", "Harga normal"])
+    df = pd.DataFrame(baris, columns=["Barang", "Kategori", "Keterangan", "Asal", "Banyaknya", "Harga satuan", "Harga normal"])
     df["Harga satuan"] = df["Harga satuan"].astype("Int64")
     df["Harga normal"] = df["Harga normal"].astype("Int64")
     return df
+
+
+# ---------------------------------------------------------------- belajar dari koreksi
+MAKS_KOREKSI = 300
+
+
+def pelajari(hasil: dict, baris: list, toko_id: str) -> int:
+    """Bandingkan hasil baca dengan yang akhirnya Anda simpan; ingat koreksinya untuk struk berikutnya.
+    Pemanggil yang commit. Kembalikan jumlah koreksi baru."""
+    peng = D.setdefault("pengaturan", {})
+    kor = peng.setdefault("koreksi_ocr", {})
+    for k in ("toko", "barang", "nama"):
+        kor.setdefault(k, {})
+    baru = 0
+
+    def simpan(bagian: str, kunci: str, nilai: str):
+        nonlocal baru
+        d = kor[bagian]
+        if d.get(kunci) != nilai:
+            d.pop(kunci, None)
+            d[kunci] = nilai
+            baru += 1
+            while len(d) > MAKS_KOREKSI:
+                d.pop(next(iter(d)))
+
+    for x in baris:
+        asal = (x.get("asal") or "").strip()
+        n = _norm(asal)
+        if not n:
+            continue
+        if x.get("barang"):
+            auto = cocokkan_barang(asal)
+            if not auto or auto["id"] != x["barang"]:
+                simpan("barang", n, x["barang"])
+            kor["nama"].pop(n, None)
+        else:
+            if kor["barang"].pop(n, None):
+                baru += 1
+            ket = (x.get("ket") or "").strip()
+            if ket and ket != asal:
+                simpan("nama", n, ket)
+    nama_toko = (hasil or {}).get("toko")
+    if nama_toko and toko_id:
+        auto = cocokkan_toko(nama_toko)
+        if not auto or auto["id"] != toko_id:
+            simpan("toko", _norm(nama_toko), toko_id)
+    return baru
+
+
+def _panel_koreksi():
+    from keuangan.bantu import barang_dari, catat, selesai_simpan, toko_dari
+    kor = D.get("pengaturan", {}).get("koreksi_ocr") or {}
+    jml = sum(len(kor.get(k, {})) for k in ("toko", "barang", "nama"))
+    with st.expander(f"🧠 Koreksi yang sudah dipelajari ({jml})"):
+        if not jml:
+            st.caption("Belum ada. Saat Anda mengoreksi hasil baca (mengganti barang, nama, atau toko) lalu menyimpan struk, "
+                       "koreksinya diingat dan dipakai di struk berikutnya.")
+            return
+        for k, f in (("toko", lambda v: (toko_dari(v) or {}).get("nama")), ("barang", lambda v: (barang_dari(v) or {}).get("nama")),
+                     ("nama", lambda v: v)):
+            for asal, nilai in kor.get(k, {}).items():
+                tampil = f(nilai)
+                if tampil:
+                    st.caption(f"{k.capitalize()}: “{asal}” → {tampil}")
+        if not hanya_lihat() and st.button("Lupakan semua koreksi", key="kor_hapus"):
+            D["pengaturan"]["koreksi_ocr"] = {"toko": {}, "barang": {}, "nama": {}}
+            catat("data", "Hapus koreksi baca struk")
+            selesai_simpan("Koreksi dilupakan.")
+
+
+# ---------------------------------------------------------------- tes koneksi
+def _struk_contoh() -> bytes:
+    """Gambar struk kecil buatan sendiri untuk menguji mesin (tanpa data pribadi)."""
+    import io
+    from PIL import Image, ImageDraw, ImageFont
+    img = Image.new("RGB", (640, 520), "white")
+    d = ImageDraw.Draw(img)
+    f = ImageFont.load_default(size=30)
+    baris = ["TOKO UJI MAKMUR", "09/11/2026 14:32", "--------------------------", "Indomie Goreng 5 x 3.000   15.000",
+             "Aqua 600ml 2 x 3.500        7.000", "--------------------------", "TOTAL                      22.000"]
+    for i, b in enumerate(baris):
+        d.text((24, 24 + i * 62), b, fill="black", font=f)
+    bio = io.BytesIO()
+    img.save(bio, "JPEG", quality=90)
+    return bio.getvalue()
+
+
+def tes_mesin(nama: str):
+    """Uji satu mesin dengan struk contoh. Kembalikan (berhasil, keterangan)."""
+    import time
+    mulai = time.time()
+    gambar = _struk_contoh()
+    try:
+        if nama == "claude":
+            h = _claude(gambar, ["Makanan"])
+        elif nama == "tesseract":
+            h = _tesseract(gambar)
+        else:
+            h = _openai(gambar, ["Makanan"], nama)
+    except Exception as ex:
+        return False, str(ex)[:300]
+    dt = time.time() - mulai
+    n = len(h["item"])
+    if not n:
+        return False, f"Terhubung ({dt:.1f} dtk), tapi tidak ada barang yang terbaca dari struk contoh."
+    return True, f"Terhubung ({dt:.1f} dtk). Terbaca {n} barang, total {h.get('total') or '?'} (seharusnya 2 barang, total 22000)."
+
+
+def halaman_mesin():
+    """Pengaturan > Mesin baca struk: lihat mesin yang aktif dan tes tiap satunya."""
+    mesin = daftar_mesin()
+    if not mesin:
+        st.info("Belum ada mesin baca struk yang aktif. Isi kunci di secrets atau pasang Tesseract. Cara lengkapnya ada di README bagian Baca struk otomatis.")
+        _panel_koreksi()
+        return
+    st.markdown("Mesin dicoba berurutan sesuai daftar ini; bila satu gagal, pindah ke berikutnya.")
+    for i, m in enumerate(mesin, start=1):
+        info = ""
+        if m == "claude":
+            info = _cfg_claude()["model"]
+        elif m != "tesseract":
+            c = _cfg_oa(m)
+            info = f'{c["model"]} · {c["base"]}'
+        with st.container(border=True, key=f"kartu_g_mesin_{m}"):
+            st.markdown(f"**{i}. {m}**" + (f"  \n`{info}`" if info else ""))
+            if st.button("Tes koneksi", key=f"tes_{m}"):
+                with st.spinner("Menguji…"):
+                    ok, ket = tes_mesin(m)
+                (st.success if ok else st.error)(("✅ " if ok else "❌ ") + ket)
+    st.caption("Tes memakai gambar struk contoh buatan aplikasi, tanpa data Anda. Mesin berbayar dikenai biaya sangat kecil per tes.")
+    _panel_koreksi()

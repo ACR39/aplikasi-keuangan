@@ -16,3 +16,5 @@ def halaman_tampilan():
                 D["pengaturan"]["beranda"] = [k for k, v in tampil.items() if not v]
                 catat("data", "Ubah bagian Beranda yang ditampilkan")
                 selesai_simpan("Tampilan disimpan.")
+    from keuangan.pin import panel_pin
+    panel_pin()

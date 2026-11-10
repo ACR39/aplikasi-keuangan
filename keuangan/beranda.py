@@ -5,17 +5,20 @@ from datetime import date, timedelta
 import pandas as pd
 import streamlit as st
 
-from keuangan.anggaran import status_anggaran
+from keuangan.anggaran import hari_melewati, ikon_ag, jatah_hari_ini, label_ag, status_anggaran
 from keuangan.bantu import (
     atur, sisa_hari_teks, baris_transaksi, batang, ikon_kat, kunci_urut, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
     pindah_halaman, saldo_dompet, total_saldo, ym_ini, akar, barang_dari, toko_dari,
 )
 from keuangan.inti import D, TGL_MAX, TGL_MIN, sisa_hari, fmt_iso, hanya_lihat, hari_ini, nama_bulan, rp
+from keuangan.mingguan import kartu_mingguan
+from keuangan.prakiraan import kartu_prakiraan, teks_ringkas
+from keuangan.stok import baris_perhatian
 from keuangan.tabungan import terkumpul
 from keuangan.tagihan import status_tagihan, tagihan_mendekat
 from keuangan.utang import jatuh_tempo_dekat, sisa
 
-SEKSI_BERANDA = [("ringkasan", "Ringkasan angka"), ("perhatian", "Perlu perhatian"), ("dompet", "Saldo per dompet"),
+SEKSI_BERANDA = [("ringkasan", "Ringkasan angka"), ("harian", "Jatah pengeluaran hari ini"), ("perhatian", "Perlu perhatian"), ("mingguan", "Ringkasan mingguan"), ("prakiraan", "Prakiraan akhir bulan"), ("dompet", "Saldo per dompet"),
                  ("anggaran", "Anggaran periode ini"), ("tabungan", "Target tabungan"), ("g_kategori", "Grafik pengeluaran per kategori"),
                  ("g_tren", "Grafik pemasukan dan pengeluaran"), ("teratas", "Toko dan barang teratas"), ("terakhir", "Transaksi terakhir")]
 
@@ -29,18 +32,26 @@ def _perhatian() -> list:
     for t in tagihan_mendekat(7):
         teks, _ = status_tagihan(t)
         baris.append(f'⏰ Tagihan <b>{e(t["nama"])}</b> {rp(t["jumlah"])}: {teks.lower()} ({fmt_iso(t["berikut"])})')
+    j = jatah_hari_ini()
+    if j and j[2] >= 100:
+        baris.append(f'🔴 Pengeluaran hari ini {rp(j[0])} sudah melewati batas harian {rp(j[1])}')
+    elif j and j[2] >= 80:
+        baris.append(f'🟡 Pengeluaran hari ini {rp(j[0])}, sudah {j[2]:.0f}% dari batas harian {rp(j[1])}')
     for u in jatuh_tempo_dekat(7):
         arah = "bayar utang ke" if u["arah"] == "utang" else "tagih piutang dari"
         baris.append(f'🤝 Waktunya {arah} <b>{e(u["orang"])}</b>: sisa {rp(sisa(u))} (tenggat {fmt_iso(u["tenggat"])})')
     for a, pakai, persen in status_anggaran(ym_ini()):
         if persen >= 100:
-            baris.append(f'🔴 Anggaran <b>{e(nama_kat(a["kategori"]))}</b> terlewati: {rp(pakai)} dari {rp(a["batas"])}')
+            baris.append(f'🔴 Anggaran <b>{e(label_ag(a))}</b> terlewati: {rp(pakai)} dari {rp(a["batas"])}')
         elif persen >= 80:
-            baris.append(f'🟡 Anggaran <b>{e(nama_kat(a["kategori"]))}</b> sudah {persen:.0f}% ({rp(pakai)} dari {rp(a["batas"])})')
+            baris.append(f'🟡 Anggaran <b>{e(label_ag(a))}</b> sudah {persen:.0f}% ({rp(pakai)} dari {rp(a["batas"])})')
     for b_ in D["barang"]:
         n_ = sisa_hari(b_.get("kedaluwarsa"))
         if n_ is not None and n_ <= 14:
             baris.append(f'⏳ <b>{e(b_["nama"])}</b> {e(sisa_hari_teks(b_["kedaluwarsa"]))}')
+    baris += baris_perhatian()
+    if teks_ringkas():
+        baris.append(teks_ringkas())
     for d in dompet_aktif():
         if saldo_dompet(d["id"]) < 0 and d.get("jenis") != "Kartu kredit":
             baris.append(f'⚠️ Saldo dompet <b>{e(d["nama"])}</b> negatif: {rp(saldo_dompet(d["id"]))}. Cek transaksi atau saldo awalnya.')
@@ -171,6 +182,16 @@ def halaman_beranda():
                      kartu_stat("Selisih", rp(masuk - keluar), "ditabung" if masuk >= keluar else "defisit",
                                 "g" if masuk >= keluar else "m"))
         st.caption(f"{label} · {hari} hari · {len(ts)} transaksi · rata-rata pengeluaran {rp(round(keluar / hari_lalu))} per hari")
+    j = jatah_hari_ini()
+    if j and "harian" not in sembunyi:
+        with st.container(key="kartu_g_br_harian"):
+            terpakai, batas, persen = j
+            st.markdown(f'<div class="ag"><b>📅 Jatah hari ini</b><span>{rp(terpakai)} / {rp(batas)}</span></div>'
+                        f'{batang(terpakai, batas)}', unsafe_allow_html=True)
+            st.caption(f"Sisa {rp(batas - terpakai)} hari ini." if terpakai <= batas else f"Melewati jatah {rp(terpakai - batas)} hari ini.")
+            lewat = hari_melewati(hari_ini().strftime("%Y-%m"))
+            if lewat:
+                st.caption(f"Bulan ini {lewat} hari melewati batas harian.")
     if "perhatian" not in sembunyi:
         with st.container(key="kartu_perhatian"):
             st.markdown("**Perlu perhatian**")
@@ -179,6 +200,10 @@ def halaman_beranda():
                 st.caption("Tidak ada yang mendesak. Tagihan, utang, dan anggaran aman.")
             for h in hal:
                 st.markdown(f'<div class="perhatian">{h}</div>', unsafe_allow_html=True)
+    if "mingguan" not in sembunyi:
+        kartu_mingguan()
+    if "prakiraan" not in sembunyi:
+        kartu_prakiraan()
     if "dompet" not in sembunyi:
         st.markdown("**Saldo per dompet**")
         if not dompet_aktif():
@@ -196,9 +221,9 @@ def halaman_beranda():
                 dt = status_anggaran(ym)[:6]
                 if not dt:
                     st.caption("Belum ada anggaran.")
-                for a, pakai, persen in dt:
-                    st.markdown(f'<div class="ag"><b>{ikon_kat(a["kategori"])}{e(nama_kat(a["kategori"]))}</b><span>{rp(pakai)} / {rp(a["batas"])}</span></div>'
-                                f'{batang(pakai, a["batas"])}', unsafe_allow_html=True)
+                for ag, pakai, persen in dt:
+                    st.markdown(f'<div class="ag"><b>{ikon_ag(ag)}{e(label_ag(ag))}</b><span>{rp(pakai)} / {rp(ag["batas"])}</span></div>'
+                                f'{batang(pakai, ag["batas"])}', unsafe_allow_html=True)
                 if not hanya_lihat() or dt:
                     st.button("Kelola anggaran", key="lompat_ag", on_click=pindah_halaman, args=("Anggaran",))
     with c2:

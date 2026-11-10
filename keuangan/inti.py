@@ -494,6 +494,7 @@ def data_kosong() -> dict:
         "kategori": kategori_awal(),  # [{"id","nama","jenis"(masuk|keluar),"induk"(id kategori utama, kosong = utama),"ikon","warna"}]
         "transaksi": [],  # [{"id","jenis"(masuk|keluar|transfer),"tgl","jumlah","dompet","ke","biaya","kategori","catatan",
                           #   "barang","qty","harga_satuan","toko","lokasi","waktu"(HH:MM),"tagihan","utang","dibuat","oleh"}]
+        "templat": [],    # templat transaksi: [{"id","nama","jenis","dompet","kategori","jumlah","catatan","barang","qty","harga_satuan","toko","lokasi"}]
         "belanja": [],    # daftar belanja: [{"id","nama","toko","dibuat","selesai","item":[],"riwayat":[]}]
         "toko": [],       # [{"id","nama","jenis","lokasi"}]  tempat beli / toko
         "barang": [],     # [{"id","nama","kategori"(id kategori atau sub kategori),"harga"(harga satuan terakhir),"satuan"}]

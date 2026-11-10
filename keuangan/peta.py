@@ -96,3 +96,50 @@ def peta_semua(daftar: list):
     if len(ada) > 1:
         m.fit_bounds([list(t) for _, t in ada], padding=(30, 30))
     st_folium(m, height=320, width=700, key="peta_semua_toko", returned_objects=[])
+
+
+# ---------------------------------------------------------------- toko terdekat
+def jarak_km(a, b) -> float:
+    """Jarak garis lurus (km) antara dua titik (lat, lon), rumus haversine."""
+    from math import asin, cos, radians, sin, sqrt
+    la1, lo1, la2, lo2 = map(radians, (a[0], a[1], b[0], b[1]))
+    h = sin((la2 - la1) / 2) ** 2 + cos(la1) * cos(la2) * sin((lo2 - lo1) / 2) ** 2
+    return 2 * 6371.0 * asin(sqrt(h))
+
+
+def teks_jarak(km: float) -> str:
+    return f"{round(km * 1000 / 10) * 10:.0f} m" if km < 1 else f"{km:.1f} km".replace(".", ",")
+
+
+def terdekat(pos, daftar: list, n: int = 5) -> list:
+    """[(toko, km)] toko yang punya titik, dari yang paling dekat ke posisi (lat, lon)."""
+    hasil = [(x, jarak_km(pos, t)) for x in daftar if (t := titik_dari(x))]
+    return sorted(hasil, key=lambda z: z[1])[:n]
+
+
+def proses_gps(sk: str):
+    """Panggil SEBELUM widget yang nilainya mau diisi dari lokasi. Bila tombol lokasi (tombol_gps) sudah ditekan,
+    minta lokasi ke browser dan kembalikan (lat, lon) begitu tersedia, kalau belum None."""
+    if not st.session_state.get(f"{sk}_minta"):
+        return None
+    try:
+        from streamlit_js_eval import get_geolocation
+    except ImportError:
+        st.session_state[f"{sk}_minta"] = False
+        st.caption(BUTUH)
+        return None
+    loc = get_geolocation(component_key=f"{sk}_geo")
+    if loc and loc.get("coords"):
+        st.session_state[f"{sk}_minta"] = False
+        return float(loc["coords"]["latitude"]), float(loc["coords"]["longitude"])
+    if loc and loc.get("error"):
+        st.session_state[f"{sk}_minta"] = False
+        st.warning("Lokasi tidak bisa dibaca. Izinkan akses lokasi di browser lalu coba lagi.")
+    else:
+        st.caption("Menunggu izin lokasi dari browser…")
+    return None
+
+
+def tombol_gps(sk: str, label: str = "📍 Toko terdekat dari saya"):
+    st.button(label, key=f"{sk}_btn", on_click=lambda: st.session_state.update({f"{sk}_minta": True}),
+              help="Browser akan meminta izin lokasi. Lokasi tidak disimpan.")

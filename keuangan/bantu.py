@@ -22,7 +22,7 @@ def atur(kunci: str, nilai):
 def pindah_halaman(h: str):
     """Ganti menu sekaligus tutup form/konfirmasi yang masih terbuka."""
     st.session_state.halaman = h
-    for k in [k for k in st.session_state if str(k).startswith(("tb_", "edit_", "hapus_", "bayar_f", "tr_"))]:
+    for k in [k for k in st.session_state if str(k).startswith(("tb_", "edit_", "hapus_", "bayar_f", "tr_", "brg_"))]:
         st.session_state.pop(k, None)
 
 
@@ -200,6 +200,40 @@ def harga_normal_barang(id_) -> int:
         if t.get("harga_satuan"):
             return int(t.get("harga_normal") or t["harga_satuan"])
     return 0
+
+
+def peringatan_harga(id_, harga: int):
+    """Bandingkan harga yang sedang dicatat dengan riwayat barang itu.
+    Kembalikan (tingkat, teks) dengan tingkat 'mahal' | 'murah' | 'info', atau None bila tidak ada yang perlu disampaikan."""
+    harga = int(harga or 0)
+    riwayat = [int(t["harga_satuan"]) for t in transaksi_barang(id_) if t.get("harga_satuan")][:5]
+    if not harga or not riwayat:
+        return None
+    urut = sorted(riwayat)
+    biasa = urut[len(urut) // 2]  # median pembelian terakhir
+    pesan = []
+    tingkat = "info"
+    if harga >= biasa * 1.10:
+        tingkat = "mahal"
+        pesan.append(f"Lebih mahal {round((harga - biasa) / biasa * 100)}% dari biasanya ({rp(biasa)}).")
+    elif harga <= biasa * 0.90:
+        tingkat = "murah"
+        pesan.append(f"Lebih murah {round((biasa - harga) / biasa * 100)}% dari biasanya ({rp(biasa)}).")
+    from keuangan.struk import termurah
+    tm = termurah(id_)
+    if tm and harga >= tm[1] * 1.05 and tm[1] < biasa:
+        pesan.append(f"Pernah {rp(tm[1])} di {tm[0]}.")
+        if tingkat == "info":
+            tingkat = "mahal"
+    return (tingkat, " ".join(pesan)) if pesan else None
+
+
+def tampil_peringatan_harga(id_, harga: int):
+    """Tampilkan peringatan harga (kalau ada) sebagai kotak kecil."""
+    h = peringatan_harga(id_, harga)
+    if not h:
+        return
+    (st.warning if h[0] == "mahal" else st.success)(("⚠️ " if h[0] == "mahal" else "✅ ") + h[1])
 
 
 def info_diskon(t: dict):
