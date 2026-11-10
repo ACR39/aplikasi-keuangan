@@ -145,8 +145,14 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             opsi_sat = [""] + sorted({*SATUAN_UMUM, *(x.get("satuan", "") for x in D["barang"] if x.get("satuan")), b.get("satuan", "")} - {""})
             satuan = c6.selectbox("Satuan", opsi_sat, index=opsi_sat.index(b.get("satuan", "")), format_func=lambda x: x or "(tanpa satuan)",
                                   help="Berlaku untuk barang ini seterusnya. Tambah satuan lain di Pengaturan > Barang dan produk.")
-        else:
-            jumlah = c2.number_input("Jumlah (Rp)", min_value=0, step=1000, value=int(awal.get("jumlah", 0) or 0))
+        elif jenis != "transfer":
+            # tanpa barang: tetap bisa isi banyaknya; total = banyaknya x harga satuan
+            q0 = float(awal.get("qty") or 1)
+            qty = c2.number_input("Banyaknya", min_value=0.0, step=1.0, format="%g", value=q0)
+            h0 = int(awal.get("harga_satuan") or round(int(awal.get("jumlah", 0) or 0) / q0))
+            hs = st.number_input("Harga satuan (Rp)", min_value=0, step=1000, value=h0)
+            jumlah = int(round(qty * hs))
+            st.caption(f"Total: {rp(jumlah)}")
             c3, c4 = st.columns(2)
             dari = c3.selectbox("Dari dompet" if jenis in ("keluar", "transfer") else "Ke dompet", dompet,
                                 index=dompet.index(awal["dompet"]) if awal.get("dompet") in dompet else 0, format_func=f_dompet())
@@ -183,10 +189,14 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
     if jenis == "transfer" and dari == ke:
         st.error("Dompet asal dan tujuan tidak boleh sama.")
         return None
+    if not b and jenis != "transfer":
+        extra = {"qty": float(qty) if qty != 1 else 0, "harga_satuan": int(hs) if qty != 1 else 0}
+    else:
+        extra = {}
     if b and satuan != b.get("satuan", ""):
         b["satuan"] = satuan
     return {"tgl": tgl, "jumlah": int(jumlah), "dompet": dari, "kategori": kat, "ke": ke, "biaya": int(biaya),
-            "catatan": catatan, "barang": brg, "qty": float(qty) if b else 0, "harga_satuan": int(hs) if b else 0, "harga_normal": int(hn) if b and hn > hs else 0,
+            "catatan": catatan, "barang": brg, "qty": float(qty) if b else extra.get("qty", 0), "harga_satuan": int(hs) if b else extra.get("harga_satuan", 0), "harga_normal": int(hn) if b and hn > hs else 0,
             "toko": toko, "lokasi": lokasi.strip(), "waktu": waktu,
             "struk_berkas": struk_berkas, "struk_hapus": struk_hapus}
 
@@ -474,6 +484,8 @@ def _tampil_tx(t: dict, edit_id, hapus_id, foto: bool = True):
                 else:
                     for kk in ("barang", "qty", "harga_satuan", "harga_normal"):
                         t.pop(kk, None)
+                    if isi["qty"]:
+                        t["qty"], t["harga_satuan"] = isi["qty"], isi["harga_satuan"]
                 if t["jenis"] == "transfer":
                     t["ke"], t["biaya"] = isi["ke"], isi["biaya"]
                 else:

@@ -257,7 +257,8 @@ def teks_barang(t: dict) -> str:
     """'Indomie × 5 bungkus' atau '' bila transaksi tanpa barang."""
     b = barang_dari(t.get("barang"))
     if not b:
-        return ""
+        q = t.get("qty") or 0
+        return f"{int(q) if float(q).is_integer() else q}×" if q and float(q) != 1 else ""
     q = t.get("qty") or 1
     q = int(q) if float(q).is_integer() else q
     return f'{b["nama"]} × {q}' + (f' {b["satuan"]}' if b.get("satuan") else "")
