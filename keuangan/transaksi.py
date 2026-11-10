@@ -18,6 +18,7 @@ from keuangan.inti import (
 )
 
 HALAMAN_ISI = 30
+SATUAN_UMUM = ["porsi", "pcs", "bungkus", "botol", "buah", "kg", "gram", "liter", "kotak", "lembar", "paket"]
 
 
 def _pilihan_dompet(termasuk: str = "") -> list:
@@ -59,6 +60,16 @@ def _cari_barcode(kunci: str, jenis: str):
         st.session_state[f"{kunci}_bcpesan"] = f"Terpilih: {b['nama']}"
 
 
+def _barang_dipilih(kunci: str):
+    """Saat barang dipilih, isi kategori dan sub kategori sesuai barang itu."""
+    b = barang_dari(st.session_state.get(f"{kunci}_brg"))
+    if not b or not kat_dari(b["kategori"]):
+        return
+    utama = akar(b["kategori"])
+    st.session_state[f"{kunci}_kat"] = utama
+    st.session_state[f"{kunci}_sub"] = b["kategori"] if b["kategori"] != utama else ""
+
+
 def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str = "Simpan", bersih: bool = False):
     """Form satu transaksi. Kembalikan dict isian kalau tombol ditekan dan isian sah, kalau tidak None.
 
@@ -81,15 +92,18 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             if st.session_state.get(f"{kunci}_bcpesan"):
                 st.caption(st.session_state[f"{kunci}_bcpesan"])
         kat = pilih_kategori(kunci, jenis, kat_pertama(jenis, awal.get("kategori", "")))
-        opsi = [""] + [b["id"] for b in barang_dalam(kat)]
+        dalam = [b["id"] for b in barang_dalam(kat)]
+        lain = [b["id"] for b in sorted(D["barang"], key=lambda b: b["nama"].lower())
+                if b["id"] not in dalam and (kat_dari(b["kategori"]) or {}).get("jenis") == jenis]
+        opsi = [""] + dalam + lain  # barang kategori terpilih dulu; memilih barang kategori lain memindahkan kategorinya
         if awal.get("barang") and awal["barang"] not in opsi and kat == awal.get("kategori") and barang_dari(awal["barang"]):
             opsi.append(awal["barang"])
         if st.session_state.get(f"{kunci}_brg") not in opsi:
             st.session_state.pop(f"{kunci}_brg", None)
         c1, c2 = st.columns(2)
         brg = c1.selectbox("Barang (opsional)", opsi, index=opsi.index(awal["barang"]) if awal.get("barang") in opsi else 0,
-                           format_func=f_barang(kat), key=f"{kunci}_brg",
-                           help="Pilih barang agar harga dan jumlahnya tercatat. Tambah barang di Pengaturan > Barang dan produk.")
+                           format_func=f_barang(kat), key=f"{kunci}_brg", on_change=_barang_dipilih, args=(kunci,),
+                           help="Pilih barang agar harga dan jumlahnya tercatat; kategorinya ikut terisi otomatis. Tambah barang di Pengaturan > Barang dan produk.")
         ada_titik = any(titik_dari(x) for x in D["toko"])
         if ada_titik:
             _isi_toko_terdekat(f"{kunci}_gps", f"{kunci}_toko")
@@ -113,9 +127,9 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
         tgl = c1.date_input("Tanggal", value=iso_ke_date(awal.get("tgl")) or hari_ini(), min_value=TGL_MIN, max_value=TGL_MAX,
                             format="DD/MM/YYYY")
         qty = hs = hn = 0
+        satuan = ""
         if b:
-            satuan = f" ({b['satuan']})" if b.get("satuan") else ""
-            qty = c2.number_input(f"Banyaknya{satuan}", min_value=0.0, step=1.0, format="%g",
+            qty = c2.number_input("Banyaknya", min_value=0.0, step=1.0, format="%g",
                                   value=float(awal.get("qty") or 1) if awal.get("barang") == brg else 1.0)
             c3, c4 = st.columns(2)
             hs = c3.number_input("Harga satuan (Rp)", min_value=0, step=500,
@@ -128,6 +142,9 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             c5, c6 = st.columns(2)
             dari = c5.selectbox("Dari dompet" if jenis == "keluar" else "Ke dompet", dompet,
                                 index=dompet.index(awal["dompet"]) if awal.get("dompet") in dompet else 0, format_func=f_dompet())
+            opsi_sat = [""] + sorted({*SATUAN_UMUM, *(x.get("satuan", "") for x in D["barang"] if x.get("satuan")), b.get("satuan", "")} - {""})
+            satuan = c6.selectbox("Satuan", opsi_sat, index=opsi_sat.index(b.get("satuan", "")), format_func=lambda x: x or "(tanpa satuan)",
+                                  help="Berlaku untuk barang ini seterusnya. Tambah satuan lain di Pengaturan > Barang dan produk.")
         else:
             jumlah = c2.number_input("Jumlah (Rp)", min_value=0, step=1000, value=int(awal.get("jumlah", 0) or 0))
             c3, c4 = st.columns(2)
@@ -166,6 +183,8 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
     if jenis == "transfer" and dari == ke:
         st.error("Dompet asal dan tujuan tidak boleh sama.")
         return None
+    if b and satuan != b.get("satuan", ""):
+        b["satuan"] = satuan
     return {"tgl": tgl, "jumlah": int(jumlah), "dompet": dari, "kategori": kat, "ke": ke, "biaya": int(biaya),
             "catatan": catatan, "barang": brg, "qty": float(qty) if b else 0, "harga_satuan": int(hs) if b else 0, "harga_normal": int(hn) if b and hn > hs else 0,
             "toko": toko, "lokasi": lokasi.strip(), "waktu": waktu,
