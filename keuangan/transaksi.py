@@ -118,6 +118,8 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
         if ada_titik:
             with c2:
                 tombol_gps(f"{kunci}_gps", "📍 Pilih toko terdekat")
+    if not brg and jenis != "transfer" and barang_dari(st.session_state.get(f"{kunci}_brg")):
+        brg = st.session_state[f"{kunci}_brg"]  # pengaman: pilihan barang yang masih tersimpan di sesi tidak boleh hilang
     b = barang_dari(brg) if brg else None
     if b:
         hn_riwayat = harga_normal_barang(brg)
@@ -409,6 +411,7 @@ def halaman_catat():
                                  harga_normal=isi["harga_normal"], toko=isi["toko"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk)
             catat("tambah", ringkas_teks(t))
             selesai_simpan(f"Transaksi dicatat: {JENIS[jenis].lower()} {rp(isi['jumlah'])}"
+                           + (f" ({teks_barang(t)})" if teks_barang(t) else "")
                            + (f" · {'⚠️' if ph[0] == 'mahal' else '✅'} {ph[1]}" if ph else "")
                            + (f" · {teks_jatah()}" if jenis == "keluar" and isi["tgl"] == hari_ini() and teks_jatah() else ""), salin_tx=None)
     st.markdown("**Terakhir dicatat**")
