@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+data_lokal.json
+data_lokal.json.versi/
+.streamlit/secrets.toml
+hasil-hash.txt
+data_lokal.json.foto/
