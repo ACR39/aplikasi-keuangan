@@ -5,7 +5,7 @@ from collections import Counter
 import streamlit as st
 
 from keuangan.bantu import (
-    barang_dari, catat, dompet_aktif, f_dompet, f_kat, kat_dari, kat_pertama, kategori_jenis, selesai_simpan, tambah_transaksi, versi,
+    barang_dari, catat, dompet_aktif, f_dompet, f_kat, f_platform, kat_dari, kat_pertama, kategori_jenis, selesai_simpan, tambah_transaksi, versi,
 )
 from keuangan.inti import D, hari_ini, rp
 from keuangan.mutasi import _norm, usulan_kategori
@@ -76,6 +76,17 @@ def tebak(teks: str) -> dict | None:
         if _norm(x["nama"]) and _norm(x["nama"]) in n:
             toko = x["id"]
             break
+    platform = ""
+    if jenis == "keluar":
+        for p in sorted(D["platform"], key=lambda p: -len(p["nama"])):
+            dasar = _norm(re.sub(r"\(.*?\)", "", p["nama"]))
+            if not dasar or dasar == "lainnya":
+                continue
+            pola = r"\s*".join(map(re.escape, dasar.split()))
+            if re.search(rf"(?<![a-z]){pola}(?![a-z])", n):
+                platform = p["id"]
+                sisa = re.sub(rf"(?i)\b(?:pakai|pake|via|lewat)?\s*(?<![a-z]){pola}(?![a-z])", " ", sisa).strip()
+                break
     dompet = ""
     for d in dompet_aktif():
         if _norm(d["nama"]) and _norm(d["nama"]) in n.split() or _norm(d["nama"]) in n and len(_norm(d["nama"])) >= 3:
@@ -101,16 +112,16 @@ def tebak(teks: str) -> dict | None:
     if kat not in ids_k:
         kat = ids_k[0] if ids_k else ""
     return {"jenis": jenis, "jumlah": int(round(hs * qty_)), "qty": qty_, "harga_satuan": int(hs), "barang": cocok["id"] if cocok else "",
-            "kategori": kat, "dompet": dompet, "toko": toko, "catatan": catatan}
+            "kategori": kat, "dompet": dompet, "toko": toko, "platform": platform, "catatan": catatan}
 
 
-def _simpan(h: dict, kat: str, dompet: str):
+def _simpan(h: dict, kat: str, dompet: str, platform: str = ""):
     kait = {}
     if h["barang"] or h["qty"] != 1:
         kait = {"qty": float(h["qty"]), "harga_satuan": h["harga_satuan"]}
         if h["barang"]:
             kait["barang"] = h["barang"]
-    t = tambah_transaksi(h["jenis"], hari_ini(), h["jumlah"], dompet, kat, h["catatan"], toko=h["toko"], **kait)
+    t = tambah_transaksi(h["jenis"], hari_ini(), h["jumlah"], dompet, kat, h["catatan"], toko=h["toko"], platform=platform, **kait)
     catat("tambah", f"Tangkap cepat: {t['jenis']} {rp(t['jumlah'])}")
     selesai_simpan(f"Tercatat: {'pengeluaran' if h['jenis'] == 'keluar' else 'pemasukan'} {rp(h['jumlah'])}"
                    + (f" ({barang_dari(h['barang'])['nama']} × {h['qty']})" if h["barang"] else ""))
@@ -119,22 +130,33 @@ def _simpan(h: dict, kat: str, dompet: str):
 def panel_tangkap():
     """Kotak ketik cepat di atas form catat. Tanggal selalu hari ini; ubah lewat form lengkap bila perlu."""
     with st.expander("⚡ Tangkap cepat", expanded=False):
-        st.caption("Ketik satu kalimat, contoh: **es jeruk 8rb 2**, **bensin 30rb**, **gaji 5jt**. Barang, kategori, dompet, dan toko ditebak dari kebiasaanmu; "
+        st.caption("Ketik satu kalimat, contoh: **es jeruk 8rb 2**, **bensin 30rb**, **gaji 5jt**, **nasi goreng 25rb gofood**. Barang, kategori, dompet, toko, dan platform ditebak dari kebiasaanmu; "
                    "periksa dulu sebelum menyimpan. Dengan banyaknya, nominal dihitung per satuan.")
         teks = st.text_input("Catat apa?", key=f"tc_teks_{versi()}", placeholder="es jeruk 8rb 2")
         h = tebak(teks)
         if not h:
             return
+        from keuangan.ai_fitur import tombol_tangkap
+        h_ai = tombol_tangkap(teks.strip(), h, f"{versi()}_{teks.strip()}")
+        if h_ai:
+            h = h_ai
+            st.caption("🤖 Hasil tebakan AI. Periksa dulu sebelum menyimpan.")
+        sfx = "_ai" if h_ai else ""
         if not h["jumlah"]:
             st.warning("Belum ada nominal. Tambahkan angka, misalnya 8rb atau 25000.")
             return
         ids = [k["id"] for k in kategori_jenis(h["jenis"])]
         c1, c2 = st.columns(2)
-        kat = c1.selectbox("Kategori", ids, index=ids.index(h["kategori"]) if h["kategori"] in ids else 0, format_func=f_kat(), key=f"tc_kat_{versi()}_{teks}")
+        kat = c1.selectbox("Kategori", ids, index=ids.index(h["kategori"]) if h["kategori"] in ids else 0, format_func=f_kat(), key=f"tc_kat_{versi()}_{teks}{sfx}")
         dom_ids = [d["id"] for d in dompet_aktif()]
-        dom = c2.selectbox("Dompet", dom_ids, index=dom_ids.index(h["dompet"]) if h["dompet"] in dom_ids else 0, format_func=f_dompet(), key=f"tc_dom_{versi()}_{teks}")
+        dom = c2.selectbox("Dompet", dom_ids, index=dom_ids.index(h["dompet"]) if h["dompet"] in dom_ids else 0, format_func=f_dompet(), key=f"tc_dom_{versi()}_{teks}{sfx}")
+        plat = ""
+        if h["jenis"] == "keluar" and D["platform"]:
+            pops = [""] + [p["id"] for p in D["platform"]]
+            plat = st.selectbox("Beli online lewat (opsional)", pops, index=pops.index(h.get("platform") or "") if (h.get("platform") or "") in pops else 0,
+                                format_func=f_platform(), key=f"tc_pl_{versi()}_{teks}{sfx}")
         nama = barang_dari(h["barang"])["nama"] if h["barang"] else (h["catatan"] or "tanpa catatan")
         st.markdown(f"**{'Pengeluaran' if h['jenis'] == 'keluar' else 'Pemasukan'} {rp(h['jumlah'])}** · {nama}"
                     + (f" · {h['qty']} × {rp(h['harga_satuan'])}" if h["qty"] != 1 else ""))
         if st.button("Simpan", type="primary", key=f"tc_simpan_{versi()}"):
-            _simpan(h, kat, dom)
+            _simpan(h, kat, dom, plat)

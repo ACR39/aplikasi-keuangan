@@ -134,12 +134,21 @@ def halaman_mutasi():
         for k in kategori_jenis(j):
             semua_kat[k["id"]] = f"{'↓' if j == 'masuk' else '↑'} {nama_kat(k['id'])}"
     nama_ke_id = {v: k for k, v in semua_kat.items()}
+    from keuangan.ai_fitur import panel_mutasi
+    saran = panel_mutasi(baris, usulan_kategori, f"{berkas.name}_{len(baris)}")
+    pl_ke_id = {p["nama"]: p["id"] for p in D["platform"]}
+    id_ke_pl = {v: k for k, v in pl_ke_id.items()}
+
+    def _saran(r, kunci):
+        return saran.get((r["ket"].strip(), r["jenis"]), {}).get(kunci, "")
     tabel = pd.DataFrame([{"Impor": not duplikat(dom, r), "Tanggal": r["tgl"], "Keterangan": r["ket"], "Jenis": r["jenis"], "Jumlah": r["jumlah"],
-                           "Kategori": semua_kat.get(usulan_kategori(r["ket"], r["jenis"]) or kat_pertama(r["jenis"], "k_lain") or "", ""),
+                           "Kategori": semua_kat.get(usulan_kategori(r["ket"], r["jenis"]) or _saran(r, "kategori") or kat_pertama(r["jenis"], "k_lain") or "", ""),
+                           "Platform": id_ke_pl.get(_saran(r, "platform")) if r["jenis"] == "keluar" else None,
                            "Catatan": "sudah ada" if duplikat(dom, r) else ""} for r in baris])
     st.caption(f"{len(baris)} baris terbaca, {int((tabel['Catatan'] == 'sudah ada').sum())} tampaknya sudah ada. Ubah kategori atau centang sebelum mengimpor.")
-    edit = st.data_editor(tabel, key=f"mt_tabel_{versi()}_{berkas.name}_{dom}", hide_index=True, width="stretch", disabled=["Tanggal", "Keterangan", "Jenis", "Jumlah", "Catatan"],
+    edit = st.data_editor(tabel, key=f"mt_tabel_{versi()}_{berkas.name}_{dom}_{len(saran)}", hide_index=True, width="stretch", disabled=["Tanggal", "Keterangan", "Jenis", "Jumlah", "Catatan"],
                           column_config={"Impor": st.column_config.CheckboxColumn(), "Kategori": st.column_config.SelectboxColumn(options=list(nama_ke_id), required=False),
+                                         "Platform": st.column_config.SelectboxColumn(options=list(pl_ke_id), required=False, help="Hanya untuk pengeluaran lewat aplikasi (GoFood dan sebagainya)"),
                                          "Jumlah": st.column_config.NumberColumn(format="%d")})
     pilih = edit[edit["Impor"]]
     if st.button(f"Impor {len(pilih)} transaksi", type="primary", key="mt_impor", disabled=pilih.empty):
@@ -147,6 +156,7 @@ def halaman_mutasi():
             kat = nama_ke_id.get(b["Kategori"], "")
             if kat and (kat_dari(kat) or {}).get("jenis") != b["Jenis"]:
                 kat = kat_pertama(b["Jenis"], "k_lain") or ""
-            tambah_transaksi(b["Jenis"], b["Tanggal"], int(b["Jumlah"]), dom, kat, b["Keterangan"])
+            plat = pl_ke_id.get(b.get("Platform"), "") if b["Jenis"] == "keluar" else ""
+            tambah_transaksi(b["Jenis"], b["Tanggal"], int(b["Jumlah"]), dom, kat, b["Keterangan"], platform=plat)
         catat("impor", f"Impor mutasi: {len(pilih)} transaksi dari {berkas.name}")
         selesai_simpan(f"{len(pilih)} transaksi diimpor (total {rp(int(pilih['Jumlah'].sum()))}).")

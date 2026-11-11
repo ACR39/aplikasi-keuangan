@@ -268,6 +268,9 @@ def form_struk():
                     st.rerun()
     elif berkas is None and not mesin:
         st.caption("Isi otomatis dari foto struk belum aktif. Cara mengaktifkannya ada di README bagian Baca struk otomatis.")
+    if berkas is not None:
+        from keuangan.ai_fitur import panel_layar
+        panel_layar(berkas, base)
     if ocr:
         st.info(f"Terisi otomatis dari foto struk (mesin {ocr['mesin']}). Periksa setiap barang, harga, dan banyaknya sebelum menyimpan.")
         if ocr.get("gagal"):
@@ -306,6 +309,8 @@ def form_struk():
     lokasi = st.text_input("Lokasi", value=(toko_dari(toko) or {}).get("lokasi", ""), max_chars=80, key=f"{base}_lok_{toko}",
                            placeholder="Contoh: Jl. Merdeka, Bandung")
     pops = [""] + [p["id"] for p in D["platform"]]
+    if ocr and ocr.get("platform_id") and f"{base}_plat" not in st.session_state:
+        st.session_state[f"{base}_plat"] = ocr["platform_id"]
     if st.session_state.get(f"{base}_plat") not in pops:
         st.session_state.pop(f"{base}_plat", None)
     platform = st.selectbox("Beli online lewat (opsional)", pops, format_func=f_platform(), key=f"{base}_plat",
@@ -315,6 +320,8 @@ def form_struk():
     df = editor_kartu(f"{base}_tbl", ke_tabel(ocr) if ocr else None)
     baris_ok, _ = baca_baris(df)
     jumlah_struk = total_cepat(df)
+    if ocr and ocr.get("potongan") and f"{base}_pot" not in st.session_state:
+        st.session_state[f"{base}_pot"] = int(ocr["potongan"])
     potongan = st.number_input("Potongan seluruh struk (Rp), opsional", min_value=0, step=500, key=f"{base}_pot",
                                help="Voucher atau diskon total di struk. Dibagi ke tiap barang sebanding harganya, jadi tercatat sebagai diskon.")
     if potongan:

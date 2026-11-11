@@ -29,10 +29,10 @@ from keuangan.utang import halaman_utang
 from keuangan.inti import pasang_css
 
 UTAMA = ["Pencarian", "Catat transaksi", "Daftar belanja", "Daftar transaksi", "Riwayat aktivitas"]
-PANTAU = ["Anggaran", "Transaksi berulang", "Target tabungan", "Utang-piutang", "Laporan"]
+PANTAU = ["Anggaran", "Transaksi berulang", "Target tabungan", "Utang-piutang", "Laporan", "Asisten AI"]
 EDIT_SAJA = ("Catat transaksi",)
 MASTER = ["Dompet", "Kategori", "Cadangan dan pulihkan"]
-IKON = {"Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Platform beli online": "delivery_dining", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
+IKON = {"Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Platform beli online": "delivery_dining", "Asisten AI": "auto_awesome", "Privasi AI": "shield", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Transaksi berulang": "event_repeat", "Target tabungan": "savings",
         "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner", "Pemeriksa data": "fact_check",
         "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
@@ -51,6 +51,8 @@ DESKRIPSI = {
     "Daftar belanja": "Rencanakan belanja, lihat toko termurah, centang saat membeli, lalu catat jadi satu struk.",
     "Toko dan tempat beli": "Daftar toko atau tempat beli beserta lokasinya. Saat mencatat, toko bisa dipilih.",
     "Platform beli online": "Daftar aplikasi tempat beli online (GoFood, ShopeeFood, dan lainnya) yang bisa Anda atur sendiri. Saat mencatat, platform bisa dipilih.",
+    "Asisten AI": "Tanya data dengan bahasa biasa dan minta ringkasan bulanan tertulis. Perhitungan dikerjakan di server ini; AI tidak melihat transaksimu.",
+    "Privasi AI": "Nyalakan fitur AI satu per satu, lihat apa yang dikirim dan tidak dikirim ke penyedia, dan riwayat kiriman. Semua mati secara bawaan.",
     "Barang dan produk": "Daftar barang per kategori atau sub kategori. Saat mencatat, barang bisa dipilih sesuai kategorinya.",
     "Riwayat aktivitas": "Semua perubahan data yang tercatat otomatis, lengkap dengan siapa dan kapan.",
     "Tempat sampah": "Transaksi yang dihapus disimpan 30 hari di sini, bisa dipulihkan sebelum hilang permanen.",
@@ -107,7 +109,7 @@ def peringatan_uji():
 
 
 def pilih_halaman():
-    PENGATURAN = ["Tampilan", "Barang dan produk", "Toko dan tempat beli", "Platform beli online", "Tempat sampah", "Mesin baca struk", "Pemeriksa data", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
+    PENGATURAN = ["Tampilan", "Barang dan produk", "Toko dan tempat beli", "Platform beli online", "Privasi AI", "Tempat sampah", "Mesin baca struk", "Pemeriksa data", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
     HALAMAN = ["Beranda"] + menu_utama() + PANTAU + PENGATURAN
     if st.session_state.get("halaman") not in HALAMAN:
         st.session_state.halaman = "Beranda"
@@ -181,6 +183,12 @@ def tampilkan_halaman(halaman):
         halaman_toko()
     elif halaman == "Platform beli online":
         halaman_platform()
+    elif halaman == "Asisten AI":
+        from keuangan.ai_fitur import halaman_asisten
+        halaman_asisten()
+    elif halaman == "Privasi AI":
+        from keuangan.ai import halaman_privasi_ai
+        halaman_privasi_ai()
     elif halaman == "Daftar belanja":
         halaman_belanja()
     elif halaman == "Riwayat aktivitas":
