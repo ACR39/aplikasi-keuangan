@@ -1,6 +1,7 @@
 """Toko dan tempat beli: daftar toko (nama, jenis, lokasi) yang dipilih saat mencatat transaksi."""
 import streamlit as st
 
+from keuangan.bantu import jumlah_kunjungan
 from keuangan.bantu import atur, catat, e, ikon_foto, kolom_foto, link_aman, proses_foto, selesai_simpan, transaksi_toko, versi
 from keuangan.peta import peta_semua, pilih_titik, proses_gps, terdekat, teks_jarak, titik_dari, tombol_gps, url_peta
 from keuangan.inti import D, TOKO_IKON, baru_id, fmt_iso, hanya_lihat, rp
@@ -105,7 +106,7 @@ def halaman_toko():
             ket += f' · 📞 {e(x["telepon"])}'
         if url_peta(x):
             ket += f' · <a href="{e(url_peta(x))}" target="_blank" rel="noopener noreferrer">📍 {"Titik di peta" if titik_dari(x) else "Buka di peta"}</a>'
-        ket += f" · dikunjungi {len(pakai)}×" + (f" · total {rp(total)} · terakhir {fmt_iso(pakai[0]['tgl'])}" if pakai else "")
+        ket += f" · dikunjungi {jumlah_kunjungan(pakai)}×" + (f" · total {rp(total)} · terakhir {fmt_iso(pakai[0]['tgl'])}" if pakai else "")
         with st.container(key=f"tx_tk_{x['id']}"):
             kolom = st.columns([1] + ([0.001, 0.001] if not hanya_lihat() else []))
             kolom[0].markdown(f'<div class="rt">{ikon_foto(x.get("foto"), TOKO_IKON.get(x.get("jenis"), "📍"))}'

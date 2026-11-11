@@ -152,6 +152,11 @@ def f_barang(kat: str = ""):
     return lambda i: m.get(i, "(barang dihapus)")
 
 
+def jumlah_kunjungan(ts) -> int:
+    """Satu struk (banyak barang, satu grup) dihitung satu kunjungan; transaksi lepas dihitung satu per transaksi."""
+    return len({t.get("grup") or t["id"] for t in ts})
+
+
 def kunci_urut(t: dict):
     """Urutan kronologis: tanggal, lalu jam beli, lalu saat dicatat."""
     return (t["tgl"], t.get("waktu", "") or "", t.get("dibuat", ""))

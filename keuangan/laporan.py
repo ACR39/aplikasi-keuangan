@@ -2,6 +2,7 @@
 import pandas as pd
 import streamlit as st
 
+from keuangan.bantu import jumlah_kunjungan
 from keuangan.bantu import (
     info_diskon, daftar_bulan, transaksi_barang, transaksi_toko,    akar, ikon_kat,    deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_dompet, nama_kat, per_kategori, pilih_bulan,
     ringkas_bulan, saldo_dompet, transaksi_bulan, ym_ini, batang,
@@ -281,8 +282,8 @@ def _toko():
         if not ts:
             continue
         total = sum(t["jumlah"] for t in ts)
-        baris.append({"Toko": x["nama"], "Jenis": x.get("jenis", ""), "Lokasi": x.get("lokasi", ""), "Kunjungan": len(ts),
-                      "Total (Rp)": total, "Rata-rata (Rp)": round(total / len(ts)), "Terakhir": ts[0]["tgl"]})
+        baris.append({"Toko": x["nama"], "Jenis": x.get("jenis", ""), "Lokasi": x.get("lokasi", ""), "Kunjungan": jumlah_kunjungan(ts),
+                      "Total (Rp)": total, "Rata-rata (Rp)": round(total / jumlah_kunjungan(ts)), "Terakhir": ts[0]["tgl"]})
     if not baris:
         st.info("Belum ada pengeluaran dengan toko pada periode ini. Pilih toko saat mencatat transaksi.")
     else:

@@ -40,9 +40,9 @@ def data_tahun(y: int) -> dict:
             k = akar(t["kategori"])
             kat[k] = kat.get(k, 0) + v
         if t.get("toko"):
-            a = toko.setdefault(t["toko"], [0, 0])
+            a = toko.setdefault(t["toko"], [0, set()])
             a[0] += v
-            a[1] += 1
+            a[1].add(t.get("grup") or t["id"])
         if t.get("barang"):
             a = brg.setdefault(t["barang"], [0, 0])
             a[0] += v
@@ -54,7 +54,7 @@ def data_tahun(y: int) -> dict:
     bln_aktif = [i for i, (m, k) in enumerate(per_bln) if m or k]
     return {"tahun": y, "n": len(ts), "masuk": masuk, "keluar": keluar, "selisih": masuk - keluar, "masuk_lalu": masuk_lalu,
             "keluar_lalu": keluar_lalu, "per_bln": per_bln, "kat": sorted(kat.items(), key=lambda x: -x[1])[:5],
-            "toko": sorted(toko.items(), key=lambda x: -x[1][0])[:5], "barang_sering": sorted(brg.items(), key=lambda x: -x[1][1])[:5],
+            "toko": sorted(((i, [v[0], len(v[1])]) for i, v in toko.items()), key=lambda x: -x[1][0])[:5], "barang_sering": sorted(brg.items(), key=lambda x: -x[1][1])[:5],
             "hari_boros": max(hari.items(), key=lambda x: x[1]) if hari else None, "terbesar": besar, "hemat": round(hemat),
             "bln_boros": max(bln_aktif, key=lambda i: per_bln[i][1]) if bln_aktif else None,
             "rata_bulan": round(keluar / len(bln_aktif)) if bln_aktif else 0,
