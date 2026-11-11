@@ -92,17 +92,17 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             if st.session_state.get(f"{kunci}_bcpesan"):
                 st.caption(st.session_state[f"{kunci}_bcpesan"])
         kat = pilih_kategori(kunci, jenis, kat_pertama(jenis, awal.get("kategori", "")))
-        dalam = [b["id"] for b in barang_dalam(kat)]
-        lain = [b["id"] for b in sorted(D["barang"], key=lambda b: b["nama"].lower())
-                if b["id"] not in dalam and (kat_dari(b["kategori"]) or {}).get("jenis") == jenis]
-        opsi = [""] + dalam + lain  # barang kategori terpilih dulu; memilih barang kategori lain memindahkan kategorinya
-        if awal.get("barang") and awal["barang"] not in opsi and kat == awal.get("kategori") and barang_dari(awal["barang"]):
+        # daftar barang TIDAK bergantung pada kategori terpilih: bila urutan/isinya berubah, Streamlit menganggap
+        # kotak ini baru dan pilihannya hilang (jadi "tanpa barang"). Memilih barang memindahkan kategorinya.
+        opsi = [""] + [b["id"] for b in sorted(D["barang"], key=lambda b: b["nama"].lower())
+                       if (kat_dari(b["kategori"]) or {}).get("jenis") == jenis]
+        if awal.get("barang") and awal["barang"] not in opsi and barang_dari(awal["barang"]):
             opsi.append(awal["barang"])
         if st.session_state.get(f"{kunci}_brg") not in opsi:
             st.session_state.pop(f"{kunci}_brg", None)
         c1, c2 = st.columns(2)
         brg = c1.selectbox("Barang (opsional)", opsi, index=opsi.index(awal["barang"]) if awal.get("barang") in opsi else 0,
-                           format_func=f_barang(kat), key=f"{kunci}_brg", on_change=_barang_dipilih, args=(kunci,),
+                           format_func=f_barang(), key=f"{kunci}_brg", on_change=_barang_dipilih, args=(kunci,),
                            help="Pilih barang agar harga dan jumlahnya tercatat; kategorinya ikut terisi otomatis. Tambah barang di Pengaturan > Barang dan produk.")
         ada_titik = any(titik_dari(x) for x in D["toko"])
         if ada_titik:

@@ -147,7 +147,7 @@ def f_barang(kat: str = ""):
     m = {}
     for b in D["barang"]:
         k = kat_dari(b["kategori"])
-        m[b["id"]] = b["nama"] if b["kategori"] == kat or not k else f'{b["nama"]} ({k["nama"]})'
+        m[b["id"]] = b["nama"] if (b["kategori"] == kat and kat) or not k else f'{b["nama"]} ({k["nama"]})'
     m[""] = "(tanpa barang)"
     return lambda i: m.get(i, "(barang dihapus)")
 
