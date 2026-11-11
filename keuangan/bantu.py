@@ -191,6 +191,30 @@ def teks_toko(t: dict) -> str:
     return f"{nama} ({lok})" if nama and lok else nama or lok
 
 
+# ---------------------------------------------------------------- platform beli online
+def platform_dari(id_):
+    return next((x for x in D["platform"] if x["id"] == id_), None) if id_ else None
+
+
+def nama_platform(id_) -> str:
+    """Nama platform, '' bila transaksi offline (tanpa platform)."""
+    if not id_:
+        return ""
+    p = platform_dari(id_)
+    return p["nama"] if p else "(platform dihapus)"
+
+
+def f_platform(tambahan: dict | None = None):
+    m = {x["id"]: x["nama"] for x in D["platform"]}
+    m[""] = "(offline / bukan beli online)"
+    m.update(tambahan or {})
+    return lambda i: m.get(i, "(platform dihapus)")
+
+
+def transaksi_platform(id_) -> list:
+    return sorted([t for t in D["transaksi"] if t.get("platform") == id_], key=kunci_urut, reverse=True)
+
+
 def perbarui_harga_barang(id_):
     """Harga barang = harga satuan pada transaksi terbarunya."""
     b = barang_dari(id_)
@@ -400,6 +424,8 @@ def baris_transaksi(t: dict) -> str:
             baris.append(f'📝 {t["catatan"]}')
         if teks_toko(t):
             baris.append(f'📍 {teks_toko(t)}')
+        if t.get("platform"):
+            baris.append(f'🛵 Online via {nama_platform(t["platform"])}')
         d_ = info_diskon(t)
         if d_:
             baris.append(f"🏷️ Diskon {d_[0]}% · normal {rp(d_[2])}, bayar {rp(t['harga_satuan'])}")
@@ -437,7 +463,8 @@ def ringkas_teks(t: dict) -> str:
     if t["jenis"] == "transfer":
         return f'{isi}, {nama_dompet(t["dompet"])} → {nama_dompet(t.get("ke"))}'
     return (f'{isi}, {nama_kat(t.get("kategori"))}, {nama_dompet(t["dompet"])}' + (f", {teks_barang(t)}" if teks_barang(t) else "")
-            + (f", di {teks_toko(t)}" if teks_toko(t) else "") + (f' ("{t["catatan"]}")' if t.get("catatan") else ""))
+            + (f", di {teks_toko(t)}" if teks_toko(t) else "") + (f", via {nama_platform(t['platform'])}" if t.get("platform") else "")
+            + (f' ("{t["catatan"]}")' if t.get("catatan") else ""))
 
 
 def pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_sub: bool = True) -> str:

@@ -518,16 +518,23 @@ def lengkapi_kategori(daftar: list) -> list:
     return daftar
 
 
+def platform_awal() -> list:
+    """Platform beli online bawaan. Id tetap supaya data dari cadangan lama tetap cocok."""
+    return [{"id": "p_gofood", "nama": "GoFood"}, {"id": "p_grabfood", "nama": "GrabFood"},
+            {"id": "p_shopeefood", "nama": "ShopeeFood"}, {"id": "p_lain", "nama": "Lainnya (online)"}]
+
+
 def data_kosong() -> dict:
     return {
         "dompet": [{"id": "d_tunai", "nama": "Tunai", "jenis": "Tunai", "saldo_awal": 0, "arsip": False}],
         # [{"id","nama","jenis","saldo_awal","arsip"}]  saldo sekarang dihitung dari saldo awal + transaksi
         "kategori": kategori_awal(),  # [{"id","nama","jenis"(masuk|keluar),"induk"(id kategori utama, kosong = utama),"ikon","warna"}]
         "transaksi": [],  # [{"id","jenis"(masuk|keluar|transfer),"tgl","jumlah","dompet","ke","biaya","kategori","catatan",
-                          #   "barang","qty","harga_satuan","toko","lokasi","waktu"(HH:MM),"tagihan","utang","dibuat","oleh"}]
-        "templat": [],    # templat transaksi: [{"id","nama","jenis","dompet","kategori","jumlah","catatan","barang","qty","harga_satuan","toko","lokasi"}]
+                          #   "barang","qty","harga_satuan","toko","platform","lokasi","waktu"(HH:MM),"tagihan","utang","dibuat","oleh"}]
+        "templat": [],    # templat transaksi: [{"id","nama","jenis","dompet","kategori","jumlah","catatan","barang","qty","harga_satuan","toko","platform","lokasi"}]
         "belanja": [],    # daftar belanja: [{"id","nama","toko","dibuat","selesai","item":[],"riwayat":[]}]
         "toko": [],       # [{"id","nama","jenis","lokasi"}]  tempat beli / toko
+        "platform": platform_awal(),  # [{"id","nama"}]  platform beli online (GoFood dst); transaksi menyimpan id-nya di "platform", kosong = offline
         "barang": [],     # [{"id","nama","kategori"(id kategori atau sub kategori),"harga"(harga satuan terakhir),"satuan"}]
         "anggaran": [],   # [{"id","kategori","batas"}]  batas per bulan, berlaku tiap bulan
         "tagihan": [],    # [{"id","nama","jumlah","kategori","dompet","tiap","berikut","catatan","aktif"}]

@@ -2,7 +2,7 @@
 import streamlit as st
 
 from keuangan.bantu import (
-    atur, barang_dari, e, kat_dari, kunci_urut, nama_dompet, nama_kat, pindah_halaman, ringkas_teks, teks_barang, teks_toko, toko_dari,
+    atur, barang_dari, e, kat_dari, kunci_urut, nama_dompet, nama_kat, nama_platform, pindah_halaman, ringkas_teks, teks_barang, teks_toko, toko_dari,
 )
 from keuangan.inti import D, fmt_iso, rp
 
@@ -21,7 +21,7 @@ def cari(q: str) -> dict:
     angka = "".join(c for c in q if c.isdigit())
     tx = [t for t in D["transaksi"]
           if _cocok(q, t.get("catatan"), nama_kat(t.get("kategori")) if t["jenis"] != "transfer" else "transfer", nama_dompet(t["dompet"]),
-                    teks_barang(t), teks_toko(t), t.get("lokasi"), t["tgl"])
+                    teks_barang(t), teks_toko(t), t.get("lokasi"), t["tgl"], nama_platform(t.get("platform")))
           or (len(angka) >= 3 and angka == str(t["jumlah"]))]
     return {
         "transaksi": sorted(tx, key=kunci_urut, reverse=True),

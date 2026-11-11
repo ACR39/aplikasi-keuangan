@@ -18,7 +18,7 @@ from keuangan.tabungan import terkumpul
 from keuangan.tagihan import status_tagihan, tagihan_mendekat
 from keuangan.utang import jatuh_tempo_dekat, sisa
 
-SEKSI_BERANDA = [("ringkasan", "Ringkasan angka"), ("harian", "Jatah pengeluaran hari ini"), ("perhatian", "Perlu perhatian"), ("mingguan", "Ringkasan mingguan"), ("prakiraan", "Prakiraan akhir bulan"), ("dompet", "Saldo per dompet"),
+SEKSI_BERANDA = [("ringkasan", "Ringkasan angka"), ("harian", "Jatah pengeluaran hari ini"), ("perhatian", "Perlu perhatian"), ("mingguan", "Ringkasan mingguan"), ("online", "Belanja online vs offline"), ("prakiraan", "Prakiraan akhir bulan"), ("dompet", "Saldo per dompet"),
                  ("anggaran", "Anggaran periode ini"), ("tabungan", "Target tabungan"), ("g_kategori", "Grafik pengeluaran per kategori"),
                  ("g_tren", "Grafik pemasukan dan pengeluaran"), ("teratas", "Toko dan barang teratas"), ("terakhir", "Transaksi terakhir")]
 
@@ -206,6 +206,9 @@ def halaman_beranda():
                 st.markdown(f'<div class="perhatian">{h}</div>', unsafe_allow_html=True)
     if "mingguan" not in sembunyi:
         kartu_mingguan()
+    if "online" not in sembunyi:
+        from keuangan.daring import kartu_online
+        kartu_online(ts)
     if "prakiraan" not in sembunyi:
         kartu_prakiraan()
     if "dompet" not in sembunyi:

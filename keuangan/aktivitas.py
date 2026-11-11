@@ -7,7 +7,7 @@ from keuangan.bantu import atur, baris_transaksi, catat, e, perbarui_harga_baran
 from keuangan.inti import D, HARI_SAMPAH, fmt_iso, fmt_waktu, hanya_lihat, hari_ini, iso_ke_date
 
 IKON = {"tambah": "➕", "ubah": "✏️", "hapus": "🗑️", "pulih": "♻️", "tagihan": "⏰", "anggaran": "🎯", "tabungan": "🐷",
-        "utang": "🤝", "barang": "📦", "toko": "🏪", "belanja": "🛒", "dompet": "👛", "kategori": "🏷️", "impor": "📥", "data": "💾"}
+        "utang": "🤝", "barang": "📦", "toko": "🏪", "platform": "🛵", "belanja": "🛒", "dompet": "👛", "kategori": "🏷️", "impor": "📥", "data": "💾"}
 
 
 def bersihkan_sampah():

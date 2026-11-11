@@ -32,6 +32,8 @@ Barang: saat mencatat pengeluaran/pemasukan, pilih kategori lalu barangnya (daft
 
 Kategori dan Sub kategori dipilih di dua kotak terpisah. Toko / tempat beli dipilih dari daftar (atau ditambah langsung di halaman Catat transaksi); lokasi terisi otomatis dari toko tetapi bisa diubah, dan Waktu beli terisi jam sekarang (WIB). Daftar transaksi bisa difilter per toko dan dicari berdasarkan toko atau lokasi. Laporan > Toko menampilkan kunjungan dan total per toko, serta grafik jam belanja.
 
+**Beli online**: pengeluaran bisa ditandai lewat platform (GoFood, GrabFood, ShopeeFood, Lainnya; kotak "Beli online lewat"), baik di satu barang maupun di satu struk banyak barang. Daftar platform diatur sendiri di Pengaturan > Platform beli online (tambah, ubah nama, hapus; platform yang sudah dipakai bisa dipindah ke platform lain saat dihapus). Transaksi tanpa platform dianggap beli langsung, jadi data lama tidak perlu diubah. Daftar transaksi punya filter "Beli online" (semua online, hanya offline, atau satu platform). Beranda (bagian "Belanja online vs offline", bisa disembunyikan di Tampilan), Laporan > Bulanan, dan Laporan akhir tahun menampilkan total online dibanding offline dan per platform. Ekspor Excel/CSV dan impor memuat kolom Platform.
+
 Saldo dompet tidak disimpan, tetapi dihitung dari saldo awal + semua transaksi, jadi tidak bisa tidak sinkron.
 Transfer tidak dihitung sebagai pemasukan atau pengeluaran; biaya admin transfer dihitung sebagai pengeluaran.
 

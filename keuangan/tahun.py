@@ -3,7 +3,7 @@ import html
 
 import streamlit as st
 
-from keuangan.bantu import akar, barang_dari, info_diskon, nama_kat, ringkas_teks, toko_dari
+from keuangan.bantu import akar, barang_dari, info_diskon, nama_kat, nama_platform, ringkas_teks, toko_dari
 from keuangan.inti import D, fmt_iso, hari_ini, nama_bulan, rp
 
 BLN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
@@ -50,12 +50,14 @@ def data_tahun(y: int) -> dict:
         d = info_diskon(t)
         if d:
             hemat += d[1] * float(t.get("qty") or 1)
+    from keuangan.daring import ringkas_online
+    online = ringkas_online(ts)
     besar = max((t for t in ts if t["jenis"] == "keluar"), key=lambda t: int(t["jumlah"]), default=None)
     bln_aktif = [i for i, (m, k) in enumerate(per_bln) if m or k]
     return {"tahun": y, "n": len(ts), "masuk": masuk, "keluar": keluar, "selisih": masuk - keluar, "masuk_lalu": masuk_lalu,
             "keluar_lalu": keluar_lalu, "per_bln": per_bln, "kat": sorted(kat.items(), key=lambda x: -x[1])[:5],
             "toko": sorted(((i, [v[0], len(v[1])]) for i, v in toko.items()), key=lambda x: -x[1][0])[:5], "barang_sering": sorted(brg.items(), key=lambda x: -x[1][1])[:5],
-            "hari_boros": max(hari.items(), key=lambda x: x[1]) if hari else None, "terbesar": besar, "hemat": round(hemat),
+            "hari_boros": max(hari.items(), key=lambda x: x[1]) if hari else None, "terbesar": besar, "hemat": round(hemat), "online": online,
             "bln_boros": max(bln_aktif, key=lambda i: per_bln[i][1]) if bln_aktif else None,
             "rata_bulan": round(keluar / len(bln_aktif)) if bln_aktif else 0,
             "tabung_persen": round((masuk - keluar) / masuk * 100) if masuk else None}
@@ -84,6 +86,13 @@ def html_tahun(d: dict) -> str:
         bagian.append(baris("Kategori terbesar", li([f"{h(nama_kat(k))}: {rp(v)}" for k, v in d["kat"]])))
     if d["toko"]:
         bagian.append(baris("Toko favorit", li([f"{nm(i)}: {rp(v[0])} dalam {v[1]} kunjungan" for i, v in d["toko"]])))
+    on = d["online"]
+    if on["online"][0]:
+        semua = on["online"][1] + on["offline"][1]
+        bagian.append(baris("Belanja online", li(
+            [f"Online: <b>{rp(on['online'][1])}</b> dalam {on['online'][0]} pesanan ({round(on['online'][1] / semua * 100) if semua else 0}% dari pengeluaran)",
+             f"Offline: {rp(on['offline'][1])} dalam {on['offline'][0]} transaksi"]
+            + [f"{h(nama_platform(i))}: {rp(v)} dalam {n} pesanan" for i, n, v in on["per_platform"]])))
     if d["barang_sering"]:
         bagian.append(baris("Barang paling sering dibeli", li([f"{h((barang_dari(i) or {}).get('nama', '?'))}: {v[1]} kali, {rp(v[0])}" for i, v in d["barang_sering"]])))
     rekor = []
@@ -122,6 +131,12 @@ def halaman_tahun():
         st.markdown("**Toko favorit**")
         for i, v in d["toko"]:
             st.caption(f"{(toko_dari(i) or {}).get('nama', '?')} · {rp(v[0])} · {v[1]} kunjungan")
+    if d["online"]["online"][0]:
+        st.markdown("**Belanja online**")
+        from keuangan.daring import teks_online
+        st.caption(teks_online([t for t in D["transaksi"] if t["tgl"][:4] == str(y)]))
+        for i, n, v in d["online"]["per_platform"]:
+            st.caption(f"{nama_platform(i)} · {rp(v)} · {n} pesanan")
     if d["barang_sering"]:
         st.markdown("**Barang paling sering dibeli**")
         for i, v in d["barang_sering"]:

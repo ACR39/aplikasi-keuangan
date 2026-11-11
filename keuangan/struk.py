@@ -209,7 +209,8 @@ def struk_serupa(tgl_iso: str, toko: str, total: int, foto_hash: str = ""):
     return None
 
 
-def simpan_struk(baris: list, tgl, waktu: str, dompet: str, toko: str, lokasi: str, struk: str, catatan: str = "", foto_hash: str = "") -> list:
+def simpan_struk(baris: list, tgl, waktu: str, dompet: str, toko: str, lokasi: str, struk: str, catatan: str = "", foto_hash: str = "",
+                 platform: str = "") -> list:
     """Buat satu transaksi pengeluaran per baris. Pemanggil yang menulis riwayat dan commit."""
     grup = baru_id()
     hasil = []
@@ -219,7 +220,7 @@ def simpan_struk(baris: list, tgl, waktu: str, dompet: str, toko: str, lokasi: s
             "keluar", tgl, round(x["qty"] * x["harga"]), dompet, x["kategori"], x["ket"] or catatan,
             barang=x["barang"], qty=qty if x["barang"] else 0, harga_satuan=x["harga"] if x["barang"] else 0,
             harga_normal=x.get("normal", 0) if x["barang"] else 0,
-            toko=toko, lokasi=lokasi, waktu=waktu, struk=struk, grup=grup, foto_hash=foto_hash))
+            toko=toko, platform=platform, lokasi=lokasi, waktu=waktu, struk=struk, grup=grup, foto_hash=foto_hash))
     for x in baris:
         if x["barang"]:
             perbarui_harga_barang(x["barang"])

@@ -114,6 +114,8 @@ def _bulanan():
             st.markdown("**Pemasukan per kategori**")
             _tabel_kategori(ym, "masuk")
     _banding_bulan(ym)
+    from keuangan.daring import kartu_online
+    kartu_online(transaksi_bulan(ym), "kartu_g_lp_online")
     with st.container(key="kartu_g_lp_harian"):
         st.markdown("**Pengeluaran harian**")
         per_hari = {}

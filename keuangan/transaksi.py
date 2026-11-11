@@ -9,6 +9,7 @@ from keuangan.bantu import (
     f_dompet, f_kat, turunan, harga_normal_barang, tampil_peringatan_harga, peringatan_harga, salin_transaksi, pilih_kategori, kolom_foto, proses_foto, kat_dari, f_toko, toko_dari, teks_toko, kunci_urut, akar,
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
     ringkas_teks, info_diskon, e, selesai_simpan, tambah_transaksi, versi, hapus_foto_bebas, daftar_bulan, deretan_stat, kartu_stat,
+    f_platform, nama_platform,
 )
 from keuangan.anggaran import teks_jatah
 from keuangan.peta import proses_gps, terdekat, titik_dari, tombol_gps
@@ -192,7 +193,7 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             idx = dompet.index(awal["ke"]) if awal.get("ke") in dompet else (1 if len(dompet) > 1 else 0)
             ke = c4.selectbox("Ke dompet", dompet, index=idx, format_func=f_dompet())
             biaya = st.number_input("Biaya admin (Rp), opsional", min_value=0, step=500, value=int(awal.get("biaya", 0) or 0))
-        waktu, lokasi = "", ""
+        waktu, lokasi, platform = "", "", ""
         if jenis != "transfer":
             c7, c8 = st.columns(2)
             if awal.get("waktu"):
@@ -206,6 +207,13 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             tk = toko_dari(toko)
             lokasi = c8.text_input("Lokasi", value=awal.get("lokasi") or (tk or {}).get("lokasi", ""), max_chars=80,
                                    placeholder="Contoh: Jl. Merdeka, Bandung") if jenis == "keluar" else ""
+            if jenis == "keluar":
+                pops = [""] + [p["id"] for p in D["platform"]]
+                if awal.get("platform") and awal["platform"] not in pops:
+                    pops.append(awal["platform"])
+                platform = st.selectbox("Beli online lewat (opsional)", pops, index=pops.index(awal["platform"]) if awal.get("platform") in pops else 0,
+                                        format_func=f_platform(),
+                                        help="Pilih GoFood, ShopeeFood, dan sebagainya bila beli lewat aplikasi. Biarkan kosong untuk beli langsung. Atur daftarnya di Pengaturan > Platform beli online.")
         struk_berkas, struk_hapus = None, False
         if jenis != "transfer":
             struk_berkas, struk_hapus = kolom_foto("Foto struk, opsional" if jenis == "keluar" else "Foto bukti, opsional", f"{kunci}_struk", awal.get("struk", ""), "struk")
@@ -228,7 +236,7 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
         b["satuan"] = satuan
     return {"tgl": tgl, "jumlah": int(jumlah), "dompet": dari, "kategori": kat, "ke": ke, "biaya": int(biaya),
             "catatan": catatan, "barang": brg, "qty": float(qty) if b else extra.get("qty", 0), "harga_satuan": int(hs) if b else extra.get("harga_satuan", 0), "harga_normal": int(hn) if b and hn > hs else 0,
-            "toko": toko, "lokasi": lokasi.strip(), "waktu": waktu,
+            "toko": toko, "platform": platform, "lokasi": lokasi.strip(), "waktu": waktu,
             "struk_berkas": struk_berkas, "struk_hapus": struk_hapus}
 
 
@@ -297,6 +305,11 @@ def form_struk():
             tombol_gps(f"{base}_gps", "📍 Pilih toko terdekat")
     lokasi = st.text_input("Lokasi", value=(toko_dari(toko) or {}).get("lokasi", ""), max_chars=80, key=f"{base}_lok_{toko}",
                            placeholder="Contoh: Jl. Merdeka, Bandung")
+    pops = [""] + [p["id"] for p in D["platform"]]
+    if st.session_state.get(f"{base}_plat") not in pops:
+        st.session_state.pop(f"{base}_plat", None)
+    platform = st.selectbox("Beli online lewat (opsional)", pops, format_func=f_platform(), key=f"{base}_plat",
+                            help="Pilih GoFood, ShopeeFood, dan sebagainya bila beli lewat aplikasi. Berlaku untuk seluruh struk ini.")
     st.markdown("**Barang di struk**")
     st.caption("Pilih Barang dari daftar, atau kosongkan lalu pilih Kategori. Harga kosong memakai harga terakhir barang.")
     df = editor_kartu(f"{base}_tbl", ke_tabel(ocr) if ocr else None)
@@ -360,12 +373,12 @@ def form_struk():
             if ppn:
                 baris = terapkan_tambahan(baris, ppn) if cara_ppn == "bagi" else baris + [baris_pajak(baris, ppn)]
             n_belajar = pelajari(ocr, baris, toko) if ocr else 0
-            simpan_struk(baris, tgl, w.strftime("%H:%M"), dari, toko, lokasi.strip(), struk, foto_hash=foto_hash)
+            simpan_struk(baris, tgl, w.strftime("%H:%M"), dari, toko, lokasi.strip(), struk, foto_hash=foto_hash, platform=platform)
             catat("tambah", ringkas_struk(baris, toko))
             selesai_simpan(f"Struk dicatat: {len(baris)} barang" + (f" · {n_belajar} koreksi dipelajari" if n_belajar else "") + (f" · {teks_jatah()}" if tgl == hari_ini() and teks_jatah() else ""), struk_ocr=None, struk_up_n=n_up + 1)
 
 
-TPL_KUNCI = ("jenis", "dompet", "kategori", "jumlah", "catatan", "ke", "biaya", "barang", "qty", "harga_satuan", "harga_normal", "toko", "lokasi")
+TPL_KUNCI = ("jenis", "dompet", "kategori", "jumlah", "catatan", "ke", "biaya", "barang", "qty", "harga_satuan", "harga_normal", "toko", "platform", "lokasi")
 
 
 def _asal_salin():
@@ -381,7 +394,7 @@ def _catat_dari_templat(tp: dict):
     if not dompet_dari(tp["dompet"]):
         st.error("Dompet pada templat ini sudah tidak ada. Hapus templatnya lalu buat lagi.")
         return
-    extra = {k: tp[k] for k in ("barang", "qty", "harga_satuan", "harga_normal", "toko", "lokasi") if tp.get(k)}
+    extra = {k: tp[k] for k in ("barang", "qty", "harga_satuan", "harga_normal", "toko", "platform", "lokasi") if tp.get(k)}
     t = tambah_transaksi(tp["jenis"], hari_ini(), tp["jumlah"], tp["dompet"], tp.get("kategori", ""), tp.get("catatan", ""),
                          tp.get("ke", ""), tp.get("biaya", 0), waktu=sekarang().strftime("%H:%M"), **extra)
     catat("tambah", f"{ringkas_teks(t)} (dari templat {tp['nama']})")
@@ -465,7 +478,7 @@ def halaman_catat():
             ph = peringatan_harga(isi["barang"], isi["harga_satuan"]) if jenis == "keluar" and isi["barang"] else None
             t = tambah_transaksi(jenis, isi["tgl"], isi["jumlah"], isi["dompet"], isi["kategori"], isi["catatan"],
                                  isi["ke"], isi["biaya"], barang=isi["barang"], qty=isi["qty"], harga_satuan=isi["harga_satuan"],
-                                 harga_normal=isi["harga_normal"], toko=isi["toko"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk)
+                                 harga_normal=isi["harga_normal"], toko=isi["toko"], platform=isi["platform"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk)
             catat("tambah", ringkas_teks(t))
             selesai_simpan(f"Transaksi dicatat: {JENIS[jenis].lower()} {rp(isi['jumlah'])}"
                            + (f" ({teks_barang(t)})" if teks_barang(t) else "")
@@ -493,6 +506,8 @@ def _filter() -> list:
                            format_func=f_kat({"semua": "Semua kategori"}))
         tk = c6.selectbox("Toko", ["semua"] + [x["id"] for x in D["toko"]], key="tr_toko",
                           format_func=f_toko({"semua": "Semua toko"}))
+        plat = st.selectbox("Beli online", ["semua", "online", "offline"] + [p["id"] for p in D["platform"]], key="tr_plat",
+                            format_func=f_platform({"semua": "Semua (online dan offline)", "online": "Semua yang online", "offline": "Hanya offline"}))
         q = st.text_input("Cari catatan, kategori, barang, toko, atau lokasi", key="tr_q", placeholder="Ketik kata kunci").strip().lower()
     hasil = []
     for t in D["transaksi"]:
@@ -506,7 +521,13 @@ def _filter() -> list:
             continue
         if tk != "semua" and t.get("toko") != tk:
             continue
-        if q and q not in f'{t.get("catatan", "")} {nama_kat(t.get("kategori"))} {nama_dompet(t["dompet"])} {teks_barang(t)} {teks_toko(t)}'.lower():
+        if plat == "online" and not t.get("platform"):
+            continue
+        if plat == "offline" and (t.get("platform") or t["jenis"] != "keluar"):
+            continue
+        if plat not in ("semua", "online", "offline") and t.get("platform") != plat:
+            continue
+        if q and q not in f'{t.get("catatan", "")} {nama_kat(t.get("kategori"))} {nama_dompet(t["dompet"])} {teks_barang(t)} {teks_toko(t)} {nama_platform(t.get("platform"))}'.lower():
             continue
         hasil.append(t)
     return sorted(hasil, key=kunci_urut, reverse=True)
@@ -551,7 +572,7 @@ def _tampil_tx(t: dict, edit_id, hapus_id, foto: bool = True):
                 else:
                     t["kategori"] = isi["kategori"]
                     isi["struk"] = proses_foto(isi["struk_berkas"], isi["struk_hapus"], t.get("struk", ""), "struk")
-                    for kk in ("toko", "lokasi", "waktu", "struk"):
+                    for kk in ("toko", "platform", "lokasi", "waktu", "struk"):
                         if isi[kk]:
                             t[kk] = isi[kk]
                         else:
@@ -643,7 +664,7 @@ def _kartu_struk(isi: list, edit_id, hapus_id):
     with st.container(key=f"tx_g_{t0['grup']}"):
         st.markdown(
             f'<div class="rt"><div class="ic keluar">🧾</div><div class="isi"><div class="jd">{e(nama)}</div>'
-            f'<div class="mt">{fmt_iso(t0["tgl"])}{waktu} · {e(nama_dompet(t0["dompet"]))}<br>{len(isi)} barang'
+            f'<div class="mt">{fmt_iso(t0["tgl"])}{waktu} · {e(nama_dompet(t0["dompet"]))}{" · 🛵 " + e(nama_platform(t0.get("platform"))) if t0.get("platform") else ""}<br>{len(isi)} barang'
             f'{" · 🏷️ hemat " + rp(round(hemat)) if hemat else ""}</div></div>'
             f'<div class="nom keluar">{rp(total)}</div></div>', unsafe_allow_html=True)
         if t0.get("struk") and st.session_state.get("tr_struk"):
