@@ -124,6 +124,8 @@ def _form(awal: dict | None):
 
 
 def halaman_tagihan():
+    from keuangan.langganan import panel_langganan
+    panel_langganan()
     aktif = sorted([t for t in D["tagihan"] if t.get("aktif", True)], key=lambda t: t["berikut"])
     selesai = [t for t in D["tagihan"] if not t.get("aktif", True)]
     per_bulan = sum(t["jumlah"] * {"mingguan": 52 / 12, "bulanan": 1, "tiga_bulan": 1 / 3, "tahunan": 1 / 12}.get(t["tiap"], 0)

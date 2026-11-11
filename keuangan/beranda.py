@@ -52,6 +52,10 @@ def _perhatian() -> list:
     baris += baris_perhatian()
     if teks_ringkas():
         baris.append(teks_ringkas())
+    from keuangan.langganan import jumlah_belum_dijadwalkan
+    nl = jumlah_belum_dijadwalkan()
+    if nl:
+        baris.append(f"🔎 {nl} pengeluaran rutin belum dijadwalkan (lihat Transaksi berulang)")
     for d in dompet_aktif():
         if saldo_dompet(d["id"]) < 0 and d.get("jenis") != "Kartu kredit":
             baris.append(f'⚠️ Saldo dompet <b>{e(d["nama"])}</b> negatif: {rp(saldo_dompet(d["id"]))}. Cek transaksi atau saldo awalnya.')

@@ -137,3 +137,10 @@ Tanggal `2026-03-15` atau `15/03/2026`; angka boleh `1.250.000`. Contoh file bis
 - **Kunci PIN**: Pengaturan > Tampilan > Kunci PIN (4–12 angka, per akun, disimpan sebagai hash). Aplikasi terkunci saat dibuka ulang di perangkat yang masih tersambung, atau lewat tombol Kunci di menu samping. 5 salah = tunggu 60 detik.
 - **Harga per satuan**: Laporan > Per satuan membandingkan harga per 100 g / 100 ml / buah antar barang sekategori dari "Ukuran / isi kemasan" (contoh: 85 g, 1 liter, 2 x 250 ml, isi 12).
 - **Laporan akhir tahun**: Laporan > Akhir tahun. Ringkasan, grafik per bulan, kategori dan toko teratas, barang tersering, rekor, perbandingan dengan tahun lalu, dan unduhan HTML (cetak ke PDF dari peramban).
+
+## Pencatatan lebih cepat dan pemeriksaan data
+
+- **Tangkap cepat**: Catat transaksi > "⚡ Tangkap cepat". Ketik satu kalimat seperti `es jeruk 8rb 2`, `bensin 30rb`, `gaji 5jt`. Jenis, barang, kategori, dompet, dan toko ditebak dari kebiasaan; periksa lalu Simpan. Dengan banyaknya, nominal dihitung per satuan. Tanggal selalu hari ini.
+- **Sering dicatat**: deretan tombol barang paling sering (90 hari terakhir) di atas form. Ketuk untuk mengisi barang, harga, kategori, dan toko yang biasa.
+- **Pengeluaran rutin terlupa**: di Transaksi berulang. Mencari pengeluaran berjumlah mirip yang muncul tiap bulan (minimal 3 bulan), lalu bisa dijadwalkan, ditandai "mau dihentikan", atau diabaikan. Juga muncul di Perlu perhatian di Beranda.
+- **Pemeriksa data**: Pengaturan > Pemeriksa data. Menemukan barang kosong padahal catatan menyebut barang, kategori beda dari barangnya, jumlah tak sama dengan banyaknya × harga satuan, dan rujukan ke barang/toko terhapus.

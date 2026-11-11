@@ -1,5 +1,6 @@
 """Catat transaksi (pemasukan, pengeluaran, transfer) dan daftar transaksi dengan filter, ubah, dan hapus."""
-from datetime import time as jam_t
+from collections import Counter
+from datetime import time as jam_t, timedelta
 
 import streamlit as st
 
@@ -70,6 +71,34 @@ def _barang_dipilih(kunci: str):
     st.session_state[f"{kunci}_sub"] = b["kategori"] if b["kategori"] != utama else ""
 
 
+def barang_favorit(jenis: str, n: int = 6) -> list:
+    """Barang yang paling sering dicatat (90 hari terakhir, kalau kosong seluruh riwayat), untuk jenis transaksi ini."""
+    batas = (hari_ini() - timedelta(days=90)).isoformat()
+    for dari in (batas, ""):
+        hit = Counter(t["barang"] for t in D["transaksi"] if t.get("barang") and t["jenis"] == jenis and t["tgl"] >= dari and barang_dari(t["barang"]))
+        if hit:
+            return [barang_dari(i) for i, _ in hit.most_common(n)]
+    return []
+
+
+def _pilih_favorit(kunci: str, bid: str):
+    st.session_state[f"{kunci}_brg"] = bid
+    _barang_dipilih(kunci)
+    tk = Counter(t.get("toko") for t in D["transaksi"] if t.get("barang") == bid and t.get("toko") and toko_dari(t["toko"]))
+    if tk:
+        st.session_state[f"{kunci}_toko"] = tk.most_common(1)[0][0]
+
+
+def panel_favorit(kunci: str, jenis: str):
+    fav = barang_favorit(jenis)
+    if not fav:
+        return
+    st.caption("⭐ Sering dicatat, ketuk untuk mengisi barang, harga, kategori, dan toko")
+    kolom = st.columns(3)
+    for i, b in enumerate(fav):
+        kolom[i % 3].button(b["nama"], key=f"{kunci}_fav_{b['id']}", on_click=_pilih_favorit, args=(kunci, b["id"]), width="stretch")
+
+
 def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str = "Simpan", bersih: bool = False):
     """Form satu transaksi. Kembalikan dict isian kalau tombol ditekan dan isian sah, kalau tidak None.
 
@@ -112,10 +141,10 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             tops.append(awal["toko"])
         if st.session_state.get(f"{kunci}_toko") not in tops:
             st.session_state.pop(f"{kunci}_toko", None)
-        toko = c2.selectbox("Toko / tempat beli (opsional)", tops, index=tops.index(awal["toko"]) if awal.get("toko") in tops else 0,
+        toko = c2.selectbox("Toko / tempat beli (opsional)" if jenis == "keluar" else "Sumber pemasukan (opsional)", tops, index=tops.index(awal["toko"]) if awal.get("toko") in tops else 0,
                             format_func=f_toko(), key=f"{kunci}_toko",
                             help="Tambah toko di Pengaturan > Toko dan tempat beli.")
-        if ada_titik:
+        if ada_titik and jenis == "keluar":
             with c2:
                 tombol_gps(f"{kunci}_gps", "📍 Pilih toko terdekat")
     if not brg and jenis != "transfer" and barang_dari(st.session_state.get(f"{kunci}_brg")):
@@ -172,14 +201,14 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
                 nilai = None  # transaksi lama tanpa jam: biarkan kosong
             else:
                 nilai = sekarang().time().replace(second=0, microsecond=0)
-            w = c7.time_input("Waktu beli", value=nilai, step=60, help="Kosongkan bila tidak perlu.")
+            w = c7.time_input("Waktu beli" if jenis == "keluar" else "Waktu terima", value=nilai, step=60, help="Kosongkan bila tidak perlu.")
             waktu = w.strftime("%H:%M") if w else ""
             tk = toko_dari(toko)
             lokasi = c8.text_input("Lokasi", value=awal.get("lokasi") or (tk or {}).get("lokasi", ""), max_chars=80,
-                                   placeholder="Contoh: Jl. Merdeka, Bandung")
+                                   placeholder="Contoh: Jl. Merdeka, Bandung") if jenis == "keluar" else ""
         struk_berkas, struk_hapus = None, False
         if jenis != "transfer":
-            struk_berkas, struk_hapus = kolom_foto("Foto struk, opsional", f"{kunci}_struk", awal.get("struk", ""), "struk")
+            struk_berkas, struk_hapus = kolom_foto("Foto struk, opsional" if jenis == "keluar" else "Foto bukti, opsional", f"{kunci}_struk", awal.get("struk", ""), "struk")
         catatan = st.text_input("Catatan, opsional", value=awal.get("catatan", ""), max_chars=120,
                                 placeholder="Contoh: makan siang, bensin, gaji bulan ini")
         kirim = st.form_submit_button(tombol, type="primary")
@@ -402,6 +431,10 @@ def halaman_catat():
                 st.button("Batal menyalin", key="batal_salin", on_click=atur, args=("salin_tx", None))
                 if not dari_templat:
                     _simpan_templat(asal)
+            if not awal_salin:
+                from keuangan.tangkap import panel_tangkap
+                panel_tangkap()
+                panel_favorit(kunci, jenis)
             isi = form_transaksi(kunci, jenis, awal=awal_salin, tombol="Simpan transaksi", bersih=True)
         if isi:
             struk = proses_foto(isi["struk_berkas"], False, "", "struk")

@@ -33,7 +33,7 @@ EDIT_SAJA = ("Catat transaksi",)
 MASTER = ["Dompet", "Kategori", "Cadangan dan pulihkan"]
 IKON = {"Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Transaksi berulang": "event_repeat", "Target tabungan": "savings",
-        "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner",
+        "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner", "Pemeriksa data": "fact_check",
         "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
 LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">'
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
@@ -58,6 +58,7 @@ DESKRIPSI = {
     "Utang-piutang": "Catat utang dan piutang beserta cicilannya. Bisa ikut tercatat di saldo dompet.",
     "Laporan": "Statistik bulanan, tren 12 bulan, arus tiap dompet, serta belanja per barang dan per toko.",
     "Tampilan": "Pilih bagian Beranda yang ditampilkan.",
+    "Pemeriksa data": "Cari transaksi yang janggal (barang kosong, kategori tak cocok, jumlah tak sinkron) dan perbaiki dengan satu ketukan.",
     "Mesin baca struk": "Lihat mesin pembaca foto struk yang aktif dan uji apakah tiap mesin berfungsi.",
     "Ekspor dan impor": "Unduh data ke Excel atau CSV, atau tambah banyak transaksi sekaligus dari file.",
     "Dompet": "Tempat uang disimpan beserta saldo awalnya. Saldo sekarang dihitung otomatis.",
@@ -104,7 +105,7 @@ def peringatan_uji():
 
 
 def pilih_halaman():
-    PENGATURAN = ["Tampilan", "Barang dan produk", "Toko dan tempat beli", "Tempat sampah", "Mesin baca struk", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
+    PENGATURAN = ["Tampilan", "Barang dan produk", "Toko dan tempat beli", "Tempat sampah", "Mesin baca struk", "Pemeriksa data", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
     HALAMAN = ["Beranda"] + menu_utama() + PANTAU + PENGATURAN
     if st.session_state.get("halaman") not in HALAMAN:
         st.session_state.halaman = "Beranda"
@@ -194,6 +195,9 @@ def tampilkan_halaman(halaman):
         halaman_laporan()
     elif halaman == "Tampilan":
         halaman_tampilan()
+    elif halaman == "Pemeriksa data":
+        from keuangan.periksa import halaman_periksa
+        halaman_periksa()
     elif halaman == "Mesin baca struk":
         halaman_mesin()
     elif halaman == "Ekspor dan impor":
