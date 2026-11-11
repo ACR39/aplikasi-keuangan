@@ -13,7 +13,7 @@ from keuangan.bantu import (
 from keuangan.anggaran import teks_jatah
 from keuangan.peta import proses_gps, terdekat, titik_dari, tombol_gps
 from keuangan.ocr import baca_struk, cocokkan_toko, pelajari, ke_tabel, mesin_tersedia
-from keuangan.struk import struk_serupa, peta_kategori, baca_baris, terapkan_potongan, editor_kartu, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
+from keuangan.struk import struk_serupa, peta_kategori, baca_baris, terapkan_potongan, terapkan_tambahan, baris_pajak, editor_kartu, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
 from keuangan.inti import (
     D, JENIS, TOKO_IKON, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, hari_ini, iso_ke_date, nama_bulan, rp, sekarang,
 )
@@ -307,6 +307,22 @@ def form_struk():
     if potongan:
         st.caption(f"Jumlah barang {rp(jumlah_struk)}, dikurangi potongan {rp(min(potongan, jumlah_struk))}.")
         jumlah_struk = max(0, jumlah_struk - int(potongan))
+    dasar_ppn = jumlah_struk
+    ppn = st.number_input("PPN / pajak / biaya lain (Rp), opsional", min_value=0, step=500, key=f"{base}_ppn",
+                          help="Kalau harga di struk belum termasuk PPN, isi jumlah PPN-nya supaya total cocok dengan yang dibayar.")
+    cb1, cb2 = st.columns(2)
+    cb1.button("Hitung 11% dari barang", key=f"{base}_ppn11", on_click=atur, args=(f"{base}_ppn", round(dasar_ppn * 0.11)), disabled=dasar_ppn <= 0, width="stretch")
+    if ocr and ocr.get("total") and ocr["total"] > dasar_ppn > 0:
+        cb2.button(f"Pakai selisih struk ({rp(ocr['total'] - dasar_ppn)})", key=f"{base}_ppnsel", on_click=atur,
+                   args=(f"{base}_ppn", int(ocr["total"] - dasar_ppn)), width="stretch")
+    cara_ppn = "bagi"
+    if ppn:
+        cara_ppn = st.radio("Catat PPN sebagai", ["bagi", "baris"], horizontal=True, key=f"{base}_ppncara",
+                            format_func=lambda c: "Dibagi ke harga tiap barang" if c == "bagi" else "Satu baris PPN sendiri",
+                            help="Dibagi: harga tiap barang jadi sudah termasuk PPN (harga tercatat = harga yang benar-benar dibayar). "
+                                 "Satu baris: harga barang tetap sesuai struk, PPN jadi baris tersendiri.")
+        st.caption(f"Ditambah PPN {rp(ppn)}.")
+        jumlah_struk += int(ppn)
     st.markdown(f"**Total struk: {rp(jumlah_struk)}** · {len(baris_ok)} barang")
     if ocr and ocr.get("total"):
         if ocr["total"] == jumlah_struk:
@@ -335,6 +351,8 @@ def form_struk():
         else:
             struk = proses_foto(berkas, False, "", "struk")
             baris = terapkan_potongan(baris, potongan)
+            if ppn:
+                baris = terapkan_tambahan(baris, ppn) if cara_ppn == "bagi" else baris + [baris_pajak(baris, ppn)]
             n_belajar = pelajari(ocr, baris, toko) if ocr else 0
             simpan_struk(baris, tgl, w.strftime("%H:%M"), dari, toko, lokasi.strip(), struk, foto_hash=foto_hash)
             catat("tambah", ringkas_struk(baris, toko))

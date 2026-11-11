@@ -144,3 +144,5 @@ Tanggal `2026-03-15` atau `15/03/2026`; angka boleh `1.250.000`. Contoh file bis
 - **Sering dicatat**: deretan tombol barang paling sering (90 hari terakhir) di atas form. Ketuk untuk mengisi barang, harga, kategori, dan toko yang biasa.
 - **Pengeluaran rutin terlupa**: di Transaksi berulang. Mencari pengeluaran berjumlah mirip yang muncul tiap bulan (minimal 3 bulan), lalu bisa dijadwalkan, ditandai "mau dihentikan", atau diabaikan. Juga muncul di Perlu perhatian di Beranda.
 - **Pemeriksa data**: Pengaturan > Pemeriksa data. Menemukan barang kosong padahal catatan menyebut barang, kategori beda dari barangnya, jumlah tak sama dengan banyaknya × harga satuan, dan rujukan ke barang/toko terhapus.
+
+- **PPN di struk**: pada "Satu struk, banyak barang" ada kolom "PPN / pajak / biaya lain". Tombol "Hitung 11% dari barang" atau "Pakai selisih struk" (dari total hasil baca foto) mengisinya. PPN bisa dibagi ke harga tiap barang (total cocok dengan yang dibayar) atau dicatat sebagai satu baris PPN tersendiri.

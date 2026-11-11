@@ -22,7 +22,7 @@ from keuangan.inti import D, hanya_lihat
 MODEL_BAWAAN = "claude-sonnet-5-5"
 URL_API = "https://api.anthropic.com/v1/messages"
 KATA_ABAI = ("total", "subtotal", "sub total", "tunai", "cash", "kembali", "change", "bayar", "ppn", "pajak", "tax", "kartu", "debit",
-             "kredit", "qris", "voucher", "poin", "point", "hemat", "item", "terima kasih", "thank", "npwp", "kasir", "struk", "no.", "nomor")
+             "kredit", "qris", "voucher", "poin", "point", "hemat", "item", "terima kasih", "thank", "npwp", "kasir", "struk", "no.", "nomor", "sms", "kritik", "member", "tgl.", "telp", "dpp", "jl.", "expired", "kembalian", "saran")
 
 
 # ---------------------------------------------------------------- mesin
@@ -180,25 +180,51 @@ def parse_teks(teks: str) -> dict:
         m = re.search(r"\b([01]?\d|2[0-3])[:.]([0-5]\d)(?:[:.][0-5]\d)?\b", b)
         if m and not waktu and ":" in b:
             waktu = f"{int(m[1]):02d}:{m[2]}"
-    item, total = [], None
+    item, total, cadangan_total = [], None, None
+    uang = r"(\d{1,3}(?:[.,]\d{3})+|\d{3,8})"
     for b in baris:
         rendah = b.lower()
-        if re.match(r"^\s*(grand\s*)?total\b", rendah):
+        # total yang dibayar: 'Total Belanja', 'Grand Total', 'Total Bayar'; 'Total Item' dan 'Total Disc' bukan total
+        if re.match(r"^\s*(grand\s*)?total\b", rendah) or re.match(r"^\s*(jumlah\s*(bayar|tagihan)|tagihan)\b", rendah):
             angka_total = re.findall(r"[\d.,]*\d", b)
-            if angka_total and not total:
-                total = angka(angka_total[-1])
+            if not angka_total or re.search(r"\b(item|disc|diskon|qty|barang)\b", rendah):
+                continue
+            nilai = angka(angka_total[-1])
+            if re.search(r"belanja|bayar|grand|tagihan", rendah):
+                total = total or nilai
+            elif cadangan_total is None:
+                cadangan_total = nilai
             continue
-        if any(k in rendah for k in KATA_ABAI):
+        # potongan harga item: 'Disc. -2,000' berlaku untuk barang di atasnya
+        m = re.match(r"^\s*(?:disc(?:ount)?|diskon|potongan|pot\.?|hemat)\b\.?\s*[:\-]?\s*-?\s*(?:rp\.?\s*)?" + uang + r"\s*$", rendah)
+        if m and item:
+            pot = angka(m[1])
+            x = item[-1]
+            nilai = x["qty"] * x["harga_satuan"]
+            if 0 < pot < nilai:
+                x["harga_normal"] = x["harga_satuan"]
+                x["harga_satuan"] = max(1, round((nilai - pot) / x["qty"]))
             continue
+        if any(k in rendah for k in KATA_ABAI) or re.search(r"\d{9,}", b):
+            continue  # baris pembayaran, alamat, nomor telepon, dan sejenisnya
         m = re.match(r"^(?P<nama>.*?[A-Za-z].*?)\s+(?P<q>\d+(?:[.,]\d+)?)\s*[xX@*]\s*(?P<h>[\d.,]+)\s+(?P<t>[\d.,]+)\s*$", b)
         if m:
             qty = float(m["q"].replace(",", "."))
             item.append({"nama": m["nama"].strip(" .-"), "qty": qty, "harga_satuan": angka(m["h"]), "harga_normal": None, "kategori": None})
             continue
-        m = re.match(r"^(?P<nama>.*?[A-Za-z].*?)\s+(?P<t>\d{1,3}(?:[.,]\d{3})+|\d{3,})\s*$", b)
+        # format minimarket: NAMA  [qty]  harga_satuan  jumlah  (qty kadang salah baca, jadi dihitung dari jumlah / harga satuan)
+        m = re.match(r"^(?P<nama>.*?[A-Za-z].*?)\s+(?:\S{1,3}\s+)?(?P<h>" + uang[1:-1] + r")\s+(?P<t>" + uang[1:-1] + r")\s*$", b)
+        if m and angka(m["h"]) > 0:
+            h_, t_ = angka(m["h"]), angka(m["t"])
+            q_ = t_ / h_
+            if abs(q_ - round(q_)) < 0.01 and round(q_) >= 1:
+                item.append({"nama": m["nama"].strip(" .-"), "qty": float(round(q_)), "harga_satuan": h_, "harga_normal": None, "kategori": None})
+                continue
+        m = re.match(r"^(?P<nama>.*?[A-Za-z].*?)\s+(?P<t>\d{1,3}(?:[.,]\d{3})+|\d{3,8})\s*$", b)
         if m:
             t = angka(m["t"])
             item.append({"nama": m["nama"].strip(" .-"), "qty": 1, "harga_satuan": t, "harga_normal": None, "kategori": None})
+    total = total or cadangan_total
     return _rapikan({"toko": toko, "tanggal": tanggal, "waktu": waktu, "total": total, "item": item}, "tesseract")
 
 

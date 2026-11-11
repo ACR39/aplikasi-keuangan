@@ -163,6 +163,30 @@ def terapkan_potongan(baris: list, potongan: int) -> list:
     return hasil
 
 
+def terapkan_tambahan(baris: list, tambahan: int) -> list:
+    """Bagi PPN/pajak/biaya tambahan ke tiap barang sebanding nilainya, jadi total barang = total struk.
+    Harga satuan (dan harga normal, bila ada) naik dengan faktor yang sama."""
+    total = total_baris(baris)
+    tambahan = int(tambahan or 0)
+    if tambahan <= 0 or total <= 0:
+        return baris
+    sisa, hasil = tambahan, []
+    for i, x in enumerate(baris):
+        nilai = round(x["qty"] * x["harga"])
+        bagian = sisa if i == len(baris) - 1 else round(tambahan * nilai / total)
+        sisa -= bagian
+        faktor = (nilai + bagian) / nilai if nilai else 1
+        baru = round((nilai + bagian) / x["qty"])
+        hasil.append({**x, "harga": baru, "normal": round(x["normal"] * faktor) if x["normal"] else 0})
+    return hasil
+
+
+def baris_pajak(baris: list, pajak: int) -> dict:
+    """Satu baris tersendiri 'PPN' berkategori sama dengan barang termahal di struk."""
+    besar = max(baris, key=lambda x: x["qty"] * x["harga"])
+    return {"barang": "", "kategori": besar["kategori"], "ket": "PPN", "qty": 1, "harga": int(pajak), "normal": 0, "asal": ""}
+
+
 def total_cepat(df: pd.DataFrame) -> int:
     """Total yang tampil langsung saat mengetik; baris bermasalah diabaikan."""
     baris, _ = baca_baris(df)
