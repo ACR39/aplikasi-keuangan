@@ -146,3 +146,8 @@ Tanggal `2026-03-15` atau `15/03/2026`; angka boleh `1.250.000`. Contoh file bis
 - **Pemeriksa data**: Pengaturan > Pemeriksa data. Menemukan barang kosong padahal catatan menyebut barang, kategori beda dari barangnya, jumlah tak sama dengan banyaknya × harga satuan, dan rujukan ke barang/toko terhapus.
 
 - **PPN di struk**: pada "Satu struk, banyak barang" ada kolom "PPN / pajak / biaya lain". Tombol "Hitung 11% dari barang" atau "Pakai selisih struk" (dari total hasil baca foto) mengisinya. PPN bisa dibagi ke harga tiap barang (total cocok dengan yang dibayar) atau dicatat sebagai satu baris PPN tersendiri.
+
+## Foto struk untuk seluruh struk
+Lupa unggah foto saat menyimpan struk? Di **Daftar transaksi**, buka kartu struk lalu pilih
+"📷 Tambah foto struk" (atau "Ganti foto struk"). Satu foto dipasang ke semua barang dalam struk itu,
+tidak perlu per barang. Tombol "Hapus foto" melepasnya dari semua barang.

@@ -8,7 +8,7 @@ from keuangan.bantu import (
     barang_dalam, barang_dari, f_barang, perbarui_harga_barang, teks_barang,
     f_dompet, f_kat, turunan, harga_normal_barang, tampil_peringatan_harga, peringatan_harga, salin_transaksi, pilih_kategori, kolom_foto, proses_foto, kat_dari, f_toko, toko_dari, teks_toko, kunci_urut, akar,
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
-    ringkas_teks, info_diskon, e, selesai_simpan, tambah_transaksi, versi, daftar_bulan, deretan_stat, kartu_stat,
+    ringkas_teks, info_diskon, e, selesai_simpan, tambah_transaksi, versi, hapus_foto_bebas, daftar_bulan, deretan_stat, kartu_stat,
 )
 from keuangan.anggaran import teks_jatah
 from keuangan.peta import proses_gps, terdekat, titik_dari, tombol_gps
@@ -597,6 +597,37 @@ def _hapus_struk(g: str):
     selesai_simpan(f"Struk dihapus: {len(semua)} barang (ada di Tempat sampah).", hapus_grup=None)
 
 
+def _simpan_foto_struk(g: str, berkas, hapus: bool):
+    """Pasang/ganti/hapus foto struk untuk SEMUA barang di satu struk."""
+    import hashlib
+    semua = [x for x in D["transaksi"] if x.get("grup") == g]
+    if not semua:
+        return
+    lama = {x["struk"] for x in semua if x.get("struk")}
+    if berkas is not None:
+        data = berkas.getvalue()
+        baru = proses_foto(berkas, False, "", "struk")
+        if not baru:
+            return
+        for i in lama:
+            hapus_foto_bebas(i)
+        h = hashlib.sha1(data).hexdigest()
+        for x in semua:
+            x["struk"], x["foto_hash"] = baru, h
+        pesan = "Foto struk dipasang untuk semua barang."
+    elif hapus:
+        for i in lama:
+            hapus_foto_bebas(i)
+        for x in semua:
+            x.pop("struk", None)
+            x.pop("foto_hash", None)
+        pesan = "Foto struk dihapus."
+    else:
+        return
+    catat("ubah", f"{pesan[:-1]} ({len(semua)} barang)")
+    selesai_simpan(pesan)
+
+
 def _kartu_struk(isi: list, edit_id, hapus_id):
     """Satu kartu untuk satu struk (beberapa barang); barangnya bisa dibuka."""
     isi = sorted(isi, key=lambda x: x.get("dibuat", ""))
@@ -626,6 +657,15 @@ def _kartu_struk(isi: list, edit_id, hapus_id):
                 _tampil_tx(x, edit_id, hapus_id, foto=False)
         if not hanya_lihat():
             g = t0["grup"]
+            ada = bool(t0.get("struk"))
+            with st.expander("📷 Ganti foto struk" if ada else "📷 Tambah foto struk (untuk semua barang)"):
+                f = st.file_uploader("Foto struk", type=["jpg", "jpeg", "png", "webp"],
+                                     key=f"fs_{g}_{versi()}", label_visibility="collapsed")
+                a1, a2 = st.columns(2)
+                if a1.button("Simpan foto", key=f"fs_ok_{g}_{versi()}", disabled=f is None, type="primary"):
+                    _simpan_foto_struk(g, f, False)
+                if ada and a2.button("Hapus foto", key=f"fs_del_{g}_{versi()}"):
+                    _simpan_foto_struk(g, None, True)
             if st.session_state.get("hapus_grup") == g:
                 semua = [x for x in D["transaksi"] if x.get("grup") == g]
                 st.warning(f"Hapus seluruh struk ini ({len(semua)} barang, {rp(sum(int(x['jumlah']) for x in semua))})? "

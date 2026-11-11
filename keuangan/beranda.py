@@ -7,7 +7,7 @@ import streamlit as st
 
 from keuangan.anggaran import hari_melewati, ikon_ag, jatah_hari_ini, label_ag, status_anggaran
 from keuangan.bantu import (
-    atur, sisa_hari_teks, baris_transaksi, batang, ikon_kat, kunci_urut, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
+    atur, sisa_hari_teks, baris_transaksi, batang, ikon_kat, kat_dari, kunci_urut, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
     pindah_halaman, saldo_dompet, total_saldo, ym_ini, akar, barang_dari, toko_dari,
 )
 from keuangan.inti import D, TGL_MAX, TGL_MIN, sisa_hari, fmt_iso, hanya_lihat, hari_ini, nama_bulan, rp
@@ -212,9 +212,18 @@ def halaman_beranda():
         st.markdown("**Saldo per dompet**")
         if not dompet_aktif():
             st.info("Belum ada dompet aktif. Tambahkan di Pengaturan > Dompet.")
-        kartu = "".join(f'<div class="dk1"><div class="j">{e(d.get("jenis", ""))}</div><div class="n">{e(d["nama"])}</div>'
-                        f'<div class="s{" neg" if saldo_dompet(d["id"]) < 0 else ""}">{rp(saldo_dompet(d["id"]))}</div></div>'
-                        for d in dompet_aktif())
+        IKON_D = {"tunai": "💵", "bank": "🏦", "e-wallet": "📱", "ewallet": "📱", "kartu kredit": "💳", "investasi": "📈"}
+        WARNA_D = {"tunai": "#34a874", "bank": "#3b82c4", "e-wallet": "#8b5cf6", "ewallet": "#8b5cf6", "kartu kredit": "#e0a63a", "investasi": "#0ea5a4"}
+        total_pos = sum(max(0, saldo_dompet(d["id"])) for d in dompet_aktif()) or 1
+        kartu = ""
+        for d in dompet_aktif():
+            sd, jn = saldo_dompet(d["id"]), (d.get("jenis") or "").lower()
+            warna = WARNA_D.get(jn, "#64748b")
+            sub = "" if (d.get("jenis") or "").lower() == d["nama"].lower() or not d.get("jenis") else f'<div class="j">{e(d["jenis"])}</div>'
+            kartu += (f'<div class="dk2" style="--aksen:{warna};--aksen-lemah:{warna}22"><div class="h"><div class="i">{IKON_D.get(jn, "👛")}</div>'
+                      f'<div><div class="n">{e(d["nama"])}</div>{sub}</div></div>'
+                      f'<div class="s{" neg" if sd < 0 else ""}">{rp(sd)}</div>'
+                      f'<div class="p">{round(max(0, sd) / total_pos * 100)}% dari total saldo</div></div>')
         st.markdown(f'<div class="dompet-k">{kartu}</div>', unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
@@ -226,8 +235,12 @@ def halaman_beranda():
                 if not dt:
                     st.caption("Belum ada anggaran.")
                 for ag, pakai, persen in dt:
-                    st.markdown(f'<div class="ag"><b>{ikon_ag(ag)}{e(label_ag(ag))}</b><span>{rp(pakai)} / {rp(ag["batas"])}</span></div>'
-                                f'{batang(pakai, ag["batas"])}', unsafe_allow_html=True)
+                    sisa = ag["batas"] - pakai
+                    kls = "b" if persen > 100 else "w" if persen >= 80 else ""
+                    ket = f"{rp(pakai)} dari {rp(ag['batas'])} · " + (f"sisa {rp(sisa)}" if sisa >= 0 else f"lewat {rp(-sisa)}")
+                    st.markdown(f'<div class="kem"><div class="a">{ikon_ag(ag)}<span class="nm">{e(label_ag(ag))}</span>'
+                                f'<span class="pc {kls}">{persen:.0f}%</span></div>{batang(pakai, ag["batas"])}<div class="kt">{ket}</div></div>',
+                                unsafe_allow_html=True)
                 if not hanya_lihat() or dt:
                     st.button("Kelola anggaran", key="lompat_ag", on_click=pindah_halaman, args=("Anggaran",))
     with c2:
@@ -238,25 +251,38 @@ def halaman_beranda():
                     st.caption("Belum ada target.")
                 for g in D["tabungan"][:5]:
                     kum = terkumpul(g)
-                    st.markdown(f'<div class="ag"><b>{e(g["nama"])}</b><span>{rp(kum)} / {rp(g["target"])}</span></div>'
-                                f'{batang(kum, g["target"], "bl" if kum < g["target"] else "")}', unsafe_allow_html=True)
+                    pers = kum / g["target"] * 100 if g["target"] else 0
+                    kurang = max(0, g["target"] - kum)
+                    ket = f"{rp(kum)} dari {rp(g['target'])} · " + ("tercapai 🎉" if kurang == 0 else f"kurang {rp(kurang)}")
+                    st.markdown(f'<div class="kem"><div class="a"><span class="kc" style="background:#3b82c4">🎯</span><span class="nm">{e(g["nama"])}</span>'
+                                f'<span class="pc {"" if kurang == 0 else "bl"}">{pers:.0f}%</span></div>'
+                                f'{batang(kum, g["target"], "bl" if kurang else "")}<div class="kt">{ket}</div></div>', unsafe_allow_html=True)
                 st.button("Kelola target", key="lompat_tab", on_click=pindah_halaman, args=("Target tabungan",))
     d1, d2 = st.columns(2)
     with d1:
         if "g_kategori" not in sembunyi:
             with st.container(key="kartu_g_br_kat"):
                 st.markdown(f"**Pengeluaran per kategori, {label}**")
-                data = dict(_teratas(ts, lambda t: akar(t.get("kategori", "")), 99))
+                data = dict(_teratas(ts, lambda t: akar(t.get("kategori", "")), 8))
                 if data:
-                    st.bar_chart(pd.DataFrame({"Kategori": [nama_kat(k) for k in data], "Jumlah": list(data.values())}).set_index("Kategori"),
-                                 color="#d64545", horizontal=True)
+                    total_k = sum(j for _, j in _teratas(ts, lambda t: akar(t.get("kategori", "")), 999)) or 1
+                    puncak = max(data.values()) or 1
+                    html = ""
+                    for n, (k, jml) in enumerate(data.items(), 1):
+                        warna = (kat_dari(k) or {}).get("warna", "#9aa0a6")
+                        html += (f'<div class="top-r">{ikon_kat(k)}<div class="tm"><div class="tn">{e(nama_kat(k))}</div>'
+                                 f'<div class="ts">{jml / total_k * 100:.0f}% dari pengeluaran</div>'
+                                 f'<div class="bar"><i style="width:{jml / puncak * 100:.0f}%;background:{e(warna)}"></i></div></div>'
+                                 f'<div class="tj">{rp(jml)}</div></div>')
+                    st.markdown(html, unsafe_allow_html=True)
                 else:
                     st.caption("Belum ada pengeluaran pada periode ini.")
     with d2:
         if "g_tren" not in sembunyi:
             with st.container(key="kartu_g_br_tren"):
                 bulanan = mode == "tahun" or hari > 62
-                st.markdown(f"**Pemasukan dan pengeluaran {'per bulan' if bulanan else 'per hari'}**")
+                masuk_juga = st.toggle("Tampilkan pemasukan", key="br_tren_masuk", help="Pemasukan (misalnya gaji) biasanya jauh lebih besar dan membuat batang pengeluaran sulit terlihat.")
+                st.markdown(f"**{'Pemasukan dan pengeluaran' if masuk_juga else 'Pengeluaran'} {'per bulan' if bulanan else 'per hari'}**")
                 if bulanan:
                     kunci_g = {}
                     y, m = a.year, a.month
@@ -277,23 +303,36 @@ def halaman_beranda():
                             kk[g] += int(tt["jumlah"])
                         elif tt["jenis"] == "transfer":
                             kk[g] += int(tt.get("biaya", 0) or 0)
-                st.bar_chart(pd.DataFrame({"Waktu": list(kunci_g.values()), "Pemasukan": list(mm.values()),
-                                           "Pengeluaran": list(kk.values())}).set_index("Waktu"),
-                             color=["#34a874", "#d64545"], stack=False)
+                if masuk_juga:
+                    st.bar_chart(pd.DataFrame({"Waktu": list(kunci_g.values()), "Pemasukan": list(mm.values()),
+                                               "Pengeluaran": list(kk.values())}).set_index("Waktu"),
+                                 color=["#34a874", "#d64545"], stack=False)
+                else:
+                    st.bar_chart(pd.DataFrame({"Waktu": list(kunci_g.values()), "Pengeluaran": list(kk.values())}).set_index("Waktu"),
+                                 color="#d64545")
+                    if any(kk.values()):
+                        puncak = max(kk, key=kk.get)
+                        st.caption(f"Tertinggi {kunci_g[puncak]}: {rp(kk[puncak])} · rata-rata {rp(round(sum(kk.values()) / len(kk)))} per {'bulan' if bulanan else 'hari'}")
     if "teratas" not in sembunyi:
         with st.container(key="kartu_g_br_teratas"):
             st.markdown(f"**Toko dan barang teratas, {label}**")
             e1, e2 = st.columns(2)
-            for kol, judul, kunci_t, nama in (
-                    (e1, "Toko", lambda t: t.get("toko"), lambda i: (toko_dari(i) or {}).get("nama", "")),
-                    (e2, "Barang", lambda t: t.get("barang"), lambda i: (barang_dari(i) or {}).get("nama", ""))):
+            from keuangan.bantu import jumlah_kunjungan
+            for kol, judul, kunci_t, nama, satuan in (
+                    (e1, "🏪 Toko", lambda t: t.get("toko"), lambda i: (toko_dari(i) or {}).get("nama", ""), "kunjungan"),
+                    (e2, "🛒 Barang", lambda t: t.get("barang"), lambda i: (barang_dari(i) or {}).get("nama", ""), "kali dibeli")):
                 with kol:
-                    st.caption(judul)
                     isi = _teratas(ts, kunci_t)
+                    html = f'<div class="top-h">{judul}</div>'
                     if not isi:
-                        st.caption("Belum ada data pada periode ini.")
-                    for i, jml in isi:
-                        st.markdown(f'<div class="ag"><b>{e(nama(i))}</b><span>{rp(jml)}</span></div>', unsafe_allow_html=True)
+                        html += '<div class="sub-rinci">Belum ada data pada periode ini.</div>'
+                    puncak = max((j for _, j in isi), default=1) or 1
+                    for n, (i, jml) in enumerate(isi, 1):
+                        kali = jumlah_kunjungan([t for t in ts if kunci_t(t) == i and t["jenis"] == "keluar"])
+                        html += (f'<div class="top-r"><span class="no">{n}</span><div class="tm"><div class="tn">{e(nama(i))}</div>'
+                                 f'<div class="ts">{kali} {satuan}</div><div class="bar bl"><i style="width:{jml / puncak * 100:.0f}%"></i></div></div>'
+                                 f'<div class="tj">{rp(jml)}</div></div>')
+                    st.markdown(html, unsafe_allow_html=True)
     if "terakhir" not in sembunyi:
         with st.container(key="kartu_g_br_terakhir"):
             st.markdown("**Transaksi terakhir**")
