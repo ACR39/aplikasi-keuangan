@@ -309,9 +309,15 @@ def form_struk():
         jumlah_struk = max(0, jumlah_struk - int(potongan))
     dasar_ppn = jumlah_struk
     ppn = st.number_input("PPN / pajak / biaya lain (Rp), opsional", min_value=0, step=500, key=f"{base}_ppn",
-                          help="Kalau harga di struk belum termasuk PPN, isi jumlah PPN-nya supaya total cocok dengan yang dibayar.")
+                          help="Isi HANYA kalau PPN ditambahkan di luar harga barang (total di struk lebih besar dari jumlah barang). Di minimarket seperti Alfamart dan Indomaret, harga biasanya sudah termasuk PPN, dan baris 'PPN' di struk hanya rincian.")
+    sudah_termasuk = bool(ocr and ocr.get("total") and abs(ocr["total"] - dasar_ppn) <= 1 and dasar_ppn > 0)
+    if sudah_termasuk and not ppn:
+        st.success(f"Total di struk ({rp(ocr['total'])}) sama dengan jumlah barang, jadi PPN sudah termasuk di harga. Tidak perlu diisi. "
+                   f"(PPN yang terkandung kira-kira {rp(round(dasar_ppn * 11 / 111))}.)")
+    elif ppn and ocr and ocr.get("total") and dasar_ppn + int(ppn) != ocr["total"] and abs(ocr["total"] - dasar_ppn) <= 1:
+        st.warning("Total di struk sudah sama dengan jumlah barang sebelum PPN diisi. Kemungkinan PPN sudah termasuk di harga: kosongkan kolom PPN.")
     cb1, cb2 = st.columns(2)
-    cb1.button("Hitung 11% dari barang", key=f"{base}_ppn11", on_click=atur, args=(f"{base}_ppn", round(dasar_ppn * 0.11)), disabled=dasar_ppn <= 0, width="stretch")
+    cb1.button("Tambah 11% (harga belum termasuk PPN)", key=f"{base}_ppn11", on_click=atur, args=(f"{base}_ppn", round(dasar_ppn * 0.11)), disabled=dasar_ppn <= 0, width="stretch")
     if ocr and ocr.get("total") and ocr["total"] > dasar_ppn > 0:
         cb2.button(f"Pakai selisih struk ({rp(ocr['total'] - dasar_ppn)})", key=f"{base}_ppnsel", on_click=atur,
                    args=(f"{base}_ppn", int(ocr["total"] - dasar_ppn)), width="stretch")
