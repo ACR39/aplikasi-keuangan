@@ -384,11 +384,15 @@ def baris_transaksi(t: dict) -> str:
             baris.append(f'Biaya {rp(t["biaya"])}')
         ikon, nom = "⇄", rp(t["jumlah"])
     else:
-        judul = t.get("catatan") or teks_barang(t) or nama_kat(t.get("kategori"))
+        # transaksi berbarang: barang jadi judul, catatan baris kecil; tanpa barang: catatan jadi judul
+        if t.get("barang") and teks_barang(t):
+            judul = teks_barang(t)
+        else:
+            judul = t.get("catatan") or teks_barang(t) or nama_kat(t.get("kategori"))
         baris.append(f'{fmt_iso(t["tgl"])}{" · " + t["waktu"] if t.get("waktu") else ""} · {nama_dompet(t["dompet"])}')
         baris.append(nama_kat(t.get("kategori")))
-        if t.get("catatan") and teks_barang(t):
-            baris.append(teks_barang(t))
+        if t.get("catatan") and judul != t["catatan"]:
+            baris.append(f'📝 {t["catatan"]}')
         if teks_toko(t):
             baris.append(f'📍 {teks_toko(t)}')
         d_ = info_diskon(t)
