@@ -184,18 +184,32 @@ _POLA_BIAYA = (
 )
 
 
+_POLA_POTONGAN = r"^(voucher|diskon|potongan(\s+harga)?|cashback)\b"
+_POLA_RINGKASAN = r"^(sub\s*total|total|grand\s+total|harga\s+pesanan|jumlah\s+bayar)\b"
+
+
 def pisahkan_biaya(h: dict) -> dict:
-    """Baris seperti 'Ongkir' atau 'Biaya layanan' yang ikut terbaca sebagai barang dipindah ke h['biaya'] (jadi isian biaya, bukan barang)."""
-    sisa, biaya = [], dict(h.get("biaya") or {})
+    """Baris yang ikut terbaca sebagai barang tetapi bukan barang: ongkir dan biaya lain dipindah ke h['biaya'], voucher atau diskon ke h['potongan'], subtotal/total dibuang."""
+    sisa, biaya, potongan = [], dict(h.get("biaya") or {}), 0
     for it in h.get("item") or []:
         nama = re.sub(r"\s+", " ", str(it.get("nama", "")).strip().lower())
+        nilai = int(round(float(it["qty"]) * abs(int(it["harga_satuan"]))))
         kk = next((k for k, pola in _POLA_BIAYA if re.match(pola, nama)), None)
+        if re.match(_POLA_RINGKASAN, nama):  # baris subtotal/total bukan barang; total dipakai bila belum diketahui
+            if re.match(r"^(grand\s+)?total\b|^jumlah\s+bayar|^total\s+pembayaran", nama) and not h.get("total"):
+                h["total"] = nilai
+            continue
+        if not kk and re.match(_POLA_POTONGAN, nama):  # voucher/diskon pada pesanan: masuk kolom Potongan
+            potongan += nilai
+            continue
         if kk:
             biaya[kk] = biaya.get(kk, 0) + int(round(float(it["qty"]) * int(it["harga_satuan"])))
         else:
             sisa.append(it)
     if len(sisa) != len(h.get("item") or []):
         h["item"] = sisa
+    if potongan:
+        h["potongan"] = int(h.get("potongan") or 0) + potongan
     if biaya:
         h["biaya"] = biaya
     return h
