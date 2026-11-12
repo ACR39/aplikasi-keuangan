@@ -14,7 +14,7 @@ from keuangan.bantu import (
 from keuangan.anggaran import teks_jatah
 from keuangan.peta import proses_gps, terdekat, titik_dari, tombol_gps
 from keuangan.ocr import baca_struk, cocokkan_toko, pelajari, ke_tabel, mesin_tersedia
-from keuangan.daring import baris_biaya, pastikan_kategori_biaya
+from keuangan.daring import baris_biaya, kebiasaan_toko, olah_online, pastikan_kategori_biaya
 from keuangan.struk import struk_serupa, peta_kategori, baca_baris, terapkan_potongan, terapkan_tambahan, baris_pajak, editor_kartu, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
 from keuangan.inti import (
     D, JENIS, TOKO_IKON, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, hari_ini, iso_ke_date, nama_bulan, rp, sekarang,
@@ -276,7 +276,7 @@ def form_struk():
                 if not hasil["item"]:
                     st.warning("Tidak ada barang yang terbaca. Coba foto yang lebih jelas dan lurus, atau isi manual di bawah.")
                 else:
-                    st.session_state["struk_ocr"] = hasil
+                    st.session_state["struk_ocr"] = olah_online(hasil)
                     st.session_state["ver"] = versi() + 1
                     st.rerun()
     elif berkas is None and not mesin:
@@ -328,6 +328,14 @@ def form_struk():
         st.session_state.pop(f"{base}_plat", None)
     platform = st.selectbox("Beli online lewat (opsional)", pops, format_func=f_platform(), key=f"{base}_plat",
                             help="Pilih GoFood, ShopeeFood, dan sebagainya bila beli lewat aplikasi. Berlaku untuk seluruh struk ini.")
+    alasan = (ocr or {}).get("platform_alasan")
+    if platform:
+        st.caption(f"🛵 **Online** lewat {nama_platform(platform)}" + (f" · terisi otomatis: {alasan}. Salah? Ubah di atas, pilihanmu diingat untuk toko ini." if alasan and (ocr or {}).get("platform_id") == platform else ""))
+    else:
+        st.caption("🏪 **Beli langsung (offline)**" + (f" · {alasan}" if alasan else ""))
+    saran = kebiasaan_toko(toko)
+    if saran and saran[0] and saran[0] != platform and not (ocr or {}).get("platform_id"):
+        st.button(f"Toko ini biasanya lewat {nama_platform(saran[0])} ({saran[1]}x), pakai", key=f"{base}_saranplat", on_click=atur, args=(f"{base}_plat", saran[0]))
     st.markdown("**Barang di struk**")
     st.caption("Pilih Barang dari daftar, atau kosongkan lalu pilih Kategori. Harga kosong memakai harga terakhir barang.")
     df = editor_kartu(f"{base}_tbl", ke_tabel(ocr) if ocr else None)

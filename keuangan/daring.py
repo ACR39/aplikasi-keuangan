@@ -1,4 +1,7 @@
 """Platform beli online (GoFood, GrabFood, ShopeeFood, dst): daftar yang bisa diatur sendiri dan ringkasan online vs offline."""
+import re
+from collections import Counter
+
 import streamlit as st
 
 from keuangan.bantu import (
@@ -168,3 +171,71 @@ def halaman_platform():
         if edit and st.button("Batal ubah", key="batal_ubah_pl"):
             st.session_state.pop("edit_platform", None)
             st.rerun()
+
+
+# ---------------------------------------------------------------- deteksi online dari hasil baca struk
+_POLA_BIAYA = (
+    ("dso", r"^(diskon|potongan|promo)\s+(ongkir|ongkos kirim|pengiriman)"),
+    ("ong", r"^(biaya\s+|ongkos\s+)?(ongkir|kirim|pengiriman|pengantaran|delivery)"),
+    ("lay", r"^(biaya\s+)?(layanan|aplikasi|admin|service|platform)"),
+    ("kms", r"^(biaya\s+)?(pengemasan|kemasan|packaging)"),
+    ("rst", r"^biaya\s+tambahan"),
+    ("asu", r"^(biaya\s+)?asuransi"),
+)
+
+
+def pisahkan_biaya(h: dict) -> dict:
+    """Baris seperti 'Ongkir' atau 'Biaya layanan' yang ikut terbaca sebagai barang dipindah ke h['biaya'] (jadi isian biaya, bukan barang)."""
+    sisa, biaya = [], dict(h.get("biaya") or {})
+    for it in h.get("item") or []:
+        nama = re.sub(r"\s+", " ", str(it.get("nama", "")).strip().lower())
+        kk = next((k for k, pola in _POLA_BIAYA if re.match(pola, nama)), None)
+        if kk:
+            biaya[kk] = biaya.get(kk, 0) + int(round(float(it["qty"]) * int(it["harga_satuan"])))
+        else:
+            sisa.append(it)
+    if len(sisa) != len(h.get("item") or []):
+        h["item"] = sisa
+    if biaya:
+        h["biaya"] = biaya
+    return h
+
+
+def kebiasaan_toko(toko_id: str):
+    """(platform_id atau '' untuk beli langsung, jumlah pesanan) yang paling sering untuk toko ini; None bila belum ada riwayat jelas."""
+    if not toko_id:
+        return None
+    per = {}
+    for t in D["transaksi"]:
+        if t["jenis"] == "keluar" and t.get("toko") == toko_id:
+            per[t.get("grup") or t["id"]] = t.get("platform", "")
+    if not per:
+        return None
+    p, n = Counter(per.values()).most_common(1)[0]
+    return (p, n) if n * 2 >= len(per) else None
+
+
+def olah_online(h: dict) -> dict:
+    """Pisahkan biaya dari barang, lalu tebak platform: tulisan nama platform di struk, kebiasaan toko, atau adanya biaya antar.
+    Hasil: h['platform_id'] (bisa kosong) dan h['platform_alasan'] (kalimat singkat, kosong bila tidak ada petunjuk)."""
+    from keuangan.ocr import cocokkan_toko
+    pisahkan_biaya(h)
+    if h.get("platform_id"):
+        h.setdefault("platform_alasan", "terbaca dari tangkapan layar")
+        return h
+    teks = " ".join([h.get("toko") or ""] + [str(i.get("nama", "")) for i in h.get("item") or []]).lower()
+    toko = cocokkan_toko(h.get("toko") or "") if h.get("toko") else None
+    riw = kebiasaan_toko(toko["id"]) if toko else None
+    ada_biaya = any(v for k, v in (h.get("biaya") or {}).items() if k != "dso")
+    lain = "p_lain" if any(p["id"] == "p_lain" for p in D["platform"]) else (D["platform"][0]["id"] if D["platform"] else "")
+    kata = next((p for p in D["platform"] if p["id"] != "p_lain" and p["nama"].split(" (")[0].lower() in teks), None)
+    if kata:
+        h["platform_id"], h["platform_alasan"] = kata["id"], f"tertulis {kata['nama']} di struk"
+    elif riw and riw[0]:
+        h["platform_id"] = riw[0]
+        h["platform_alasan"] = ("ada biaya antar dan " if ada_biaya else "") + f"toko ini biasanya dibeli lewat {nama_platform(riw[0])} ({riw[1]}x)"
+    elif ada_biaya:
+        h["platform_id"], h["platform_alasan"] = lain, "ada ongkir atau biaya layanan, jadi ini pesanan online"
+    elif riw is not None:
+        h["platform_alasan"] = f"toko ini biasanya dibeli langsung ({riw[1]}x)"
+    return h

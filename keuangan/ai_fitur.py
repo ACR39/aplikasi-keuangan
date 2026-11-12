@@ -200,6 +200,8 @@ def terapkan_layar(teks: str, mesin: str) -> dict:
     h["biaya"] = {kk: ocr.angka(r.get(kunci)) for kunci, kk in BIAYA if ocr.angka(r.get(kunci)) > 0}
     h["platform_id"] = _platform_id(r.get("platform"))
     h["potongan"] = ocr.angka(r.get("diskon_total"))
+    from keuangan.daring import olah_online
+    olah_online(h)
     return h
 
 
