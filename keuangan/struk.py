@@ -6,7 +6,7 @@ lokasi, dompet, dan foto struk. Jadi laporan per kategori, barang, dan toko teta
 import pandas as pd
 import streamlit as st
 
-from keuangan.bantu import kat_dari, nama_kat, perbarui_harga_barang, tambah_transaksi, transaksi_barang, toko_dari, barang_dari
+from keuangan.bantu import akar, anak_dari, pilih_kategori, kat_dari, nama_kat, perbarui_harga_barang, tambah_transaksi, transaksi_barang, toko_dari, barang_dari
 from keuangan.inti import D, baru_id, rp
 
 KOLOM = ["Barang", "Kategori", "Keterangan", "Banyaknya", "Harga satuan"]
@@ -246,6 +246,10 @@ def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = Fal
             ids.append(n)
             st.session_state[f"{kunci}_{n}_brg"] = r.get("Barang") if r.get("Barang") in id_b else ""
             st.session_state[f"{kunci}_{n}_kat"] = r.get("Kategori") if r.get("Kategori") in id_k else ""
+            kid = (barang_dari(id_b[r["Barang"]]) or {}).get("kategori", "") if r.get("Barang") in id_b else id_k.get(r.get("Kategori"), "")
+            if kat_dari(kid):
+                st.session_state[f"{kunci}_{n}_c_kat"] = akar(kid)
+                st.session_state[f"{kunci}_{n}_c_sub"] = kid if kid != akar(kid) else ""
             st.session_state[f"{kunci}_{n}_ket"] = r.get("Keterangan") if isinstance(r.get("Keterangan"), str) else ""
             st.session_state[f"{kunci}_{n}_qty"] = float(r["Banyaknya"]) if not _kosong(r.get("Banyaknya")) else 1.0
             st.session_state[f"{kunci}_{n}_hrg"] = int(r["Harga satuan"]) if not _kosong(r.get("Harga satuan")) else 0
@@ -269,14 +273,35 @@ def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = Fal
             h1.markdown(f"**Barang {no}**")
             if not tetap and len(ids) > 1 and h2.button("🗑", key=f"{k}_del", help="Hapus barang ini"):
                 hapus = rid
-            brg = st.selectbox("Barang", opsi_b, key=f"{k}_brg", disabled=tetap and bool(st.session_state.get(f"{k}_brg")),
-                               format_func=lambda i: i or "(pilih dari daftar barang)")
-            kat = ket = ""
-            if not brg:
-                kat = st.selectbox("Kategori (untuk barang di luar daftar)", opsi_k, key=f"{k}_kat",
-                                   disabled=tetap and bool(st.session_state.get(f"{k}_kat")),
-                                   format_func=lambda i: i or "(pilih kategori)")
-                ket = st.text_input("Nama / keterangan", key=f"{k}_ket", max_chars=60)
+            if tetap:
+                brg = st.selectbox("Barang", opsi_b, key=f"{k}_brg", disabled=bool(st.session_state.get(f"{k}_brg")),
+                                   format_func=lambda i: i or "(pilih dari daftar barang)")
+                kat = ket = ""
+                if not brg:
+                    kat = st.selectbox("Kategori (untuk barang di luar daftar)", opsi_k, key=f"{k}_kat",
+                                       disabled=bool(st.session_state.get(f"{k}_kat")),
+                                       format_func=lambda i: i or "(pilih kategori)")
+                    ket = st.text_input("Nama / keterangan", key=f"{k}_ket", max_chars=60)
+            else:
+                efektif_k = pilih_kategori(f"{k}_c", "keluar", "", kosong=True)
+                utama_k = st.session_state.get(f"{k}_c_kat") or ""
+                langsung = bool(utama_k) and any(x["kategori"] == utama_k for x in D["barang"])
+                sub_ok = bool(utama_k) and (not anak_dari(utama_k) or bool(st.session_state.get(f"{k}_c_sub")) or langsung)
+                if sub_ok:
+                    opsi_f = [""] + [lab for lab, bid in id_b.items() if (barang_dari(bid) or {}).get("kategori") == efektif_k]
+                    if st.session_state.get(f"{k}_brg") not in opsi_f:
+                        st.session_state[f"{k}_brg"] = ""
+                    brg = st.selectbox("Barang (opsional)", opsi_f, key=f"{k}_brg", format_func=lambda i: i or "(pilih dari daftar barang)",
+                                       help="Hanya barang di kategori dan sub kategori yang dipilih.")
+                else:
+                    st.session_state[f"{k}_brg"] = ""
+                    brg = ""
+                    st.selectbox("Barang (opsional)", [""], key=f"{k}_brg_kosong", disabled=True,
+                                 format_func=lambda i: "Isi kategori dan sub kategori dulu" if not utama_k else "Pilih sub kategori dulu")
+                kat = ket = ""
+                if not brg:
+                    kat = lab_k.get(efektif_k, "") if efektif_k else ""
+                    ket = st.text_input("Nama / keterangan", key=f"{k}_ket", max_chars=60)
             c1, c2 = st.columns(2)
             qty = c1.number_input("Banyaknya", min_value=0.0, step=1.0, format="%g", key=f"{k}_qty")
             hrg = c2.number_input("Harga satuan (Rp)", min_value=0, step=500, key=f"{k}_hrg")
