@@ -63,7 +63,7 @@ DESKRIPSI = {
     "Laporan": "Statistik bulanan, tren 12 bulan, arus tiap dompet, serta belanja per barang dan per toko.",
     "Tampilan": "Pilih bagian Beranda yang ditampilkan.",
     "Pemeriksa data": "Cari transaksi yang janggal (barang kosong, kategori tak cocok, jumlah tak sinkron) dan perbaiki dengan satu ketukan.",
-    "Mesin baca struk": "Lihat mesin pembaca foto struk yang aktif dan uji apakah tiap mesin berfungsi.",
+    "Mesin baca struk": "Lihat mesin pembaca foto struk yang aktif, atur urutan percobaannya, dan uji apakah tiap mesin berfungsi.",
     "Ekspor dan impor": "Unduh data ke Excel atau CSV, atau tambah banyak transaksi sekaligus dari file.",
     "Dompet": "Tempat uang disimpan beserta saldo awalnya. Saldo sekarang dihitung otomatis.",
     "Kategori": "Kelompok pemasukan dan pengeluaran. Ubah nama atau gabungkan yang ganda.",

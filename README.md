@@ -34,6 +34,28 @@ Kategori dan Sub kategori dipilih di dua kotak terpisah. Toko / tempat beli dipi
 
 **Beli online**: pengeluaran bisa ditandai lewat platform (GoFood, GrabFood, ShopeeFood, Lainnya; kotak "Beli online lewat"), baik di satu barang maupun di satu struk banyak barang. Daftar platform diatur sendiri di Pengaturan > Platform beli online (tambah, ubah nama, hapus; platform yang sudah dipakai bisa dipindah ke platform lain saat dihapus). Transaksi tanpa platform dianggap beli langsung, jadi data lama tidak perlu diubah. Daftar transaksi punya filter "Beli online" (semua online, hanya offline, atau satu platform). Beranda (bagian "Belanja online vs offline", bisa disembunyikan di Tampilan), Laporan > Bulanan, dan Laporan akhir tahun menampilkan total online dibanding offline dan per platform. Ekspor Excel/CSV dan impor memuat kolom Platform.
 
+## Fitur AI dan privasi
+
+Lima fitur memakai AI di internet. Semuanya **mati secara bawaan** dan dinyalakan satu per satu di Pengaturan > Privasi AI. Kuncinya memakai secrets yang sama dengan Baca struk otomatis (`[anthropic]`, `[openai]`, `[openrouter]`, atau `[gemini]`); Tesseract tidak dihitung karena berjalan di server sendiri.
+
+| Fitur | Di mana | Yang dikirim | Yang tidak dikirim |
+|---|---|---|---|
+| Kategorisasi mutasi bank | Impor mutasi > Bantu kategorikan dengan AI | Keterangan mutasi yang kategorinya belum ketemu (nomor, telepon, email, nama penerima disamarkan), nama kategori dan platform | Nominal, tanggal, saldo, baris yang sudah ketemu |
+| Tangkap cepat bebas | Catat transaksi > Tangkap cepat > Tebak dengan AI | Kalimat yang diketik (nomor panjang disamarkan), nama kategori, dompet, platform | Transaksi lama, toko |
+| Tangkapan layar pesanan online | Catat struk > Baca tangkapan layar pesanan online | Gambar yang sudah dipotong (EXIF dan GPS dibuang), nama kategori dan platform | Isi transaksi lain |
+| Tanya data | Pantau > Asisten AI | Kalimat pertanyaan, tanggal hari ini, nama kategori dan platform | Transaksi, nominal, toko. Hitungan dikerjakan di server ini |
+| Ringkasan bulanan | Pantau > Asisten AI | Angka agregat dua bulan, dibulatkan ke ribuan (nama toko hanya bila dicentang) | Transaksi satu per satu, catatan, tanggal |
+
+Aturan yang berlaku di semua fitur:
+- Isi kiriman ditampilkan persis apa adanya (kotak "Lihat persis yang akan dikirim") dan baru dikirim setelah tombolnya ditekan.
+- `ai.tanya()` adalah satu-satunya jalan keluar data ke AI dan menolak bila saklar fitur mati, apa pun yang dilakukan tampilan.
+- Riwayat kiriman (Pengaturan > Privasi AI) hanya mencatat waktu, fitur, penyedia, dan jumlah butir, tidak pernah isinya.
+- Hasil AI hanya saran: kategori dan platform yang tidak ada di daftarmu diabaikan, dan semuanya diperiksa sebelum disimpan.
+- Penyamaran hanya menangkap pola umum, jadi periksa kotak pratinjau. Kebijakan penyimpanan dan pelatihan model mengikuti penyedia yang dipakai.
+- Baca struk dari foto (fitur lama) tidak lewat saklar ini. Bila ada kunci penyedia, foto struk yang kamu minta dibaca dikirim ke penyedia itu.
+
+Tangkap cepat juga mengenali nama platform tanpa AI: ketik **nasi goreng 25rb gofood**.
+
 Saldo dompet tidak disimpan, tetapi dihitung dari saldo awal + semua transaksi, jadi tidak bisa tidak sinkron.
 Transfer tidak dihitung sebagai pemasukan atau pengeluaran; biaya admin transfer dihitung sebagai pengeluaran.
 
@@ -80,7 +102,7 @@ Di Daftar belanja, buka **Toko mana yang paling hemat?**: perkiraan total bila s
 Saat mencatat satu struk atau menyusun daftar belanja, tiap barang dibandingkan dengan riwayat harganya (median 5 pembelian terakhir): kotak kuning bila lebih mahal 10% atau lebih, hijau bila lebih murah 10% atau lebih, plus info bila toko lain pernah menjual lebih murah. Di form satu barang, peringatan muncul sebagai catatan setelah disimpan (karena isian form tidak berubah langsung saat diketik).
 
 ## Tes mesin baca struk
-Pengaturan > Mesin baca struk menampilkan mesin yang aktif sesuai urutan dan tombol **Tes koneksi** untuk tiap mesin (memakai struk contoh buatan aplikasi). Berguna untuk tahu mesin mana yang kena batas pemakaian atau salah kunci.
+Pengaturan > Mesin baca struk menampilkan mesin yang aktif sesuai urutan dan tombol **Tes koneksi** untuk tiap mesin (memakai struk contoh buatan aplikasi). Berguna untuk tahu mesin mana yang kena batas pemakaian atau salah kunci. Urutan percobaan bisa diubah dengan tombol ↑ dan ↓ di tiap kartu (tersimpan di data). Urutan bawaan sebelum diatur: Claude, OpenAI, OpenRouter, Gemini, Tesseract. Menaruh Tesseract paling atas membuat foto struk hanya dikirim ke penyedia lain bila Tesseract gagal atau tidak menemukan barang. Urutan ini juga menentukan penyedia bawaan untuk fitur AI di Privasi AI.
 
 ## Diskon di struk
 Di tiap barang ada kolom **Harga normal** (isi bila barang itu diskon; harga satuan = yang dibayar). Untuk voucher atau diskon total, isi **Potongan seluruh struk**: dibagi ke tiap barang sebanding harganya dan tercatat sebagai diskon.

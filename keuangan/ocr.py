@@ -60,15 +60,25 @@ def _ada_tesseract() -> bool:
     return shutil.which("tesseract") is not None
 
 
+def _urutan_pilihan() -> list:
+    """Urutan mesin yang disimpan pengguna (Pengaturan > Mesin baca struk); kosong bila belum pernah diatur."""
+    try:
+        return [x for x in (D["pengaturan"].get("urutan_mesin") or []) if isinstance(x, str)]
+    except Exception:
+        return []
+
+
 def daftar_mesin() -> list:
-    """Mesin yang sudah diisi, urut dari yang diutamakan: claude, openai, openrouter, gemini, tesseract."""
+    """Mesin yang sudah diisi. Urutan mengikuti pilihan pengguna; yang belum diatur memakai urutan bawaan:
+    claude, openai, openrouter, gemini, tesseract (mesin baru muncul di belakang pilihan yang sudah ada)."""
     m = []
     if _cfg_claude():
         m.append("claude")
     m += [n for n in PENYEDIA_OA if _cfg_oa(n)]
     if _ada_tesseract():
         m.append("tesseract")
-    return m
+    pilih = _urutan_pilihan()
+    return sorted(m, key=lambda x: pilih.index(x) if x in pilih else len(pilih) + m.index(x))
 
 
 def mesin_tersedia() -> str:
@@ -470,7 +480,19 @@ def halaman_mesin():
         st.info("Belum ada mesin baca struk yang aktif. Isi kunci di secrets atau pasang Tesseract. Cara lengkapnya ada di README bagian Baca struk otomatis.")
         _panel_koreksi()
         return
-    st.markdown("Mesin dicoba berurutan sesuai daftar ini; bila satu gagal, pindah ke berikutnya.")
+    st.markdown("Mesin dicoba berurutan sesuai daftar ini; bila satu gagal atau tidak menemukan barang, pindah ke berikutnya. Ubah urutan dengan tombol panah.")
+    if "tesseract" in mesin and mesin.index("tesseract") > 0:
+        st.caption("Tips privasi: Tesseract berjalan di server sendiri. Bila ditaruh paling atas, foto struk hanya dikirim ke penyedia lain kalau Tesseract gagal atau tidak menemukan barang.")
+
+    def geser(m: str, arah: int):
+        baru = list(mesin)
+        i = baru.index(m)
+        baru[i], baru[i + arah] = baru[i + arah], baru[i]
+        from keuangan.bantu import catat, selesai_simpan
+        D["pengaturan"]["urutan_mesin"] = baru
+        catat("pengaturan", "Ubah urutan mesin baca struk: " + " > ".join(baru))
+        selesai_simpan("Urutan mesin baca struk disimpan.")
+
     for i, m in enumerate(mesin, start=1):
         info = ""
         if m == "claude":
@@ -480,7 +502,13 @@ def halaman_mesin():
             info = f'{c["model"]} · {c["base"]}'
         with st.container(border=True, key=f"kartu_g_mesin_{m}"):
             st.markdown(f"**{i}. {m}**" + (f"  \n`{info}`" if info else ""))
-            if st.button("Tes koneksi", key=f"tes_{m}"):
+            b1, b2, b3, _ = st.columns([1.2, 0.6, 0.6, 3])
+            tes = b1.button("Tes koneksi", key=f"tes_{m}")
+            if b2.button("↑", key=f"naik_{m}", help="Naikkan urutan", disabled=i == 1 or hanya_lihat()):
+                geser(m, -1)
+            if b3.button("↓", key=f"turun_{m}", help="Turunkan urutan", disabled=i == len(mesin) or hanya_lihat()):
+                geser(m, 1)
+            if tes:
                 with st.spinner("Menguji…"):
                     ok, ket = tes_mesin(m)
                 (st.success if ok else st.error)(("✅ " if ok else "❌ ") + ket)
