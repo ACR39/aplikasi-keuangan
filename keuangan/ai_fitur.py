@@ -173,7 +173,7 @@ def tombol_tangkap(kalimat: str, dasar: dict, kunci: str):
 
 
 # ================================================================ 3. tangkapan layar pesanan online
-BIAYA = (("ongkir", "Ongkos kirim"), ("biaya_layanan", "Biaya layanan"), ("biaya_lain", "Biaya lain"))
+BIAYA = (("ongkir", "ong"), ("biaya_layanan", "lay"), ("asuransi", "asu"), ("biaya_lain", "lain"), ("diskon_ongkir", "dso"))
 
 
 def paket_layar(jpeg: bytes) -> dict:
@@ -181,14 +181,14 @@ def paket_layar(jpeg: bytes) -> dict:
     sistem = (PERAN + "Gambar adalah tangkapan layar rincian pesanan di aplikasi belanja atau makanan online di Indonesia. "
               'Balas satu objek JSON: {"platform": satu nama PERSIS dari daftar platform atau null, "toko": nama toko/restoran atau null, "tanggal": "YYYY-MM-DD" atau null, "waktu": "HH:MM" atau null, '
               '"total": total yang dibayar (integer) atau null, "item": [{"nama": string, "qty": number, "harga_satuan": integer, "kategori": satu nama PERSIS dari kategori_keluar atau null}], '
-              '"ongkir": integer atau 0, "biaya_layanan": integer atau 0, "biaya_lain": integer atau 0, "diskon_total": integer atau 0}. '
+              '"ongkir": integer atau 0, "biaya_layanan": integer atau 0 (termasuk biaya aplikasi/admin), "asuransi": integer atau 0, "biaya_lain": integer atau 0, "diskon_ongkir": integer atau 0, "diskon_total": integer atau 0 (diskon atau voucher selain diskon ongkir)}. '
               "Semua uang rupiah bulat. Jangan menuliskan nama pemesan, alamat, nomor telepon, atau nomor pesanan di jawaban. Jangan menebak yang tidak terlihat.")
     return {"sistem": sistem, "pengguna": json.dumps(isi, ensure_ascii=False, indent=1), "jpeg": jpeg, "maks": 3000, "item": 1,
             "ringkas": "gambar yang sudah dipotong, nama kategori, dan nama platform"}
 
 
 def terapkan_layar(teks: str, mesin: str) -> dict:
-    """Jawaban AI jadi hasil baca seperti baca_struk, ditambah platform_id dan potongan. Ongkir dan biaya layanan jadi baris sendiri."""
+    """Jawaban AI jadi hasil baca seperti baca_struk, ditambah platform_id dan potongan. Ongkir, biaya layanan, asuransi, biaya lain, dan diskon ongkir dikembalikan terpisah di h['biaya'] (jadi baris sendiri saat disimpan)."""
     r = json_dari(teks)
     if not isinstance(r, dict):
         raise RuntimeError("Jawaban AI tidak berbentuk objek.")
@@ -197,10 +197,7 @@ def terapkan_layar(teks: str, mesin: str) -> dict:
         if isinstance(it, dict) and it.get("kategori") not in ks:
             it["kategori"] = None
     h = ocr._rapikan(r, f"AI ({mesin})")
-    for kunci, label in BIAYA:
-        v = ocr.angka(r.get(kunci))
-        if v > 0:
-            h["item"].append({"nama": label, "qty": 1.0, "harga_satuan": v, "harga_normal": 0, "kategori": None})
+    h["biaya"] = {kk: ocr.angka(r.get(kunci)) for kunci, kk in BIAYA if ocr.angka(r.get(kunci)) > 0}
     h["platform_id"] = _platform_id(r.get("platform"))
     h["potongan"] = ocr.angka(r.get("diskon_total"))
     return h

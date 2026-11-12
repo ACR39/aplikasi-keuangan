@@ -14,6 +14,7 @@ from keuangan.bantu import (
 from keuangan.anggaran import teks_jatah
 from keuangan.peta import proses_gps, terdekat, titik_dari, tombol_gps
 from keuangan.ocr import baca_struk, cocokkan_toko, pelajari, ke_tabel, mesin_tersedia
+from keuangan.daring import baris_biaya, pastikan_kategori_biaya
 from keuangan.struk import struk_serupa, peta_kategori, baca_baris, terapkan_potongan, terapkan_tambahan, baris_pajak, editor_kartu, editor_baris, ringkas_struk, simpan_struk, tabel_kosong, total_cepat
 from keuangan.inti import (
     D, JENIS, TOKO_IKON, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, hari_ini, iso_ke_date, nama_bulan, rp, sekarang,
@@ -361,6 +362,29 @@ def form_struk():
                                  "Satu baris: harga barang tetap sesuai struk, PPN jadi baris tersendiri.")
         st.caption(f"Ditambah PPN {rp(ppn)}.")
         jumlah_struk += int(ppn)
+    baris_biaya_online = []
+    if platform:
+        st.markdown("**Biaya pesanan online**")
+        st.caption("Dicatat sebagai baris sendiri (kategori Biaya pesan online) supaya harga barang tetap bersih. Kosongkan yang tidak ada.")
+        if ocr and ocr.get("biaya"):
+            for kk in ("ong", "lay", "asu", "lain", "dso"):
+                if ocr["biaya"].get(kk) and f"{base}_by_{kk}" not in st.session_state:
+                    st.session_state[f"{base}_by_{kk}"] = int(ocr["biaya"][kk])
+        b1, b2 = st.columns(2)
+        ong = b1.number_input("Ongkir (Rp)", min_value=0, step=500, key=f"{base}_by_ong")
+        lay = b2.number_input("Biaya layanan / admin (Rp)", min_value=0, step=500, key=f"{base}_by_lay")
+        b3, b4 = st.columns(2)
+        asu = b3.number_input("Asuransi (Rp)", min_value=0, step=500, key=f"{base}_by_asu")
+        lain_b = b4.number_input("Biaya lain (Rp)", min_value=0, step=500, key=f"{base}_by_lain")
+        dso = st.number_input("Diskon ongkir (Rp)", min_value=0, step=500, key=f"{base}_by_dso",
+                              help="Mengurangi ongkir saja, tidak mengurangi harga barang.")
+        baris_biaya_online = baris_biaya(ong, lay, asu, lain_b, dso)
+        total_biaya = sum(x["harga"] for x in baris_biaya_online)
+        if dso > ong:
+            st.caption("Diskon ongkir lebih besar dari ongkir; yang dipakai hanya sebesar ongkir.")
+        if total_biaya:
+            st.caption(f"Biaya pesanan {rp(total_biaya)}.")
+        jumlah_struk += total_biaya
     st.markdown(f"**Total struk: {rp(jumlah_struk)}** · {len(baris_ok)} barang")
     if ocr and ocr.get("total"):
         if ocr["total"] == jumlah_struk:
@@ -392,6 +416,9 @@ def form_struk():
             if ppn:
                 baris = terapkan_tambahan(baris, ppn) if cara_ppn == "bagi" else baris + [baris_pajak(baris, ppn)]
             n_belajar = pelajari(ocr, baris, toko) if ocr else 0
+            if baris_biaya_online:
+                pastikan_kategori_biaya()
+                baris = baris + baris_biaya_online
             simpan_struk(baris, tgl, w.strftime("%H:%M"), dari, toko, lokasi.strip(), struk, foto_hash=foto_hash, platform=platform)
             catat("tambah", ringkas_struk(baris, toko))
             selesai_simpan(f"Struk dicatat: {len(baris)} barang" + (f" · {n_belajar} koreksi dipelajari" if n_belajar else "") + (f" · {teks_jatah()}" if tgl == hari_ini() and teks_jatah() else ""), struk_ocr=None, struk_up_n=n_up + 1)

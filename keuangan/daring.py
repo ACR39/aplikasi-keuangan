@@ -4,7 +4,32 @@ import streamlit as st
 from keuangan.bantu import (
     atur, catat, deretan_stat, e, f_platform, kartu_stat, nama_platform, selesai_simpan, transaksi_platform, versi,
 )
-from keuangan.inti import D, baru_id, hanya_lihat, rp
+from keuangan.inti import D, _slug, baru_id, hanya_lihat, rp
+
+KAT_BIAYA = "k_biaya_online"
+# (kunci isian, nama sub kategori)
+BIAYA_ONLINE = (("ong", "Ongkir"), ("lay", "Biaya layanan dan admin"), ("asu", "Asuransi"), ("lain", "Biaya lain"))
+
+
+def id_sub_biaya(kunci: str) -> str:
+    return f"{KAT_BIAYA}__{_slug(dict(BIAYA_ONLINE)[kunci])}"
+
+
+def pastikan_kategori_biaya():
+    """Buat kategori 'Biaya pesan online' beserta subnya bila belum ada (atau sudah terhapus). Pemanggil yang commit."""
+    ada = {k["id"] for k in D["kategori"]}
+    if KAT_BIAYA not in ada:
+        D["kategori"].append({"id": KAT_BIAYA, "nama": "Biaya pesan online", "jenis": "keluar", "induk": "", "ikon": "🛵", "warna": "#0e9f8e"})
+    for kunci, nama in BIAYA_ONLINE:
+        if id_sub_biaya(kunci) not in ada:
+            D["kategori"].append({"id": id_sub_biaya(kunci), "nama": nama, "jenis": "keluar", "induk": KAT_BIAYA, "ikon": "🛵", "warna": "#0e9f8e"})
+
+
+def baris_biaya(ong: int = 0, lay: int = 0, asu: int = 0, lain: int = 0, diskon_ongkir: int = 0) -> list:
+    """Baris struk untuk biaya pesanan online. Diskon ongkir mengurangi ongkir saja (tidak lebih), bukan harga barang."""
+    nilai = {"ong": max(0, int(ong or 0) - int(diskon_ongkir or 0)), "lay": int(lay or 0), "asu": int(asu or 0), "lain": int(lain or 0)}
+    return [{"barang": "", "kategori": id_sub_biaya(k), "ket": nama, "qty": 1, "harga": nilai[k], "normal": 0, "asal": ""}
+            for k, nama in BIAYA_ONLINE if nilai[k] > 0]
 
 
 def ringkas_online(ts: list) -> dict:
@@ -14,9 +39,14 @@ def ringkas_online(ts: list) -> dict:
     """
     on, off, per = [0, 0], [0, 0], {}
     dilihat = set()
+    biaya, biaya_per = 0, {}
+    kat_biaya = {KAT_BIAYA} | {k["id"] for k in D["kategori"] if k.get("induk") == KAT_BIAYA}
     for t in ts:
         if t["jenis"] != "keluar":
             continue
+        if t.get("platform") and t.get("kategori") in kat_biaya:
+            biaya += int(t["jumlah"])
+            biaya_per[t["platform"]] = biaya_per.get(t["platform"], 0) + int(t["jumlah"])
         kunci = t.get("grup") or t["id"]
         jml = int(t["jumlah"])
         sasaran = on if t.get("platform") else off
@@ -29,7 +59,7 @@ def ringkas_online(ts: list) -> dict:
             sasaran[0] += 1
             if t.get("platform"):
                 per[t["platform"]][0] += 1
-    return {"online": tuple(on), "offline": tuple(off),
+    return {"online": tuple(on), "offline": tuple(off), "biaya": biaya, "biaya_platform": biaya_per,
             "per_platform": sorted(((i, v[0], v[1]) for i, v in per.items()), key=lambda x: -x[2])}
 
 
@@ -56,8 +86,10 @@ def kartu_online(ts: list, kunci: str = "kartu_g_br_online"):
         deretan_stat(kartu_stat("Online", rp(t_on), f"{n_on} pesanan", "m"), kartu_stat("Offline", rp(t_off), f"{n_off} transaksi"))
         if semua:
             st.caption(f"{round(t_on / semua * 100)}% pengeluaran lewat aplikasi.")
+        if r["biaya"] and t_on:
+            st.caption(f"Biaya pesan (ongkir, layanan, asuransi) {rp(r['biaya'])}, {round(r['biaya'] / t_on * 100)}% dari belanja online.")
         for i, n, total in r["per_platform"]:
-            st.caption(f"{nama_platform(i)} · {rp(total)} · {n} pesanan")
+            st.caption(f"{nama_platform(i)} · {rp(total)} · {n} pesanan" + (f" · biaya pesan {rp(r['biaya_platform'][i])}" if r["biaya_platform"].get(i) else ""))
 
 
 def _dipakai(id_) -> int:
