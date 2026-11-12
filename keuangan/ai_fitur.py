@@ -100,7 +100,7 @@ def panel_mutasi(baris: list, usulan_lokal, kunci: str) -> dict:
             else:
                 st.caption(f"{len(perlu)} baris belum ketemu kategorinya dari kebiasaanmu. Hanya keterangannya yang dikirim, tanpa nominal dan tanggal.")
                 paket = paket_mutasi(perlu)
-                jawab = kirim_dengan_pratinjau("mutasi", paket, kunci)
+                jawab = kirim_dengan_pratinjau("mutasi", paket, kunci, bentuk_json=True)
                 if jawab is not None:
                     try:
                         st.session_state[sk] = terapkan_mutasi(jawab, paket)
@@ -161,7 +161,7 @@ def tombol_tangkap(kalimat: str, dasar: dict, kunci: str):
             st.caption("🤖 Tebakan AI belum dinyalakan (Pengaturan > Privasi AI).")
         return st.session_state.get(sk)
     paket = paket_tangkap(kalimat)
-    jawab = kirim_dengan_pratinjau("tangkap", paket, kunci, "🤖 Tebak dengan AI")
+    jawab = kirim_dengan_pratinjau("tangkap", paket, kunci, "🤖 Tebak dengan AI", bentuk_json=True)
     if jawab is not None:
         try:
             st.session_state[sk] = terapkan_tangkap(jawab, dasar)
@@ -221,7 +221,7 @@ def panel_layar(berkas, base: str):
             st.error("Berkas ini tidak bisa dibaca sebagai gambar.")
             return
         paket = paket_layar(jpeg)
-        jawab = kirim_dengan_pratinjau("layar", paket, base, "Baca tangkapan layar ini")
+        jawab = kirim_dengan_pratinjau("layar", paket, base, "Baca tangkapan layar ini", bentuk_json=True)
         if jawab is None:
             return
         try:
@@ -373,7 +373,7 @@ def tab_tanya():
     q = st.text_input("Pertanyaan", key="as_q", max_chars=300, placeholder="Berapa pengeluaran makan dan minum bulan lalu?")
     if q.strip():
         paket = paket_tanya(q)
-        jawab = kirim_dengan_pratinjau("tanya", paket, "as", "Tanya")
+        jawab = kirim_dengan_pratinjau("tanya", paket, "as", "Tanya", bentuk_json=True)
         if jawab is not None:
             try:
                 r = bersihkan_rencana(json_dari(jawab))

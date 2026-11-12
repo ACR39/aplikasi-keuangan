@@ -9,7 +9,7 @@ from keuangan.bantu import (
     f_dompet, f_kat, turunan, harga_normal_barang, tampil_peringatan_harga, peringatan_harga, salin_transaksi, pilih_kategori, kolom_foto, proses_foto, kat_dari, f_toko, toko_dari, teks_toko, kunci_urut, akar,
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
     ringkas_teks, info_diskon, e, selesai_simpan, tambah_transaksi, versi, hapus_foto_bebas, daftar_bulan, deretan_stat, kartu_stat,
-    f_platform, nama_platform,
+    f_platform, nama_platform, anak_dari,
 )
 from keuangan.anggaran import teks_jatah
 from keuangan.peta import proses_gps, terdekat, titik_dari, tombol_gps
@@ -121,19 +121,28 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
                           help="Barang dengan barcode itu langsung terpilih beserta kategorinya.")
             if st.session_state.get(f"{kunci}_bcpesan"):
                 st.caption(st.session_state[f"{kunci}_bcpesan"])
-        kat = pilih_kategori(kunci, jenis, kat_pertama(jenis, awal.get("kategori", "")))
-        # daftar barang TIDAK bergantung pada kategori terpilih: bila urutan/isinya berubah, Streamlit menganggap
-        # kotak ini baru dan pilihannya hilang (jadi "tanpa barang"). Memilih barang memindahkan kategorinya.
-        opsi = [""] + [b["id"] for b in sorted(D["barang"], key=lambda b: b["nama"].lower())
-                       if (kat_dari(b["kategori"]) or {}).get("jenis") == jenis]
-        if awal.get("barang") and awal["barang"] not in opsi and barang_dari(awal["barang"]):
-            opsi.append(awal["barang"])
-        if st.session_state.get(f"{kunci}_brg") not in opsi:
-            st.session_state.pop(f"{kunci}_brg", None)
+        kat = pilih_kategori(kunci, jenis, awal.get("kategori", "") if kat_dari(awal.get("kategori", "")) else "", kosong=not awal.get("kategori"))
+        ada_sub = bool(kat) and bool(anak_dari(kat))
+        langsung = bool(kat) and any(b["kategori"] == kat for b in D["barang"])  # barang yang menempel di kategori utama tetap bisa dipilih
+        sub_ok = bool(kat) and (not ada_sub or bool(st.session_state.get(f"{kunci}_sub")) or langsung)
         c1, c2 = st.columns(2)
-        brg = c1.selectbox("Barang (opsional)", opsi, index=opsi.index(awal["barang"]) if awal.get("barang") in opsi else 0,
-                           format_func=f_barang(), key=f"{kunci}_brg", on_change=_barang_dipilih, args=(kunci,),
-                           help="Pilih barang agar harga dan jumlahnya tercatat; kategorinya ikut terisi otomatis. Tambah barang di Pengaturan > Barang dan produk.")
+        if sub_ok:
+            # daftar barang hanya yang berkategori sama dengan pilihan (sub kalau ada, kalau tidak kategori utama);
+            # berubah hanya saat kategori/sub diganti, jadi pilihan lama memang perlu direset
+            efektif = st.session_state.get(f"{kunci}_sub") or kat
+            opsi = [""] + [b["id"] for b in sorted(D["barang"], key=lambda b: b["nama"].lower())
+                           if b["kategori"] == efektif and (kat_dari(b["kategori"]) or {}).get("jenis") == jenis]
+            if awal.get("barang") and awal["barang"] not in opsi and barang_dari(awal["barang"]) and (barang_dari(awal["barang"]) or {}).get("kategori") == efektif:
+                opsi.append(awal["barang"])
+            if st.session_state.get(f"{kunci}_brg") not in opsi:
+                st.session_state.pop(f"{kunci}_brg", None)
+            brg = c1.selectbox("Barang (opsional)", opsi, index=opsi.index(awal["barang"]) if awal.get("barang") in opsi else 0,
+                               format_func=f_barang(), key=f"{kunci}_brg", on_change=_barang_dipilih, args=(kunci,),
+                               help="Hanya barang di kategori dan sub kategori yang dipilih. Tambah barang di Pengaturan > Barang dan produk.")
+        else:
+            st.session_state.pop(f"{kunci}_brg", None)
+            c1.selectbox("Barang (opsional)", [""], format_func=lambda i: "Isi kategori dan sub kategori dulu" if not kat else "Pilih sub kategori dulu",
+                         key=f"{kunci}_brg_kosong", disabled=True)
         ada_titik = any(titik_dari(x) for x in D["toko"])
         if ada_titik:
             _isi_toko_terdekat(f"{kunci}_gps", f"{kunci}_toko")
@@ -221,6 +230,9 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
                                 placeholder="Contoh: makan siang, bensin, gaji bulan ini")
         kirim = st.form_submit_button(tombol, type="primary")
     if not kirim:
+        return None
+    if jenis != "transfer" and not kat:
+        st.error("Pilih kategori dulu.")
         return None
     if jumlah <= 0:
         st.error("Jumlah harus lebih dari nol." if not b else "Banyaknya dan harga satuan harus lebih dari nol.")

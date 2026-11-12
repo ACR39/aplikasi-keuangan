@@ -208,6 +208,25 @@ def json_dari(teks: str):
         raise RuntimeError("Jawaban AI tidak bisa dibaca sebagai JSON.")
 
 
+def tanya_json(fitur: str, sistem: str, pengguna: str, jpeg: bytes | None = None, maks: int = 1500, item: int = 1) -> str:
+    """Seperti tanya(), tetapi jawabannya harus memuat JSON. Bila tidak, coba sekali lagi dengan instruksi lebih tegas dan batas panjang dua kali lipat
+    (model yang 'berpikir' sering kehabisan batas atau menjawab dengan kalimat). Isi kiriman sama persis, jadi tercakup persetujuan yang sama."""
+    teks = tanya(fitur, sistem, pengguna, jpeg, maks, item)
+    try:
+        json_dari(teks)
+        return teks
+    except RuntimeError:
+        pass
+    teks2 = tanya(fitur, sistem + " PENTING: balas HANYA satu JSON yang valid, tanpa kalimat pembuka, tanpa penjelasan, tanpa markdown.", pengguna, jpeg, maks * 2, item)
+    try:
+        json_dari(teks2)
+        return teks2
+    except RuntimeError:
+        isi = (teks2 or teks or "").strip()
+        raise RuntimeError("Jawaban AI tidak berbentuk JSON, bahkan setelah dicoba dua kali. "
+                           + (f"Isi jawabannya: {isi[:160]!r}." if isi else "Jawabannya kosong; model yang memakai mode berpikir bisa kehabisan batas panjang. Coba model lain di pengaturan kunci."))
+
+
 # ---------------------------------------------------------------- tampilan bersama
 def gerbang(fitur: str, kunci: str = "") -> bool:
     """True bila fitur boleh dipakai. Bila tidak, tampilkan alasannya dan jalan pintas ke pengaturan."""
@@ -219,7 +238,7 @@ def gerbang(fitur: str, kunci: str = "") -> bool:
     return False
 
 
-def kirim_dengan_pratinjau(fitur: str, paket: dict, kunci: str, label: str = "Kirim dan minta saran"):
+def kirim_dengan_pratinjau(fitur: str, paket: dict, kunci: str, label: str = "Kirim dan minta saran", bentuk_json: bool = False):
     """Tampilkan tujuan dan isi kiriman apa adanya, lalu kirim hanya bila tombol ditekan. Kembalian: teks jawaban pada putaran saat tombol ditekan, selain itu None.
 
     paket: {"sistem", "pengguna", "jpeg" (opsional), "ringkas", "samar" (jumlah bagian disamarkan), "item", "maks" (opsional)}
@@ -234,7 +253,7 @@ def kirim_dengan_pratinjau(fitur: str, paket: dict, kunci: str, label: str = "Ki
     if st.button(label, key=f"kirim_{fitur}_{kunci}", type="primary"):
         try:
             with st.spinner("Menunggu jawaban AI…"):
-                return tanya(fitur, paket["sistem"], paket["pengguna"], paket.get("jpeg"), paket.get("maks", 1500), paket.get("item", 1))
+                return (tanya_json if bentuk_json else tanya)(fitur, paket["sistem"], paket["pengguna"], paket.get("jpeg"), paket.get("maks", 1500), paket.get("item", 1))
         except (RuntimeError, PermissionError) as ex:
             st.error(str(ex))
     return None

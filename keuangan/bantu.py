@@ -467,25 +467,34 @@ def ringkas_teks(t: dict) -> str:
             + (f' ("{t["catatan"]}")' if t.get("catatan") else ""))
 
 
-def pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_sub: bool = True) -> str:
+def pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_sub: bool = True, kosong: bool = False) -> str:
     """Dua kotak terpisah: Kategori (utama) lalu Sub kategori. Kembalikan id kategori efektif
     (sub kalau dipilih, kalau tidak kategori utama). Dipakai di luar st.form agar sub ikut berubah."""
     utama = [k["id"] for k in kategori_utama(jenis)]
     if not utama:
         return ""
+    if kosong:  # kotak kategori dimulai kosong; sub baru bisa dipilih setelah kategori terisi
+        utama = [""] + utama
     a = akar(awal) if kat_dari(awal) else ""
     sub_awal = awal if a and a != awal else ""
     c1, c2 = kolom or st.columns(2)
     if st.session_state.get(f"{kunci}_kat") not in utama:
         st.session_state.pop(f"{kunci}_kat", None)
-    kat = c1.selectbox("Kategori", utama, index=utama.index(a) if a in utama else 0, format_func=f_kat(), key=f"{kunci}_kat")
+    fk = f_kat()
+    kat = c1.selectbox("Kategori", utama, index=utama.index(a) if a in utama else 0,
+                       format_func=(lambda i: fk(i) if i else "Pilih kategori") if kosong else fk, key=f"{kunci}_kat")
     if not tampil_sub:
         return kat
+    if kosong and not kat:
+        if st.session_state.get(f"{kunci}_sub") not in ("", None):
+            st.session_state.pop(f"{kunci}_sub", None)
+        c2.selectbox("Sub kategori", [""], format_func=lambda i: "Pilih kategori dulu", key=f"{kunci}_sub", disabled=True)
+        return ""
     anak = [""] + [k["id"] for k in sorted(anak_dari(kat), key=lambda k: k["nama"].lower())]
     if st.session_state.get(f"{kunci}_sub") not in anak:
         st.session_state.pop(f"{kunci}_sub", None)
     nama_sub = {k["id"]: k["nama"] for k in anak_dari(kat)}
-    nama_sub[""] = "(tanpa sub kategori)"
+    nama_sub[""] = "Pilih sub kategori" if (kosong and anak_dari(kat)) else "(tanpa sub kategori)"
     sub = c2.selectbox("Sub kategori", anak, index=anak.index(sub_awal) if sub_awal in anak else 0,
                        format_func=lambda i: nama_sub.get(i, "(dihapus)"), key=f"{kunci}_sub")
     return sub or kat
