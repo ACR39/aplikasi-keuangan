@@ -173,15 +173,15 @@ def tombol_tangkap(kalimat: str, dasar: dict, kunci: str):
 
 
 # ================================================================ 3. tangkapan layar pesanan online
-BIAYA = (("ongkir", "ong"), ("biaya_layanan", "lay"), ("asuransi", "asu"), ("biaya_lain", "lain"), ("diskon_ongkir", "dso"))
+BIAYA = (("ongkir", "ong"), ("biaya_layanan", "lay"), ("biaya_pengemasan", "kms"), ("biaya_tambahan_resto", "rst"), ("asuransi", "asu"), ("biaya_lain", "lain"), ("diskon_ongkir", "dso"))
 
 
 def paket_layar(jpeg: bytes) -> dict:
     isi = {"kategori_keluar": _nama_kategori("keluar"), "platform": [p["nama"] for p in D["platform"]]}
     sistem = (PERAN + "Gambar adalah tangkapan layar rincian pesanan di aplikasi belanja atau makanan online di Indonesia. "
               'Balas satu objek JSON: {"platform": satu nama PERSIS dari daftar platform atau null, "toko": nama toko/restoran atau null, "tanggal": "YYYY-MM-DD" atau null, "waktu": "HH:MM" atau null, '
-              '"total": total yang dibayar (integer) atau null, "item": [{"nama": string, "qty": number, "harga_satuan": integer, "kategori": satu nama PERSIS dari kategori_keluar atau null}], '
-              '"ongkir": integer atau 0, "biaya_layanan": integer atau 0 (termasuk biaya aplikasi/admin), "asuransi": integer atau 0, "biaya_lain": integer atau 0, "diskon_ongkir": integer atau 0, "diskon_total": integer atau 0 (diskon atau voucher selain diskon ongkir)}. '
+              '"total": total yang dibayar (integer) atau null, "item": [{"nama": string, "qty": number, "harga_satuan": integer (harga PER SATU porsi/unit; harga di kanan baris biasanya total untuk seluruh qty, jadi bagi dengan qty), "harga_normal": integer per satu unit sebelum diskon (harga yang dicoret) atau null, "kategori": satu nama PERSIS dari kategori_keluar atau null}], '
+              '"ongkir": integer atau 0, "biaya_layanan": integer atau 0 (termasuk biaya aplikasi/admin), "biaya_pengemasan": integer atau 0, "biaya_tambahan_resto": integer atau 0, "asuransi": integer atau 0, "biaya_lain": integer atau 0, "diskon_ongkir": integer atau 0, "diskon_total": integer atau 0 (voucher atau diskon pada pesanan, selain diskon ongkir)}. Bila ada harga dicoret, pakai angka akhir yang dibayar (misalnya ongkir dicoret Rp10.000 jadi Rp9.000 berarti ongkir 9000 dan diskon_ongkir 0). '
               "Semua uang rupiah bulat. Jangan menuliskan nama pemesan, alamat, nomor telepon, atau nomor pesanan di jawaban. Jangan menebak yang tidak terlihat.")
     return {"sistem": sistem, "pengguna": json.dumps(isi, ensure_ascii=False, indent=1), "jpeg": jpeg, "maks": 3000, "item": 1,
             "ringkas": "gambar yang sudah dipotong, nama kategori, dan nama platform"}

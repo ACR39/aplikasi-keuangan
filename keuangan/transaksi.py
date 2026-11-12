@@ -367,18 +367,21 @@ def form_struk():
         st.markdown("**Biaya pesanan online**")
         st.caption("Dicatat sebagai baris sendiri (kategori Biaya pesan online) supaya harga barang tetap bersih. Kosongkan yang tidak ada.")
         if ocr and ocr.get("biaya"):
-            for kk in ("ong", "lay", "asu", "lain", "dso"):
+            for kk in ("ong", "lay", "kms", "rst", "asu", "lain", "dso"):
                 if ocr["biaya"].get(kk) and f"{base}_by_{kk}" not in st.session_state:
                     st.session_state[f"{base}_by_{kk}"] = int(ocr["biaya"][kk])
         b1, b2 = st.columns(2)
         ong = b1.number_input("Ongkir (Rp)", min_value=0, step=500, key=f"{base}_by_ong")
         lay = b2.number_input("Biaya layanan / admin (Rp)", min_value=0, step=500, key=f"{base}_by_lay")
         b3, b4 = st.columns(2)
-        asu = b3.number_input("Asuransi (Rp)", min_value=0, step=500, key=f"{base}_by_asu")
-        lain_b = b4.number_input("Biaya lain (Rp)", min_value=0, step=500, key=f"{base}_by_lain")
+        kms = b3.number_input("Biaya pengemasan (Rp)", min_value=0, step=500, key=f"{base}_by_kms")
+        rst = b4.number_input("Biaya tambahan resto (Rp)", min_value=0, step=500, key=f"{base}_by_rst")
+        b5, b6 = st.columns(2)
+        asu = b5.number_input("Asuransi (Rp)", min_value=0, step=500, key=f"{base}_by_asu")
+        lain_b = b6.number_input("Biaya lain (Rp)", min_value=0, step=500, key=f"{base}_by_lain")
         dso = st.number_input("Diskon ongkir (Rp)", min_value=0, step=500, key=f"{base}_by_dso",
-                              help="Mengurangi ongkir saja, tidak mengurangi harga barang.")
-        baris_biaya_online = baris_biaya(ong, lay, asu, lain_b, dso)
+                              help="Isi hanya bila ongkir yang kamu isi di atas belum dipotong. Kalau di aplikasi ongkirnya sudah dicoret (misalnya Rp10.000 jadi Rp9.000), isi ongkir dengan angka akhir (Rp9.000) dan kosongkan ini. Mengurangi ongkir saja, tidak mengurangi harga barang.")
+        baris_biaya_online = baris_biaya(ong, lay, asu, lain_b, dso, kms, rst)
         total_biaya = sum(x["harga"] for x in baris_biaya_online)
         if dso > ong:
             st.caption("Diskon ongkir lebih besar dari ongkir; yang dipakai hanya sebesar ongkir.")

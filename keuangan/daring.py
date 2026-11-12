@@ -8,7 +8,8 @@ from keuangan.inti import D, _slug, baru_id, hanya_lihat, rp
 
 KAT_BIAYA = "k_biaya_online"
 # (kunci isian, nama sub kategori)
-BIAYA_ONLINE = (("ong", "Ongkir"), ("lay", "Biaya layanan dan admin"), ("asu", "Asuransi"), ("lain", "Biaya lain"))
+BIAYA_ONLINE = (("ong", "Ongkir"), ("lay", "Biaya layanan dan admin"), ("kms", "Biaya pengemasan"), ("rst", "Biaya tambahan resto"),
+                ("asu", "Asuransi"), ("lain", "Biaya lain"))
 
 
 def id_sub_biaya(kunci: str) -> str:
@@ -25,9 +26,10 @@ def pastikan_kategori_biaya():
             D["kategori"].append({"id": id_sub_biaya(kunci), "nama": nama, "jenis": "keluar", "induk": KAT_BIAYA, "ikon": "🛵", "warna": "#0e9f8e"})
 
 
-def baris_biaya(ong: int = 0, lay: int = 0, asu: int = 0, lain: int = 0, diskon_ongkir: int = 0) -> list:
+def baris_biaya(ong: int = 0, lay: int = 0, asu: int = 0, lain: int = 0, diskon_ongkir: int = 0, kms: int = 0, rst: int = 0) -> list:
     """Baris struk untuk biaya pesanan online. Diskon ongkir mengurangi ongkir saja (tidak lebih), bukan harga barang."""
-    nilai = {"ong": max(0, int(ong or 0) - int(diskon_ongkir or 0)), "lay": int(lay or 0), "asu": int(asu or 0), "lain": int(lain or 0)}
+    nilai = {"ong": max(0, int(ong or 0) - int(diskon_ongkir or 0)), "lay": int(lay or 0), "kms": int(kms or 0), "rst": int(rst or 0),
+             "asu": int(asu or 0), "lain": int(lain or 0)}
     return [{"barang": "", "kategori": id_sub_biaya(k), "ket": nama, "qty": 1, "harga": nilai[k], "normal": 0, "asal": ""}
             for k, nama in BIAYA_ONLINE if nilai[k] > 0]
 
@@ -87,7 +89,7 @@ def kartu_online(ts: list, kunci: str = "kartu_g_br_online"):
         if semua:
             st.caption(f"{round(t_on / semua * 100)}% pengeluaran lewat aplikasi.")
         if r["biaya"] and t_on:
-            st.caption(f"Biaya pesan (ongkir, layanan, asuransi) {rp(r['biaya'])}, {round(r['biaya'] / t_on * 100)}% dari belanja online.")
+            st.caption(f"Biaya pesan (ongkir, layanan, kemasan, dan lain-lain) {rp(r['biaya'])}, {round(r['biaya'] / t_on * 100)}% dari belanja online.")
         for i, n, total in r["per_platform"]:
             st.caption(f"{nama_platform(i)} · {rp(total)} · {n} pesanan" + (f" · biaya pesan {rp(r['biaya_platform'][i])}" if r["biaya_platform"].get(i) else ""))
 
