@@ -397,6 +397,12 @@ def form_struk():
             st.caption(f"Biaya pesanan {rp(total_biaya)}.")
         jumlah_struk += total_biaya
     st.markdown(f"**Total struk: {rp(jumlah_struk)}** · {len(baris_ok)} barang")
+    if ocr and ocr.get("dipindah"):
+        st.caption("Dipindah dari daftar barang: " + "; ".join(ocr["dipindah"]) + ".")
+    if ocr and ocr.get("total") and baris_ok and jumlah_struk > ocr["total"]:
+        lebih = jumlah_struk - int(ocr["total"])
+        st.button(f"Total lebih besar {rp(lebih)} dari struk: pakai sebagai potongan (voucher/diskon)", key=f"{base}_selpot",
+                  on_click=atur, args=(f"{base}_pot", int(potongan) + lebih))
     if ocr and ocr.get("total"):
         if ocr["total"] == jumlah_struk:
             st.caption(f"✅ Cocok dengan total di struk ({rp(ocr['total'])}).")

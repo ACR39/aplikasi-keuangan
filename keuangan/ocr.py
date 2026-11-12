@@ -113,10 +113,13 @@ def _perintah(kategori: list) -> str:
     return (
         "Ini foto struk belanja di Indonesia. Ekstrak isinya sebagai JSON SAJA (tanpa penjelasan, tanpa markdown) dengan bentuk:\n"
         '{"toko": string|null, "tanggal": "YYYY-MM-DD"|null, "waktu": "HH:MM"|null, "total": integer|null, '
-        '"item": [{"nama": string, "qty": number, "harga_satuan": integer, "harga_normal": integer|null, "kategori": string|null}]}\n'
+        '"item": [{"nama": string, "qty": number, "harga_satuan": integer, "harga_normal": integer|null, "kategori": string|null}], '
+        '"potongan": integer (jumlah voucher/diskon pada seluruh pesanan, positif, 0 bila tidak ada), '
+        '"biaya": {"ongkir": integer, "layanan": integer, "pengemasan": integer, "resto": integer, "asuransi": integer, "lain": integer} (biaya tambahan pesanan online, 0 bila tidak ada)}\n'
         "Aturan: semua uang dalam rupiah bulat tanpa titik. harga_satuan = harga per satuan yang benar-benar dibayar setelah diskon item. "
         "Kalau struk menunjukkan harga sebelum diskon untuk item itu, isi harga_normal (per satuan), kalau tidak isi null. "
-        "Jangan masukkan baris subtotal, total, pajak, tunai, kembalian, poin, atau pembayaran sebagai item. "
+        "Jangan masukkan baris subtotal, total, voucher, diskon, ongkir, biaya layanan, biaya pengemasan, pajak, tunai, kembalian, poin, atau pembayaran sebagai item; "
+        "voucher/diskon pesanan masuk ke potongan, biaya antar dan layanan masuk ke biaya. Bila harga dicoret, pakai angka akhir yang dibayar. "
         "Perbaiki singkatan nama barang jadi nama yang mudah dibaca. "
         f"kategori: pilih SATU dari daftar ini yang paling cocok, atau null bila ragu: {json.dumps(kategori, ensure_ascii=False)}. "
         "Jangan menebak data yang tidak terlihat; pakai null.")
@@ -266,8 +269,17 @@ def _rapikan(h: dict, mesin: str) -> dict:
                          "kategori": it.get("kategori") or None})
     tgl = h.get("tanggal") if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(h.get("tanggal") or "")) else None
     wkt = h.get("waktu") if re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", str(h.get("waktu") or "")) else None
-    return {"mesin": mesin, "toko": (h.get("toko") or "").strip() or None, "tanggal": tgl, "waktu": wkt,
-            "total": angka(h.get("total")) or None, "item": item}
+    hasil = {"mesin": mesin, "toko": (h.get("toko") or "").strip() or None, "tanggal": tgl, "waktu": wkt,
+             "total": angka(h.get("total")) or None, "item": item}
+    pot = angka(h.get("potongan"))
+    if pot > 0:
+        hasil["potongan"] = pot
+    peta = {"ongkir": "ong", "layanan": "lay", "pengemasan": "kms", "resto": "rst", "asuransi": "asu", "lain": "lain"}
+    bi = h.get("biaya") if isinstance(h.get("biaya"), dict) else {}
+    biaya = {kk: angka(bi.get(k)) for k, kk in peta.items() if angka(bi.get(k)) > 0}
+    if biaya:
+        hasil["biaya"] = biaya
+    return hasil
 
 
 def baca_struk(mentah: bytes, nama_kategori: list) -> dict:

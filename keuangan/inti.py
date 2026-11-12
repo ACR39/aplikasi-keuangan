@@ -366,6 +366,9 @@ details.rinci > summary{cursor:pointer;list-style:none}details.rinci > summary::
 [class*="st-key-bayar_"] button{background:#256b4a !important;border-color:#256b4a !important;color:#fff !important;font-weight:600}
 [class*="st-key-bayar_"] button p{color:#fff !important}
 [class*="st-key-lewat_"] button,[class*="st-key-batal_"] button{border:1px solid #6b7280 !important;color:#374151 !important;background:#fff !important}
+/* form ubah transaksi: kolom boleh turun ke baris baru di HP; aturan baris daftar tidak boleh menyempitkannya */
+[class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"] [data-testid="stHorizontalBlock"]{flex-wrap:wrap !important;align-items:flex-start !important;gap:.6rem !important;background:transparent !important;border:0 !important;padding:0 !important;margin-bottom:0 !important}
+[class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"] [data-testid="stColumn"],[class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"] [data-testid="stColumn"]:first-child{flex:1 1 150px !important;min-width:150px !important;width:auto !important}
 </style>
 """
 
@@ -387,6 +390,9 @@ CSS_TAMBAH_GELAP = """
 .kem .pc.w{background:#5a3d00 !important;color:#fde68a !important}.kem .pc.b{background:#5c1a14 !important;color:#fecaca !important}.kem .pc.bl{background:#17365f !important;color:#bfdbfe !important}
 [class*="st-key-tx_"]{background:#172131 !important;border-color:#2a3547 !important;box-shadow:none !important}
 [class*="st-key-lewat_"] button,[class*="st-key-batal_"] button{background:#1e293b !important;color:#cbd5e1 !important;border-color:#94a3b8 !important}
+/* form ubah transaksi: kolom boleh turun ke baris baru di HP; aturan baris daftar tidak boleh menyempitkannya */
+[class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"] [data-testid="stHorizontalBlock"]{flex-wrap:wrap !important;align-items:flex-start !important;gap:.6rem !important;background:transparent !important;border:0 !important;padding:0 !important;margin-bottom:0 !important}
+[class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"] [data-testid="stColumn"],[class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"][class*="st-key-kartu_g_edit_"] [data-testid="stColumn"]:first-child{flex:1 1 150px !important;min-width:150px !important;width:auto !important}
 </style>
 """
 

@@ -190,7 +190,8 @@ _POLA_RINGKASAN = r"^(sub\s*total|total|grand\s+total|harga\s+pesanan|jumlah\s+b
 
 def pisahkan_biaya(h: dict) -> dict:
     """Baris yang ikut terbaca sebagai barang tetapi bukan barang: ongkir dan biaya lain dipindah ke h['biaya'], voucher atau diskon ke h['potongan'], subtotal/total dibuang."""
-    sisa, biaya, potongan = [], dict(h.get("biaya") or {}), 0
+    sisa, biaya, potongan, dipindah = [], dict(h.get("biaya") or {}), 0, []
+    pot_awal, biaya_awal = int(h.get("potongan") or 0), set(biaya)  # sudah diisi eksplisit oleh pembaca: baris serupa di daftar barang hanya dibuang
     for it in h.get("item") or []:
         nama = re.sub(r"\s+", " ", str(it.get("nama", "")).strip().lower())
         nilai = int(round(float(it["qty"]) * abs(int(it["harga_satuan"]))))
@@ -200,16 +201,22 @@ def pisahkan_biaya(h: dict) -> dict:
                 h["total"] = nilai
             continue
         if not kk and re.match(_POLA_POTONGAN, nama):  # voucher/diskon pada pesanan: masuk kolom Potongan
-            potongan += nilai
+            if not pot_awal:
+                potongan += nilai
+                dipindah.append(f"{it['nama']} jadi potongan {rp(nilai)}")
             continue
         if kk:
-            biaya[kk] = biaya.get(kk, 0) + int(round(float(it["qty"]) * int(it["harga_satuan"])))
+            if kk not in biaya_awal:
+                biaya[kk] = biaya.get(kk, 0) + nilai
+                dipindah.append(f"{it['nama']} jadi biaya {rp(nilai)}")
         else:
             sisa.append(it)
     if len(sisa) != len(h.get("item") or []):
         h["item"] = sisa
     if potongan:
         h["potongan"] = int(h.get("potongan") or 0) + potongan
+    if dipindah:
+        h["dipindah"] = dipindah
     if biaya:
         h["biaya"] = biaya
     return h
