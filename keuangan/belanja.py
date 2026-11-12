@@ -115,7 +115,7 @@ def _panel_selesai(l: dict):
     c3, c4 = st.columns(2)
     dompet = [d["id"] for d in dompet_aktif()]
     if not dompet:
-        st.warning("Tambah dompet dulu di Pengaturan > Dompet.")
+        st.warning("Tambah dompet dulu di Pengaturan > Data master > Dompet.")
         return
     dari = c3.selectbox("Dari dompet", dompet, format_func=f_dompet(), key=f"{base}_dompet")
     tops = [""] + [x["id"] for x in sorted(D["toko"], key=lambda x: (not x.get("favorit"), x["nama"].lower()))]
@@ -244,7 +244,7 @@ def _satu_daftar(l: dict):
                 catat("belanja", f"Tambah {len(baru)} barang langganan ke {l['nama']}")
                 selesai_simpan(f"{len(baru)} barang langganan ditambah.", **{f"bl_ver_{l['id']}": st.session_state.get("bl_ver_" + l["id"], 0) + 1})
             else:
-                st.info("Tidak ada barang langganan baru. Tandai barang sebagai langganan di Pengaturan > Barang dan produk.")
+                st.info("Tidak ada barang langganan baru. Tandai barang sebagai langganan di Pengaturan > Data master > Barang dan produk.")
     item_baru = _kartu_item(l, kunci)
     biasa, murah, n = _taksir(item_baru)
     dibeli = sum(1 for it in item_baru if it["beli"])

@@ -94,7 +94,7 @@ def halaman_mutasi():
                "dan transaksi yang tampaknya sudah ada ditandai sehingga tidak tercatat dua kali.")
     dompet = [d["id"] for d in dompet_aktif()]
     if not dompet:
-        st.info("Tambahkan dompet dulu di Pengaturan > Dompet.")
+        st.info("Tambahkan dompet dulu di Pengaturan > Data master > Dompet.")
         return
     berkas = st.file_uploader("File mutasi", type=["csv", "xlsx", "xlsm"], key=f"mt_berkas_{versi()}")
     if berkas is None:

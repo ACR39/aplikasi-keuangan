@@ -61,7 +61,7 @@ def _ada_tesseract() -> bool:
 
 
 def _urutan_pilihan() -> list:
-    """Urutan mesin yang disimpan pengguna (Pengaturan > Mesin baca struk); kosong bila belum pernah diatur."""
+    """Urutan mesin yang disimpan pengguna (Pengaturan > AI dan baca struk > Mesin baca struk); kosong bila belum pernah diatur."""
     try:
         return [x for x in (D["pengaturan"].get("urutan_mesin") or []) if isinstance(x, str)]
     except Exception:
@@ -486,7 +486,7 @@ def tes_mesin(nama: str):
 
 
 def halaman_mesin():
-    """Pengaturan > Mesin baca struk: lihat mesin yang aktif dan tes tiap satunya."""
+    """Pengaturan > AI dan baca struk > Mesin baca struk: lihat mesin yang aktif dan tes tiap satunya."""
     mesin = daftar_mesin()
     if not mesin:
         st.info("Belum ada mesin baca struk yang aktif. Isi kunci di secrets atau pasang Tesseract. Cara lengkapnya ada di README bagian Baca struk otomatis.")

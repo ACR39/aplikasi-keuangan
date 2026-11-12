@@ -158,7 +158,7 @@ def tombol_tangkap(kalimat: str, dasar: dict, kunci: str):
     ok, _ = ai.boleh("tangkap")
     if not ok:
         if not ai.aktif("tangkap"):
-            st.caption("🤖 Tebakan AI belum dinyalakan (Pengaturan > Privasi AI).")
+            st.caption("🤖 Tebakan AI belum dinyalakan (Pengaturan > AI dan baca struk > Privasi AI).")
         return st.session_state.get(sk)
     paket = paket_tangkap(kalimat)
     jawab = kirim_dengan_pratinjau("tangkap", paket, kunci, "🤖 Tebak dengan AI", bentuk_json=True)

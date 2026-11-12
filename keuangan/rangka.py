@@ -28,11 +28,22 @@ from keuangan.transaksi import halaman_catat, halaman_transaksi
 from keuangan.utang import halaman_utang
 from keuangan.inti import pasang_css
 
-UTAMA = ["Pencarian", "Catat transaksi", "Daftar belanja", "Daftar transaksi", "Riwayat aktivitas"]
-PANTAU = ["Anggaran", "Transaksi berulang", "Target tabungan", "Utang-piutang", "Laporan", "Asisten AI"]
+UTAMA = ["Pencarian", "Catat transaksi", "Daftar belanja", "Daftar transaksi"]
+PANTAU = ["Anggaran", "Transaksi berulang", "Target tabungan", "Utang-piutang", "Laporan"]
+PENGATURAN_MENU = ["Tampilan", "Data master", "AI dan baca struk", "Perawatan data", "Data dan cadangan"]
 EDIT_SAJA = ("Catat transaksi",)
-MASTER = ["Dompet", "Kategori", "Cadangan dan pulihkan"]
+# Halaman gabungan: nama halaman -> [(label bagian, nama halaman lama, hanya admin)]. Nama lama tetap dikenali sebagai pintasan (lihat ALIAS).
+GABUNGAN = {
+    "Data master": [("Barang dan produk", "Barang dan produk", False), ("Toko dan tempat beli", "Toko dan tempat beli", False),
+                    ("Platform beli online", "Platform beli online", False), ("Dompet", "Dompet", True), ("Kategori", "Kategori", True)],
+    "AI dan baca struk": [("Privasi AI", "Privasi AI", False), ("Mesin baca struk", "Mesin baca struk", False)],
+    "Laporan": [("Statistik", "Laporan", False), ("Tanya dan ringkasan AI", "Asisten AI", False)],
+    "Perawatan data": [("Riwayat aktivitas", "Riwayat aktivitas", False), ("Tempat sampah", "Tempat sampah", False), ("Pemeriksa data", "Pemeriksa data", False)],
+    "Data dan cadangan": [("Ekspor dan impor", "Ekspor dan impor", False), ("Cadangan dan pulihkan", "Cadangan dan pulihkan", True)],
+}
+ALIAS = {lama: (hal, label) for hal, bagian in GABUNGAN.items() for label, lama, _ in bagian if lama != hal}
 IKON = {"Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Platform beli online": "delivery_dining", "Asisten AI": "auto_awesome", "Privasi AI": "shield", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
+        "Data master": "database", "AI dan baca struk": "document_scanner", "Perawatan data": "build", "Data dan cadangan": "backup",
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Transaksi berulang": "event_repeat", "Target tabungan": "savings",
         "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner", "Pemeriksa data": "fact_check",
         "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
@@ -44,6 +55,10 @@ LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.or
         '<path d="M19 13.5v11M15.5 16.5c0-1.3 1.5-2 3.5-2s3.5.8 3.5 2.1c0 3.2-7 1.6-7 4.8 0 1.3 1.6 2.1 3.5 2.1s3.5-.8 3.5-2.1" '
         'fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>')
 DESKRIPSI = {
+    "Data master": "Daftar yang diatur sekali lalu dipakai terus: barang, toko, platform beli online, dompet, dan kategori.",
+    "AI dan baca struk": "Semua pengaturan AI di satu tempat: fitur dan privasi, serta mesin pembaca foto struk.",
+    "Perawatan data": "Riwayat perubahan, transaksi terhapus yang bisa dipulihkan, dan pemeriksa data yang janggal.",
+    "Data dan cadangan": "Unduh atau impor data, simpan cadangan, dan pulihkan ke versi sebelumnya.",
     "Pencarian": "Satu kotak untuk mencari transaksi, barang, toko, daftar belanja, utang-piutang, dan tagihan.",
     "Beranda": "Ringkasan saldo, pemasukan dan pengeluaran per minggu, bulan, tahun, atau tanggal custom, plus hal yang perlu perhatian dan grafik.",
     "Catat transaksi": "Catat pemasukan, pengeluaran, atau transfer antar dompet dalam beberapa ketukan.",
@@ -60,7 +75,7 @@ DESKRIPSI = {
     "Transaksi berulang": "Listrik, internet, langganan, gaji: pantau jatuh tempo, catat dengan satu ketukan, atau catat otomatis.",
     "Target tabungan": "Tabungan dengan target dan tenggat, lengkap dengan perkiraan setoran per bulan.",
     "Utang-piutang": "Catat utang dan piutang beserta cicilannya. Bisa ikut tercatat di saldo dompet.",
-    "Laporan": "Statistik bulanan, tren 12 bulan, arus tiap dompet, serta belanja per barang dan per toko.",
+    "Laporan": "Statistik bulanan, tren 12 bulan, arus tiap dompet, belanja per barang dan toko, serta tanya data dan ringkasan bulanan dengan AI.",
     "Tampilan": "Pilih bagian Beranda yang ditampilkan.",
     "Pemeriksa data": "Cari transaksi yang janggal (barang kosong, kategori tak cocok, jumlah tak sinkron) dan perbaiki dengan satu ketukan.",
     "Mesin baca struk": "Lihat mesin pembaca foto struk yang aktif, atur urutan percobaannya, dan uji apakah tiap mesin berfungsi.",
@@ -109,8 +124,13 @@ def peringatan_uji():
 
 
 def pilih_halaman():
-    PENGATURAN = ["Tampilan", "Barang dan produk", "Toko dan tempat beli", "Platform beli online", "Privasi AI", "Tempat sampah", "Mesin baca struk", "Pemeriksa data", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
+    PENGATURAN = list(PENGATURAN_MENU)
     HALAMAN = ["Beranda"] + menu_utama() + PANTAU + PENGATURAN
+    lama = st.session_state.get("halaman")
+    if lama in ALIAS:  # nama halaman lama (pintasan dari tombol atau tautan): buka halaman gabungannya pada bagian yang sesuai
+        hal, label = ALIAS[lama]
+        st.session_state.halaman = hal
+        st.session_state[f"sub_{hal}"] = label
     if st.session_state.get("halaman") not in HALAMAN:
         st.session_state.halaman = "Beranda"
     return PENGATURAN, st.session_state.halaman
@@ -168,7 +188,7 @@ def tampilkan_kepala(halaman, PENGATURAN):
                 f'<div class="desk">{html.escape(DESKRIPSI.get(halaman, ""))}</div></div></div>', unsafe_allow_html=True)
 
 
-def tampilkan_halaman(halaman):
+def tampilkan_isi(halaman):
     if halaman == "Beranda":
         halaman_beranda()
     elif halaman == "Pencarian":
@@ -234,6 +254,27 @@ def tampilkan_halaman(halaman):
             halaman_cadangan()
         with t2:
             halaman_pulih()
+
+
+def tampilkan_halaman(halaman):
+    """Halaman biasa langsung digambar; halaman gabungan menampilkan pilihan bagian (pil) lalu isi bagian terpilih."""
+    bagian = [(lb, lama) for lb, lama, admin in GABUNGAN.get(halaman, []) if not admin or adalah_admin()]
+    if not bagian:
+        tampilkan_isi(halaman)
+        return
+    if len(bagian) > 1:
+        label = [b[0] for b in bagian]
+        kunci = f"sub_{halaman}"
+        if st.session_state.get(kunci) not in label:
+            st.session_state[kunci] = label[0]
+        st.pills("Bagian", label, selection_mode="single", key=kunci, label_visibility="collapsed")
+        pilih = st.session_state.get(kunci) or label[0]
+    else:
+        pilih = bagian[0][0]
+    lama = dict(bagian)[pilih]
+    if DESKRIPSI.get(lama) and lama != halaman:
+        st.caption(DESKRIPSI[lama])
+    tampilkan_isi(lama)
 
 
 def jalankan():

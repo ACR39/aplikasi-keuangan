@@ -5,6 +5,13 @@ tagihan berulang, target tabungan, utang-piutang, dan laporan. Tampilan dan cara
 Data disimpan sebagai satu file `data.json` di repositori GitHub privat.
 
 ## Menu
+Menu dirapikan jadi 15 halaman. Beberapa halaman punya pilihan bagian (pil) di bagian atas:
+- **Laporan**: Statistik dan Tanya dan ringkasan AI.
+- **Pengaturan > Data master**: Barang dan produk, Toko dan tempat beli, Platform beli online, Dompet, Kategori (dua yang terakhir hanya untuk admin).
+- **Pengaturan > AI dan baca struk**: Privasi AI dan Mesin baca struk.
+- **Pengaturan > Perawatan data**: Riwayat aktivitas, Tempat sampah, Pemeriksa data.
+- **Pengaturan > Data dan cadangan**: Ekspor dan impor, Cadangan dan pulihkan (admin).
+
 - **Beranda**: total saldo, pemasukan dan pengeluaran bulan terpilih, hal yang perlu perhatian (tagihan jatuh tempo, anggaran hampir atau sudah lewat, utang jatuh tempo, saldo negatif), saldo per dompet, anggaran, target tabungan, grafik. Bagian Beranda bisa disembunyikan di Pengaturan > Tampilan.
 - **Transaksi**: Catat transaksi (pemasukan, pengeluaran, transfer dengan biaya admin), Daftar transaksi (filter bulan, jenis, dompet, kategori, kata kunci; ubah dan hapus), Riwayat aktivitas. Menu **Pengaturan** memuat Barang dan produk (misalnya Indomie di Belanja bahan makanan), Toko dan tempat beli (nama, jenis, lokasi), dan Tempat sampah (30 hari). Statistik per barang dan per toko ada di Pantau > Laporan.
 - **Pantau**: Anggaran per kategori, Transaksi berulang (tombol Bayar otomatis membuat pengeluaran dan memajukan jatuh tempo), Target tabungan (perkiraan setoran per bulan), Utang-piutang (cicilan, bisa ikut tercatat di dompet), Laporan (bulanan, tren 12 bulan, per dompet).
@@ -32,11 +39,11 @@ Barang: saat mencatat pengeluaran/pemasukan, pilih kategori lalu barangnya (daft
 
 Kategori dan Sub kategori dipilih di dua kotak terpisah. Toko / tempat beli dipilih dari daftar (atau ditambah langsung di halaman Catat transaksi); lokasi terisi otomatis dari toko tetapi bisa diubah, dan Waktu beli terisi jam sekarang (WIB). Daftar transaksi bisa difilter per toko dan dicari berdasarkan toko atau lokasi. Laporan > Toko menampilkan kunjungan dan total per toko, serta grafik jam belanja.
 
-**Beli online**: pengeluaran bisa ditandai lewat platform (GoFood, GrabFood, ShopeeFood, Lainnya; kotak "Beli online lewat"), baik di satu barang maupun di satu struk banyak barang. Daftar platform diatur sendiri di Pengaturan > Platform beli online (tambah, ubah nama, hapus; platform yang sudah dipakai bisa dipindah ke platform lain saat dihapus). Transaksi tanpa platform dianggap beli langsung, jadi data lama tidak perlu diubah. Daftar transaksi punya filter "Beli online" (semua online, hanya offline, atau satu platform). Beranda (bagian "Belanja online vs offline", bisa disembunyikan di Tampilan), Laporan > Bulanan, dan Laporan akhir tahun menampilkan total online dibanding offline dan per platform. Ekspor Excel/CSV dan impor memuat kolom Platform.
+**Beli online**: pengeluaran bisa ditandai lewat platform (GoFood, GrabFood, ShopeeFood, Lainnya; kotak "Beli online lewat"), baik di satu barang maupun di satu struk banyak barang. Daftar platform diatur sendiri di Pengaturan > Data master > Platform beli online (tambah, ubah nama, hapus; platform yang sudah dipakai bisa dipindah ke platform lain saat dihapus). Transaksi tanpa platform dianggap beli langsung, jadi data lama tidak perlu diubah. Daftar transaksi punya filter "Beli online" (semua online, hanya offline, atau satu platform). Beranda (bagian "Belanja online vs offline", bisa disembunyikan di Tampilan), Laporan > Bulanan, dan Laporan akhir tahun menampilkan total online dibanding offline dan per platform. Ekspor Excel/CSV dan impor memuat kolom Platform.
 
 ## Fitur AI dan privasi
 
-Lima fitur memakai AI di internet. Semuanya **mati secara bawaan** dan dinyalakan satu per satu di Pengaturan > Privasi AI. Kuncinya memakai secrets yang sama dengan Baca struk otomatis (`[anthropic]`, `[openai]`, `[openrouter]`, atau `[gemini]`); Tesseract tidak dihitung karena berjalan di server sendiri.
+Lima fitur memakai AI di internet. Semuanya **mati secara bawaan** dan dinyalakan satu per satu di Pengaturan > AI dan baca struk > Privasi AI. Kuncinya memakai secrets yang sama dengan Baca struk otomatis (`[anthropic]`, `[openai]`, `[openrouter]`, atau `[gemini]`); Tesseract tidak dihitung karena berjalan di server sendiri.
 
 | Fitur | Di mana | Yang dikirim | Yang tidak dikirim |
 |---|---|---|---|
@@ -49,7 +56,7 @@ Lima fitur memakai AI di internet. Semuanya **mati secara bawaan** dan dinyalaka
 Aturan yang berlaku di semua fitur:
 - Isi kiriman ditampilkan persis apa adanya (kotak "Lihat persis yang akan dikirim") dan baru dikirim setelah tombolnya ditekan.
 - `ai.tanya()` adalah satu-satunya jalan keluar data ke AI dan menolak bila saklar fitur mati, apa pun yang dilakukan tampilan.
-- Riwayat kiriman (Pengaturan > Privasi AI) hanya mencatat waktu, fitur, penyedia, dan jumlah butir, tidak pernah isinya.
+- Riwayat kiriman (Pengaturan > AI dan baca struk > Privasi AI) hanya mencatat waktu, fitur, penyedia, dan jumlah butir, tidak pernah isinya.
 - Hasil AI hanya saran: kategori dan platform yang tidak ada di daftarmu diabaikan, dan semuanya diperiksa sebelum disimpan.
 - Penyamaran hanya menangkap pola umum, jadi periksa kotak pratinjau. Kebijakan penyimpanan dan pelatihan model mengikuti penyedia yang dipakai.
 - Baca struk dari foto (fitur lama) tidak lewat saklar ini. Bila ada kunci penyedia, foto struk yang kamu minta dibaca dikirim ke penyedia itu.
@@ -84,7 +91,7 @@ Di Anggaran, buka **Batas pengeluaran harian** dan isi jatah per hari (0 untuk m
 Untuk toko yang sudah punya titik lokasi: di Toko dan tempat beli ada tombol **Toko terdekat dari saya** (daftar terurut jarak dengan tautan Rute). Di Catat transaksi (satu barang maupun struk) tombol **Pilih toko terdekat** langsung memilih toko tersimpan dalam 500 m dari posisi Anda. Browser meminta izin lokasi; posisi tidak disimpan.
 
 ## Belajar dari koreksi baca struk
-Bila Anda memperbaiki hasil baca (mengganti Barang, mengubah nama, atau memilih toko yang benar) lalu menyimpan struk, aplikasi mengingat pasangan "tulisan di struk → pilihan Anda" dan memakainya di struk berikutnya. Contohnya "iii paHLAWAN SM Lan" langsung dipilihkan ke toko Pahlawan. Daftar koreksi dan tombol **Lupakan semua koreksi** ada di Pengaturan > Mesin baca struk. Koreksi tersimpan di data (maks. 300 per jenis).
+Bila Anda memperbaiki hasil baca (mengganti Barang, mengubah nama, atau memilih toko yang benar) lalu menyimpan struk, aplikasi mengingat pasangan "tulisan di struk → pilihan Anda" dan memakainya di struk berikutnya. Contohnya "iii paHLAWAN SM Lan" langsung dipilihkan ke toko Pahlawan. Daftar koreksi dan tombol **Lupakan semua koreksi** ada di Pengaturan > AI dan baca struk > Mesin baca struk. Koreksi tersimpan di data (maks. 300 per jenis).
 
 ## Struk jadi satu kartu
 Di Daftar transaksi, barang dari satu struk (minimal 2) digabung jadi satu kartu: toko, tanggal, jam, total, jumlah barang, dan hemat diskon. Tekan "Lihat N barang" untuk membuka tiap barang beserta tombol Ubah, Salin, dan Hapus. Foto struk tampil sekali di kartu.
@@ -102,13 +109,13 @@ Di Daftar belanja, buka **Toko mana yang paling hemat?**: perkiraan total bila s
 Saat mencatat satu struk atau menyusun daftar belanja, tiap barang dibandingkan dengan riwayat harganya (median 5 pembelian terakhir): kotak kuning bila lebih mahal 10% atau lebih, hijau bila lebih murah 10% atau lebih, plus info bila toko lain pernah menjual lebih murah. Di form satu barang, peringatan muncul sebagai catatan setelah disimpan (karena isian form tidak berubah langsung saat diketik).
 
 ## Tes mesin baca struk
-Pengaturan > Mesin baca struk menampilkan mesin yang aktif sesuai urutan dan tombol **Tes koneksi** untuk tiap mesin (memakai struk contoh buatan aplikasi). Berguna untuk tahu mesin mana yang kena batas pemakaian atau salah kunci. Urutan percobaan bisa diubah dengan tombol ↑ dan ↓ di tiap kartu (tersimpan di data). Urutan bawaan sebelum diatur: Claude, OpenAI, OpenRouter, Gemini, Tesseract. Menaruh Tesseract paling atas membuat foto struk hanya dikirim ke penyedia lain bila Tesseract gagal atau tidak menemukan barang. Urutan ini juga menentukan penyedia bawaan untuk fitur AI di Privasi AI.
+Pengaturan > AI dan baca struk > Mesin baca struk menampilkan mesin yang aktif sesuai urutan dan tombol **Tes koneksi** untuk tiap mesin (memakai struk contoh buatan aplikasi). Berguna untuk tahu mesin mana yang kena batas pemakaian atau salah kunci. Urutan percobaan bisa diubah dengan tombol ↑ dan ↓ di tiap kartu (tersimpan di data). Urutan bawaan sebelum diatur: Claude, OpenAI, OpenRouter, Gemini, Tesseract. Menaruh Tesseract paling atas membuat foto struk hanya dikirim ke penyedia lain bila Tesseract gagal atau tidak menemukan barang. Urutan ini juga menentukan penyedia bawaan untuk fitur AI di Privasi AI.
 
 ## Diskon di struk
 Di tiap barang ada kolom **Harga normal** (isi bila barang itu diskon; harga satuan = yang dibayar). Untuk voucher atau diskon total, isi **Potongan seluruh struk**: dibagi ke tiap barang sebanding harganya dan tercatat sebagai diskon.
 
 ## Tambah barang lewat barcode
-Di Pengaturan > Barang dan produk > Tambah barang baru, buka **Isi dari barcode**: foto barcode dengan kamera HP (atau unggah foto, atau ketik angkanya), lalu tekan **Baca dan isi form**. Kalau barcode sudah ada di data Anda, aplikasi memberi tahu dan menawarkan membuka barang itu. Kalau belum, nama, merek, ukuran, dan foto dicari di Open Food Facts (database terbuka, tanpa kunci) dan mengisi form untuk Anda periksa. Cakupan produk Indonesia belum lengkap; bila tidak ketemu, hanya barcode yang terisi.
+Di Pengaturan > Data master > Barang dan produk > Tambah barang baru, buka **Isi dari barcode**: foto barcode dengan kamera HP (atau unggah foto, atau ketik angkanya), lalu tekan **Baca dan isi form**. Kalau barcode sudah ada di data Anda, aplikasi memberi tahu dan menawarkan membuka barang itu. Kalau belum, nama, merek, ukuran, dan foto dicari di Open Food Facts (database terbuka, tanpa kunci) dan mengisi form untuk Anda periksa. Cakupan produk Indonesia belum lengkap; bila tidak ketemu, hanya barcode yang terisi.
 
 ## Baca struk otomatis
 Di Catat transaksi, mode Struk: unggah foto struk lalu tekan **Baca isi struk dari foto ini**. Toko, tanggal, jam, dan daftar barang terisi sendiri; periksa lagi sebelum menyimpan. Total di struk dibandingkan dengan jumlah barang.
@@ -167,7 +174,7 @@ Tanggal `2026-03-15` atau `15/03/2026`; angka boleh `1.250.000`. Contoh file bis
 - **Tangkap cepat**: Catat transaksi > "⚡ Tangkap cepat". Ketik satu kalimat seperti `es jeruk 8rb 2`, `bensin 30rb`, `gaji 5jt`. Jenis, barang, kategori, dompet, dan toko ditebak dari kebiasaan; periksa lalu Simpan. Dengan banyaknya, nominal dihitung per satuan. Tanggal selalu hari ini.
 - **Sering dicatat**: deretan tombol barang paling sering (90 hari terakhir) di atas form. Ketuk untuk mengisi barang, harga, kategori, dan toko yang biasa.
 - **Pengeluaran rutin terlupa**: di Transaksi berulang. Mencari pengeluaran berjumlah mirip yang muncul tiap bulan (minimal 3 bulan), lalu bisa dijadwalkan, ditandai "mau dihentikan", atau diabaikan. Juga muncul di Perlu perhatian di Beranda.
-- **Pemeriksa data**: Pengaturan > Pemeriksa data. Menemukan barang kosong padahal catatan menyebut barang, kategori beda dari barangnya, jumlah tak sama dengan banyaknya × harga satuan, dan rujukan ke barang/toko terhapus.
+- **Pemeriksa data**: Pengaturan > Perawatan data > Pemeriksa data. Menemukan barang kosong padahal catatan menyebut barang, kategori beda dari barangnya, jumlah tak sama dengan banyaknya × harga satuan, dan rujukan ke barang/toko terhapus.
 
 - **PPN di struk**: pada "Satu struk, banyak barang" ada kolom "PPN / pajak / biaya lain". Tombol "Hitung 11% dari barang" atau "Pakai selisih struk" (dari total hasil baca foto) mengisinya. PPN bisa dibagi ke harga tiap barang (total cocok dengan yang dibayar) atau dicatat sebagai satu baris PPN tersendiri.
 

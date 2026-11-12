@@ -68,7 +68,7 @@ def _form(awal: dict | None, kat_awal: str = ""):
     awal = awal or {}
     pra = {} if awal else (st.session_state.get("brg_isi") or {})
     if not semua_kategori():
-        st.warning("Belum ada kategori. Tambah dulu di Pengaturan > Kategori.")
+        st.warning("Belum ada kategori. Tambah dulu di Pengaturan > Data master > Kategori.")
         return
     pil = awal.get("kategori") or kat_awal
     kk = f"f_brg_{versi()}_{awal.get('id', 'baru')}"

@@ -84,7 +84,7 @@ def _form(awal: dict | None):
     if awal.get("dompet") and awal["dompet"] not in dompet:
         dompet.append(awal["dompet"])
     if not dompet:
-        st.warning("Tambah dompet dulu di Pengaturan > Dompet.")
+        st.warning("Tambah dompet dulu di Pengaturan > Data master > Dompet.")
         return
     jenis = st.radio("Jenis", ["keluar", "masuk"], horizontal=True, index=0 if awal.get("jenis", "keluar") == "keluar" else 1,
                      format_func=lambda j: "Pengeluaran (tagihan, langganan)" if j == "keluar" else "Pemasukan (gaji, dll.)",

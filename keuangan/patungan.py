@@ -37,7 +37,7 @@ def simpan_patungan(tgl, total, dompet, kategori, catatan, toko, orang_bagian: d
 def form_patungan():
     dompet = [d["id"] for d in dompet_aktif()]
     if not dompet:
-        st.info("Tambahkan dompet dulu di Pengaturan > Dompet.")
+        st.info("Tambahkan dompet dulu di Pengaturan > Data master > Dompet.")
         return
     k = f"pt_{versi()}"
     st.caption("Kamu membayar semuanya, teman membayar bagiannya nanti. Bagianmu jadi pengeluaran; bagian teman jadi piutang "

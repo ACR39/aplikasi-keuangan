@@ -214,7 +214,7 @@ def halaman_beranda():
     if "dompet" not in sembunyi:
         st.markdown("**Saldo per dompet**")
         if not dompet_aktif():
-            st.info("Belum ada dompet aktif. Tambahkan di Pengaturan > Dompet.")
+            st.info("Belum ada dompet aktif. Tambahkan di Pengaturan > Data master > Dompet.")
         IKON_D = {"tunai": "💵", "bank": "🏦", "e-wallet": "📱", "ewallet": "📱", "kartu kredit": "💳", "investasi": "📈"}
         WARNA_D = {"tunai": "#34a874", "bank": "#3b82c4", "e-wallet": "#8b5cf6", "ewallet": "#8b5cf6", "kartu kredit": "#e0a63a", "investasi": "#0ea5a4"}
         total_pos = sum(max(0, saldo_dompet(d["id"])) for d in dompet_aktif()) or 1

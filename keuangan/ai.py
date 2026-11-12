@@ -1,7 +1,7 @@
 """Lapisan privasi untuk semua fitur AI (kecuali baca struk dari foto yang sudah ada sejak awal).
 
 Prinsipnya:
-1. Semua fitur AI MATI secara bawaan. Tiap fitur dinyalakan sendiri di Pengaturan > Privasi AI.
+1. Semua fitur AI MATI secara bawaan. Tiap fitur dinyalakan sendiri di Pengaturan > AI dan baca struk > Privasi AI.
 2. Hanya data yang perlu yang dikirim (tanpa nominal, tanggal, atau nama toko bila tidak diperlukan), dan nomor panjang,
    email, telepon, serta nama penerima transfer disamarkan dulu di server ini sebelum dikirim.
 3. Sebelum mengirim, isi kiriman ditampilkan persis apa adanya dan baru dikirim setelah tombolnya ditekan.
@@ -82,7 +82,7 @@ def boleh(fitur: str):
     if fitur not in FITUR:
         return False, "Fitur tidak dikenal."
     if not aktif(fitur):
-        return False, "Fitur ini belum dinyalakan di Pengaturan > Privasi AI."
+        return False, "Fitur ini belum dinyalakan di Pengaturan > AI dan baca struk > Privasi AI."
     if not mesin_dipakai():
         return False, "Belum ada kunci penyedia AI (lihat README bagian Baca struk otomatis)."
     return True, ""

@@ -53,7 +53,7 @@ def _cari_barcode(kunci: str, jenis: str):
     b = next((x for x in D["barang"] if x.get("barcode", "").strip() == kode), None)
     k = kat_dari(b["kategori"]) if b else None
     if not b:
-        st.session_state[f"{kunci}_bcpesan"] = f"Barcode {kode} belum terdaftar. Tambahkan di Pengaturan > Barang dan produk."
+        st.session_state[f"{kunci}_bcpesan"] = f"Barcode {kode} belum terdaftar. Tambahkan di Pengaturan > Data master > Barang dan produk."
     elif not k or k["jenis"] != jenis:
         st.session_state[f"{kunci}_bcpesan"] = f"{b['nama']} ada di kategori {'pengeluaran' if k and k['jenis'] == 'keluar' else 'pemasukan'}, bukan jenis ini."
     else:
@@ -109,10 +109,10 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
     awal = awal or {}
     dompet = _pilihan_dompet(awal.get("dompet", ""))
     if not dompet or (jenis == "transfer" and len(dompet) < 2):
-        st.warning("Tambah dompet dulu di menu Pengaturan > Dompet" + (" (transfer butuh minimal dua dompet)." if jenis == "transfer" else "."))
+        st.warning("Tambah dompet dulu di menu Pengaturan > Data master > Dompet" + (" (transfer butuh minimal dua dompet)." if jenis == "transfer" else "."))
         return None
     if jenis != "transfer" and not kategori_jenis(jenis):
-        st.warning("Belum ada kategori untuk jenis ini. Tambah dulu di Pengaturan > Kategori.")
+        st.warning("Belum ada kategori untuk jenis ini. Tambah dulu di Pengaturan > Data master > Kategori.")
         return None
     kat, brg, toko = "", "", ""
     if jenis != "transfer":
@@ -139,7 +139,7 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
                 st.session_state.pop(f"{kunci}_brg", None)
             brg = c1.selectbox("Barang (opsional)", opsi, index=opsi.index(awal["barang"]) if awal.get("barang") in opsi else 0,
                                format_func=f_barang(), key=f"{kunci}_brg", on_change=_barang_dipilih, args=(kunci,),
-                               help="Hanya barang di kategori dan sub kategori yang dipilih. Tambah barang di Pengaturan > Barang dan produk.")
+                               help="Hanya barang di kategori dan sub kategori yang dipilih. Tambah barang di Pengaturan > Data master > Barang dan produk.")
         else:
             st.session_state.pop(f"{kunci}_brg", None)
             c1.selectbox("Barang (opsional)", [""], format_func=lambda i: "Isi kategori dan sub kategori dulu" if not kat else "Pilih sub kategori dulu",
@@ -154,7 +154,7 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             st.session_state.pop(f"{kunci}_toko", None)
         toko = c2.selectbox("Toko / tempat beli (opsional)" if jenis == "keluar" else "Sumber pemasukan (opsional)", tops, index=tops.index(awal["toko"]) if awal.get("toko") in tops else 0,
                             format_func=f_toko(), key=f"{kunci}_toko",
-                            help="Tambah toko di Pengaturan > Toko dan tempat beli.")
+                            help="Tambah toko di Pengaturan > Data master > Toko dan tempat beli.")
         if ada_titik and jenis == "keluar":
             with c2:
                 tombol_gps(f"{kunci}_gps", "📍 Pilih toko terdekat")
@@ -186,7 +186,7 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
                                 index=dompet.index(awal["dompet"]) if awal.get("dompet") in dompet else 0, format_func=f_dompet())
             opsi_sat = [""] + sorted({*SATUAN_UMUM, *(x.get("satuan", "") for x in D["barang"] if x.get("satuan")), b.get("satuan", "")} - {""})
             satuan = c6.selectbox("Satuan", opsi_sat, index=opsi_sat.index(b.get("satuan", "")), format_func=lambda x: x or "(tanpa satuan)",
-                                  help="Berlaku untuk barang ini seterusnya. Tambah satuan lain di Pengaturan > Barang dan produk.")
+                                  help="Berlaku untuk barang ini seterusnya. Tambah satuan lain di Pengaturan > Data master > Barang dan produk.")
         elif jenis != "transfer":
             # tanpa barang: tetap bisa isi banyaknya; total = banyaknya x harga satuan
             q0 = float(awal.get("qty") or 1)
@@ -223,7 +223,7 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
                     pops.append(awal["platform"])
                 platform = st.selectbox("Beli online lewat (opsional)", pops, index=pops.index(awal["platform"]) if awal.get("platform") in pops else 0,
                                         format_func=f_platform(),
-                                        help="Pilih GoFood, ShopeeFood, dan sebagainya bila beli lewat aplikasi. Biarkan kosong untuk beli langsung. Atur daftarnya di Pengaturan > Platform beli online.")
+                                        help="Pilih GoFood, ShopeeFood, dan sebagainya bila beli lewat aplikasi. Biarkan kosong untuk beli langsung. Atur daftarnya di Pengaturan > Data master > Platform beli online.")
         struk_berkas, struk_hapus = None, False
         if jenis != "transfer":
             struk_berkas, struk_hapus = kolom_foto("Foto struk, opsional" if jenis == "keluar" else "Foto bukti, opsional", f"{kunci}_struk", awal.get("struk", ""), "struk")
@@ -257,7 +257,7 @@ def form_struk():
     """Catat satu struk berisi banyak barang sekaligus, bisa diisi otomatis dari foto struk."""
     dompet = _pilihan_dompet()
     if not dompet:
-        st.warning("Tambah dompet dulu di menu Pengaturan > Dompet.")
+        st.warning("Tambah dompet dulu di menu Pengaturan > Data master > Dompet.")
         return
     base = f"f_struk_{versi()}"
     ocr = st.session_state.get("struk_ocr")
@@ -289,7 +289,7 @@ def form_struk():
         if ocr.get("gagal"):
             st.caption("Mesin sebelumnya gagal, otomatis pindah ke berikutnya: " + " | ".join(ocr["gagal"]))
         if ocr.get("toko") and not cocokkan_toko(ocr["toko"]):
-            st.caption(f"Toko di struk: {ocr['toko']}. Belum ada di daftar toko; tambah di Pengaturan > Toko dan tempat beli bila perlu.")
+            st.caption(f"Toko di struk: {ocr['toko']}. Belum ada di daftar toko; tambah di Pengaturan > Data master > Toko dan tempat beli bila perlu.")
         st.button("Kosongkan hasil baca", key=f"{base}_kosong", on_click=lambda: st.session_state.update(struk_ocr=None, ver=versi() + 1))
     tgl_awal = hari_ini()
     jam_awal = sekarang().time().replace(second=0, microsecond=0)
