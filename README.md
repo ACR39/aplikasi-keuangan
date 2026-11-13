@@ -188,3 +188,5 @@ tidak perlu per barang. Tombol "Hapus foto" melepasnya dari semua barang.
 
 
 **Jenis toko**: Pengaturan > Data master > Jenis toko. Tambah, ubah nama (toko ikut berganti), atau hapus (jika dipakai, toko dipindah ke jenis lain dulu). Dipakai di form toko dan filter Daftar toko.
+
+**Aplikasi lama**: Pengaturan > Data dan cadangan > Ekspor dan impor > tab Aplikasi lama. Impor membaca file Excel (.xls atau .xlsx) dengan sheet Records dan Debts: account menjadi dompet, category menjadi kategori, payee menjadi toko, amount negatif menjadi pengeluaran, pasangan baris transfer menjadi satu transfer, Debts menjadi utang-piutang. Data identik yang sudah ada dilewati. Ekspor menghasilkan file dengan kolom yang sama persis. Butuh paket python-calamine untuk membaca .xls.

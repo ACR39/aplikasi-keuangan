@@ -14,6 +14,7 @@ from keuangan.belanja import halaman_belanja
 from keuangan.beranda import halaman_beranda
 from keuangan.cari import halaman_cari
 from keuangan.cadangan import cadangan_otomatis, halaman_cadangan, halaman_pulih
+from keuangan.aplikasi_lama import halaman_aplikasi_lama
 from keuangan.ekspor import halaman_ekspor, halaman_impor
 from keuangan.inti import CSS_GELAP, CSS_TAMBAH_GELAP, D, adalah_admin, cfg_github, data_kosong, hanya_lihat
 from keuangan.laporan import halaman_laporan
@@ -249,7 +250,7 @@ def tampilkan_isi(halaman):
         if hanya_lihat():
             halaman_ekspor()
         else:
-            t1, t2, t3 = st.tabs(["Ekspor", "Impor", "Mutasi rekening"])
+            t1, t2, t3, t4 = st.tabs(["Ekspor", "Impor", "Mutasi rekening", "Aplikasi lama"])
             with t1:
                 halaman_ekspor()
             with t2:
@@ -257,6 +258,8 @@ def tampilkan_isi(halaman):
             with t3:
                 from keuangan.mutasi import halaman_mutasi
                 halaman_mutasi()
+            with t4:
+                halaman_aplikasi_lama()
     elif adalah_admin() and halaman == "Dompet":
         halaman_dompet()
     elif adalah_admin() and halaman == "Kategori":

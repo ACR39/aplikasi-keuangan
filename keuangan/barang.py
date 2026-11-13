@@ -8,6 +8,7 @@ from keuangan.bantu import (
 )
 from keuangan.barcode import baca_barcode, cari_produk
 from keuangan.inti import D, TGL_MAX, TGL_MIN, baru_id, fmt_iso, hanya_lihat, iso_ke_date, rp
+from keuangan.pwa import gulir_ke_atas_bila_baru
 
 
 def semua_kategori() -> list:
@@ -139,12 +140,13 @@ def _lepas_barang(b: dict):
 
 
 def halaman_barang():
+    atas = st.container()  # form tambah/ubah ditaruh di sini (paling atas) supaya tidak perlu menggulir ke bawah
     with st.container(key="kartu_filter"):
         c1, c2 = st.columns([1, 1])
         kat = c1.selectbox("Kategori", ["semua"] + semua_kategori(), key="br_kat", format_func=f_kat({"semua": "Semua kategori"}))
         q = c2.text_input("Cari nama, merek, atau barcode", key="br_q", placeholder="Ketik kata kunci").strip().lower()
     daftar = [b for b in D["barang"] if (kat == "semua" or b["kategori"] in turunan(kat)) and q in f'{b["nama"]} {b.get("merek", "")} {b.get("barcode", "")}'.lower()]
-    st.caption(f"{len(daftar)} barang" + ("" if daftar else ". Belum ada, tambahkan di bawah (atau langsung dari menu Catat transaksi)."))
+    st.caption(f"{len(daftar)} barang" + ("" if daftar else ". Belum ada, tambahkan di atas (atau langsung dari menu Catat transaksi)."))
     kelompok = {}
     for b in sorted(daftar, key=lambda b: (nama_kat(b["kategori"]).lower(), b["nama"].lower())):
         kelompok.setdefault(b["kategori"], []).append(b)
@@ -183,18 +185,21 @@ def halaman_barang():
     if hanya_lihat():
         return
     edit = next((x for x in D["barang"] if x["id"] == st.session_state.get("edit_brg")), None)
-    if not edit and not st.session_state.get("edit_baru_brg"):
-        st.button("➕ Tambah barang baru", key="tambah_brg_btn", type="primary", on_click=atur, args=("edit_baru_brg", True))
-        return
-    with st.container(key="kartu_g_form_brg"):
-        st.markdown(f"**{'Ubah barang' if edit else 'Tambah barang'}**")
-        _form(edit, kat if kat != "semua" else "")
-        if st.button("Batal", key="batal_ubah_brg"):
-            st.session_state.pop("edit_brg", None)
-            st.session_state["edit_baru_brg"] = False
-            st.session_state["brg_isi"] = st.session_state["brg_pesan"] = None
-            st.rerun()
-        st.caption("Memindahkan barang ke kategori lain tidak mengubah kategori pada transaksi yang sudah tercatat.")
+    with atas:
+        if not edit and not st.session_state.get("edit_baru_brg"):
+            gulir_ke_atas_bila_baru(None)
+            st.button("➕ Tambah barang baru", key="tambah_brg_btn", type="primary", on_click=atur, args=("edit_baru_brg", True))
+            return
+        gulir_ke_atas_bila_baru(("brg", edit["id"] if edit else "baru"))
+        with st.container(key="kartu_g_form_brg"):
+            st.markdown(f"**{'Ubah barang' if edit else 'Tambah barang'}**")
+            _form(edit, kat if kat != "semua" else "")
+            if st.button("Batal", key="batal_ubah_brg"):
+                st.session_state.pop("edit_brg", None)
+                st.session_state["edit_baru_brg"] = False
+                st.session_state["brg_isi"] = st.session_state["brg_pesan"] = None
+                st.rerun()
+            st.caption("Memindahkan barang ke kategori lain tidak mengubah kategori pada transaksi yang sudah tercatat.")
 
 
 def kat_warna(id_) -> str:

@@ -128,3 +128,19 @@ def pasang_sambung_ulang():
         return
     st.session_state.sambung_terpasang = True
     _sisipkan(_JS_SAMBUNG)
+
+
+def gulir_ke_atas_bila_baru(token):
+    """Gulir halaman ke paling atas satu kali ketika form baru dibuka (token berubah); token None berarti form tertutup."""
+    if st.session_state.get("_gulir_token") == token:
+        return
+    st.session_state["_gulir_token"] = token
+    if token is None:
+        return
+    _sisipkan("""<script>
+      try {
+        const d = window.parent.document;
+        const k = [d.querySelector('[data-testid="stMain"]'), d.querySelector('section.main'), d.scrollingElement, d.documentElement];
+        k.forEach(e => { if (e && e.scrollTo) e.scrollTo({top: 0, behavior: 'smooth'}); });
+      } catch (e) {}
+    </script>""")

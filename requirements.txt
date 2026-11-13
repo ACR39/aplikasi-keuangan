@@ -8,3 +8,4 @@ streamlit-folium>=0.22
 streamlit-js-eval>=0.1.7
 pytesseract>=0.3.10
 zxing-cpp>=2.2
+python-calamine>=0.2

@@ -5,6 +5,7 @@ from keuangan.bantu import daftar_jenis_toko, ikon_jenis_toko, jumlah_kunjungan
 from keuangan.bantu import atur, catat, e, ikon_foto, kolom_foto, link_aman, proses_foto, selesai_simpan, transaksi_toko, versi
 from keuangan.peta import peta_semua, pilih_titik, proses_gps, terdekat, teks_jarak, titik_dari, tombol_gps, url_peta
 from keuangan.inti import D, IKON_PILIHAN, baru_id, fmt_iso, hanya_lihat, rp
+from keuangan.pwa import gulir_ke_atas_bila_baru
 
 
 def _form(awal: dict | None, titik=None):
@@ -87,13 +88,14 @@ def _toko_terdekat():
 
 
 def halaman_toko():
+    atas = st.container()  # form tambah/ubah ditaruh di sini (paling atas) supaya tidak perlu menggulir ke bawah
     with st.container(key="kartu_filter"):
         c1, c2 = st.columns(2)
         jn = c1.selectbox("Jenis", ["semua"] + daftar_jenis_toko(), key="tk_jenis", format_func=lambda j: "Semua jenis" if j == "semua" else j)
         q = c2.text_input("Cari nama atau lokasi", key="tk_q", placeholder="Ketik kata kunci").strip().lower()
     _toko_terdekat()
     daftar = [x for x in D["toko"] if (jn == "semua" or x.get("jenis") == jn) and q in f'{x["nama"]} {x.get("lokasi", "")}'.lower()]
-    st.caption(f"{len(daftar)} toko" + ("" if daftar else ". Belum ada, tambahkan di bawah (atau langsung dari menu Catat transaksi)."))
+    st.caption(f"{len(daftar)} toko" + ("" if daftar else ". Belum ada, tambahkan di atas (atau langsung dari menu Catat transaksi)."))
     if any(titik_dari(x) for x in D["toko"]) and st.toggle("Lihat semua toko di peta", key="tk_peta"):
         peta_semua(daftar)
     for x in sorted(daftar, key=lambda x: (not x.get("favorit"), x["nama"].lower())):
@@ -126,22 +128,25 @@ def halaman_toko():
     if hanya_lihat():
         return
     edit = next((x for x in D["toko"] if x["id"] == st.session_state.get("edit_toko")), None)
-    if not edit and not st.session_state.get("edit_baru_toko"):
-        st.button("➕ Tambah toko baru", key="tambah_toko_btn", type="primary", on_click=atur, args=("edit_baru_toko", True))
-        return
-    with st.container(key="kartu_g_form_tk"):
-        st.markdown(f"**{'Ubah toko' if edit else 'Tambah toko'}**")
-        kt = (edit or {}).get("id") or "baru"
-        if st.session_state.get(f"titik_{kt}") == "_reset":
-            for suf in ("", "_klik", "_minta"):
-                st.session_state.pop(f"titik_{kt}{suf}", None)
-        st.markdown("**Titik lokasi**")
-        titik = pilih_titik(kt, titik_dari(edit))
-        _form(edit, titik)
-        if st.button("Batal", key="batal_ubah_tk"):
-            st.session_state.pop("edit_toko", None)
-            st.session_state["edit_baru_toko"] = False
-            st.rerun()
+    with atas:
+        if not edit and not st.session_state.get("edit_baru_toko"):
+            gulir_ke_atas_bila_baru(None)
+            st.button("➕ Tambah toko baru", key="tambah_toko_btn", type="primary", on_click=atur, args=("edit_baru_toko", True))
+            return
+        gulir_ke_atas_bila_baru(("toko", edit["id"] if edit else "baru"))
+        with st.container(key="kartu_g_form_tk"):
+            st.markdown(f"**{'Ubah toko' if edit else 'Tambah toko'}**")
+            kt = (edit or {}).get("id") or "baru"
+            if st.session_state.get(f"titik_{kt}") == "_reset":
+                for suf in ("", "_klik", "_minta"):
+                    st.session_state.pop(f"titik_{kt}{suf}", None)
+            st.markdown("**Titik lokasi**")
+            titik = pilih_titik(kt, titik_dari(edit))
+            _form(edit, titik)
+            if st.button("Batal", key="batal_ubah_tk"):
+                st.session_state.pop("edit_toko", None)
+                st.session_state["edit_baru_toko"] = False
+                st.rerun()
 
 
 # ---------------------------------------------------------------- jenis toko
