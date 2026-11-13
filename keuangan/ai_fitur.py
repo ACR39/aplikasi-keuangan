@@ -14,7 +14,7 @@ import streamlit as st
 from keuangan import ai, ocr
 from keuangan.ai import gerbang, json_dari, kirim_dengan_pratinjau, samarkan
 from keuangan.bantu import (
-    anak_dari, daftar_bulan, dompet_aktif, kat_dari, kategori_jenis, nama_kat, nama_platform, toko_dari, transaksi_bulan, versi, ym_ini,
+    anak_dari, turunan, daftar_bulan, dompet_aktif, kat_dari, kategori_jenis, nama_kat, nama_platform, toko_dari, transaksi_bulan, versi, ym_ini,
 )
 from keuangan.inti import D, SEP, hari_ini, nama_bulan, rp
 
@@ -264,7 +264,7 @@ def _ids_kategori(nama_list: list, jenis: str):
         kid = _kat_id(jenis, nm) or next((k["id"] for k in kategori_jenis(jenis) if k["nama"].lower() == str(nm).strip().lower()), "")
         if kid:
             ids.add(kid)
-            ids.update(a["id"] for a in anak_dari(kid))
+            ids.update(turunan(kid))
     return ids
 
 

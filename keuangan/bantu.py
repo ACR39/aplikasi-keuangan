@@ -68,6 +68,17 @@ def f_dompet(tambahan: dict | None = None):
     return lambda i: m.get(i, "(dompet dihapus)")
 
 
+def daftar_jenis_toko() -> list:
+    """Nama jenis toko dari daftar pengaturan, ditambah jenis yang masih dipakai toko tetapi tidak ada di daftar (supaya tak ada yang hilang)."""
+    nama = [j["nama"] for j in D.get("jenis_toko", [])]
+    pakai = sorted({x.get("jenis") for x in D["toko"] if x.get("jenis") and x.get("jenis") not in nama})
+    return (nama + pakai) or ["Lainnya"]
+
+
+def ikon_jenis_toko(nama) -> str:
+    return next((j.get("ikon", "📍") for j in D.get("jenis_toko", []) if j["nama"] == nama), "📍")
+
+
 def kat_dari(id_):
     return next((k for k in D["kategori"] if k["id"] == id_), None)
 
@@ -76,24 +87,52 @@ def anak_dari(id_) -> list:
     return [k for k in D["kategori"] if k.get("induk") == id_]
 
 
+MAKS_TINGKAT = 3  # kategori, sub kategori, sub-sub kategori
+
+
 def turunan(id_) -> set:
-    """Kategori itu sendiri ditambah sub kategorinya."""
-    return {id_} | {k["id"] for k in anak_dari(id_)}
+    """Kategori itu sendiri ditambah semua keturunannya (sub dan sub-sub)."""
+    hasil, antri = {id_}, [id_]
+    while antri:
+        for k in anak_dari(antri.pop()):
+            if k["id"] not in hasil:
+                hasil.add(k["id"])
+                antri.append(k["id"])
+    return hasil
+
+
+def rantai(id_) -> list:
+    """Id dari kategori utama sampai kategori itu sendiri, misalnya [kendaraan, bahan_bakar, pertamax]."""
+    hasil, sekarang_ = [], kat_dari(id_)
+    while sekarang_ and sekarang_["id"] not in hasil and len(hasil) < 10:
+        hasil.append(sekarang_["id"])
+        sekarang_ = kat_dari(sekarang_.get("induk")) if sekarang_.get("induk") else None
+    return hasil[::-1]
+
+
+def tingkat(id_) -> int:
+    """1 untuk kategori utama, 2 untuk sub, 3 untuk sub-sub."""
+    return len(rantai(id_)) or 1
+
+
+def tinggi(id_) -> int:
+    """Banyaknya tingkat di bawah kategori ini termasuk dirinya (1 bila tidak punya anak)."""
+    anak = anak_dari(id_)
+    return 1 + (max(tinggi(k["id"]) for k in anak) if anak else 0)
 
 
 def akar(id_) -> str:
     """Id kategori utama dari sebuah kategori (dirinya sendiri kalau sudah utama)."""
-    k = kat_dari(id_)
-    return k["induk"] if k and k.get("induk") and kat_dari(k["induk"]) else id_
+    r = rantai(id_)
+    return r[0] if r else id_
 
 
 def nama_kat(id_) -> str:
-    """'Rumah' untuk kategori utama, 'Rumah › Listrik' untuk sub kategori."""
-    k = kat_dari(id_)
-    if not k:
+    """'Rumah' untuk kategori utama, 'Rumah › Listrik' untuk sub, 'Kendaraan › Bahan bakar › Pertamax' untuk sub-sub."""
+    r = rantai(id_)
+    if not r:
         return TANPA_KAT
-    p = kat_dari(k.get("induk"))
-    return f'{p["nama"]}{SEP}{k["nama"]}' if p else k["nama"]
+    return SEP.join(kat_dari(i)["nama"] for i in r)
 
 
 def f_kat(tambahan: dict | None = None):
@@ -109,9 +148,13 @@ def kategori_utama(jenis: str) -> list:
 def kategori_jenis(jenis: str) -> list:
     """Semua kategori satu jenis, berurutan: kategori utama lalu sub kategorinya."""
     hasil = []
+
+    def tambah(k):
+        hasil.append(k)
+        for a in sorted(anak_dari(k["id"]), key=lambda x: x["nama"].lower()):
+            tambah(a)
     for p in kategori_utama(jenis):
-        hasil.append(p)
-        hasil += sorted(anak_dari(p["id"]), key=lambda k: k["nama"].lower())
+        tambah(p)
     return hasil
 
 
@@ -468,15 +511,17 @@ def ringkas_teks(t: dict) -> str:
 
 
 def pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_sub: bool = True, kosong: bool = False) -> str:
-    """Dua kotak terpisah: Kategori (utama) lalu Sub kategori. Kembalikan id kategori efektif
-    (sub kalau dipilih, kalau tidak kategori utama). Dipakai di luar st.form agar sub ikut berubah."""
+    """Kotak bertingkat: Kategori, lalu Sub kategori, lalu Sub-sub kategori (bila ada). Kembalikan id kategori efektif
+    (yang terdalam dipilih). Dipakai di luar st.form agar tingkat bawahnya ikut berubah."""
     utama = [k["id"] for k in kategori_utama(jenis)]
     if not utama:
         return ""
     if kosong:  # kotak kategori dimulai kosong; sub baru bisa dipilih setelah kategori terisi
         utama = [""] + utama
-    a = akar(awal) if kat_dari(awal) else ""
-    sub_awal = awal if a and a != awal else ""
+    r = rantai(awal) if kat_dari(awal) else []
+    a = r[0] if r else ""
+    sub_awal = r[1] if len(r) > 1 else ""
+    sub2_awal = r[2] if len(r) > 2 else ""
     c1, c2 = kolom or st.columns(2)
     if st.session_state.get(f"{kunci}_kat") not in utama:
         st.session_state.pop(f"{kunci}_kat", None)
@@ -486,18 +531,39 @@ def pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_su
     if not tampil_sub:
         return kat
     if kosong and not kat:
-        if st.session_state.get(f"{kunci}_sub") not in ("", None):
-            st.session_state.pop(f"{kunci}_sub", None)
+        for sfx in ("_sub", "_sub2"):
+            if st.session_state.get(f"{kunci}{sfx}") not in ("", None):
+                st.session_state.pop(f"{kunci}{sfx}", None)
         c2.selectbox("Sub kategori", [""], format_func=lambda i: "Pilih kategori dulu", key=f"{kunci}_sub", disabled=True)
         return ""
-    anak = [""] + [k["id"] for k in sorted(anak_dari(kat), key=lambda k: k["nama"].lower())]
-    if st.session_state.get(f"{kunci}_sub") not in anak:
-        st.session_state.pop(f"{kunci}_sub", None)
-    nama_sub = {k["id"]: k["nama"] for k in anak_dari(kat)}
-    nama_sub[""] = "Pilih sub kategori" if (kosong and anak_dari(kat)) else "(tanpa sub kategori)"
-    sub = c2.selectbox("Sub kategori", anak, index=anak.index(sub_awal) if sub_awal in anak else 0,
+
+    def tingkat_bawah(induk, label, sfx, awal_):
+        anak_ = sorted(anak_dari(induk), key=lambda k: k["nama"].lower())
+        pilihan = [""] + [k["id"] for k in anak_]
+        if st.session_state.get(f"{kunci}{sfx}") not in pilihan:
+            st.session_state.pop(f"{kunci}{sfx}", None)
+        nama = {k["id"]: k["nama"] for k in anak_}
+        nama[""] = f"Pilih {label.lower()}" if (kosong and anak_) else f"(tanpa {label.lower()})"
+        return pilihan, nama, awal_
+
+    pilihan, nama_sub, awal_ = tingkat_bawah(kat, "Sub kategori", "_sub", sub_awal)
+    sub = c2.selectbox("Sub kategori", pilihan, index=pilihan.index(awal_) if awal_ in pilihan else 0,
                        format_func=lambda i: nama_sub.get(i, "(dihapus)"), key=f"{kunci}_sub")
-    return sub or kat
+    if not sub or not anak_dari(sub):
+        st.session_state.pop(f"{kunci}_sub2", None)
+        return sub or kat
+    pilihan2, nama_sub2, awal2 = tingkat_bawah(sub, "Sub-sub kategori", "_sub2", sub2_awal)
+    sub2 = st.selectbox("Sub-sub kategori", pilihan2, index=pilihan2.index(awal2) if awal2 in pilihan2 else 0,
+                        format_func=lambda i: nama_sub2.get(i, "(dihapus)"), key=f"{kunci}_sub2")
+    return sub2 or sub
+
+
+def atur_kategori(kunci: str, id_: str):
+    """Isi kotak Kategori, Sub, dan Sub-sub di sesi sesuai satu id kategori (dipakai tombol pintas seperti barcode dan favorit)."""
+    r = rantai(id_)
+    st.session_state[f"{kunci}_kat"] = r[0] if r else ""
+    st.session_state[f"{kunci}_sub"] = r[1] if len(r) > 1 else ""
+    st.session_state[f"{kunci}_sub2"] = r[2] if len(r) > 2 else ""
 
 
 # ---------------------------------------------------------------- foto

@@ -10,7 +10,7 @@ Alamat aplikasi mencatat halaman yang sedang dibuka (`?h=...`), jadi muat ulang 
 ## Menu
 Menu dirapikan jadi 15 halaman. Beberapa halaman punya pilihan bagian (pil) di bagian atas:
 - **Laporan**: Statistik dan Tanya dan ringkasan AI.
-- **Pengaturan > Data master**: Barang dan produk, Toko dan tempat beli, Platform beli online, Dompet, Kategori (dua yang terakhir hanya untuk admin).
+- **Pengaturan > Data master**: Barang dan produk, Toko dan tempat beli, Jenis toko, Platform beli online, Dompet, Kategori (dua yang terakhir hanya untuk admin).
 - **Pengaturan > AI dan baca struk**: Privasi AI dan Mesin baca struk.
 - **Pengaturan > Perawatan data**: Riwayat aktivitas, Tempat sampah, Pemeriksa data.
 - **Pengaturan > Data dan cadangan**: Ekspor dan impor, Cadangan dan pulihkan (admin).
@@ -20,7 +20,7 @@ Menu dirapikan jadi 15 halaman. Beberapa halaman punya pilihan bagian (pil) di b
 - **Pantau**: Anggaran per kategori, Transaksi berulang (tombol Bayar otomatis membuat pengeluaran dan memajukan jatuh tempo), Target tabungan (perkiraan setoran per bulan), Utang-piutang (cicilan, bisa ikut tercatat di dompet), Laporan (bulanan, tren 12 bulan, per dompet).
 - **Pengaturan**: Tampilan, Ekspor dan impor (Excel lengkap, CSV transaksi, impor dari Excel/CSV), Dompet, Kategori (kategori utama + sub kategori dengan ikon dan warna, gabungkan saat menghapus), Cadangan dan pulihkan (unduh JSON, titik pulih dari riwayat commit).
 
-Kategori punya dua tingkat: kategori utama (misalnya Rumah) dan sub kategori (misalnya Listrik). Transaksi boleh memakai keduanya. Anggaran, laporan, dan filter pada kategori utama otomatis mencakup semua sub kategorinya. Data lama tanpa sub kategori tetap terbuka (kategori lama jadi kategori utama).
+Kategori punya sampai tiga tingkat: kategori utama (Kendaraan), sub kategori (Bahan bakar), dan sub-sub kategori (Pertamax). Transaksi memakai tingkat terdalam yang dipilih. Anggaran, laporan, dan filter pada kategori utama otomatis mencakup semua sub kategorinya. Data lama tanpa sub kategori tetap terbuka (kategori lama jadi kategori utama).
 
 Beranda: pilih periode Minggu, Bulan, Tahun, atau Tanggal custom. Kartu angka dibandingkan dengan periode sebelumnya, ada rata-rata pengeluaran per hari, grafik harian atau bulanan, serta toko dan barang dengan belanja terbesar.
 
@@ -185,3 +185,6 @@ Tanggal `2026-03-15` atau `15/03/2026`; angka boleh `1.250.000`. Contoh file bis
 Lupa unggah foto saat menyimpan struk? Di **Daftar transaksi**, buka kartu struk lalu pilih
 "📷 Tambah foto struk" (atau "Ganti foto struk"). Satu foto dipasang ke semua barang dalam struk itu,
 tidak perlu per barang. Tombol "Hapus foto" melepasnya dari semua barang.
+
+
+**Jenis toko**: Pengaturan > Data master > Jenis toko. Tambah, ubah nama (toko ikut berganti), atau hapus (jika dipakai, toko dipindah ke jenis lain dulu). Dipakai di form toko dan filter Daftar toko.

@@ -2,8 +2,8 @@
 import streamlit as st
 
 from keuangan.bantu import (
-    anak_dari, atur, catat, e, f_dompet, f_kat, kat_dari, kategori_jenis, kategori_utama, nama_kat, saldo_dompet,
-    selesai_simpan, versi,
+    MAKS_TINGKAT, anak_dari, atur, catat, e, f_dompet, f_kat, kat_dari, kategori_jenis, kategori_utama, nama_kat, saldo_dompet,
+    selesai_simpan, tingkat, tinggi, turunan, versi,
 )
 from keuangan.inti import D, IKON_PILIHAN, JENIS_DOMPET, PALET, baru_id, rp
 
@@ -81,13 +81,16 @@ def _form_kat(kunci: str, jenis: str, awal: dict | None = None, induk: str = "",
     p = kat_dari(induk or awal.get("induk"))
     with st.form(kunci, clear_on_submit=not awal):
         c1, c2, c3 = st.columns([2, 1, 1])
-        nama = c1.text_input("Nama", value=awal.get("nama", ""), placeholder="Contoh: Listrik" if induk else "Contoh: Rumah")
+        nama = c1.text_input("Nama", value=awal.get("nama", ""), placeholder=("Contoh: Pertamax" if p and tingkat(p["id"]) >= 2 else "Contoh: Listrik") if induk else "Contoh: Rumah")
         ikon = c2.selectbox("Ikon", IKON_PILIHAN, index=IKON_PILIHAN.index(awal["ikon"]) if awal.get("ikon") in IKON_PILIHAN else
                             (IKON_PILIHAN.index(p["ikon"]) if p and p.get("ikon") in IKON_PILIHAN else 0))
         warna = c3.color_picker("Warna", value=awal.get("warna") or (p["warna"] if p else PALET[len(D["kategori"]) % len(PALET)]))
         letak = awal.get("induk", induk)
-        if awal and not anak_dari(awal["id"]):
-            opsi = [""] + [x["id"] for x in kategori_utama(jenis) if x["id"] != awal["id"]]
+        if awal:
+            # boleh dipindah ke mana saja (kecuali ke dirinya atau turunannya) selama tidak lebih dari tiga tingkat
+            ke_bawah, tg = turunan(awal["id"]), tinggi(awal["id"])
+            opsi = ([""] if tg <= MAKS_TINGKAT else []) + [x["id"] for x in kategori_jenis(jenis)
+                                                            if x["id"] not in ke_bawah and tingkat(x["id"]) + tg <= MAKS_TINGKAT]
             letak = st.selectbox("Letak", opsi, index=opsi.index(letak) if letak in opsi else 0,
                                  format_func=f_kat({"": "Kategori utama"}))
         kirim = st.form_submit_button(tombol, type="primary")
@@ -182,7 +185,7 @@ def halaman_kategori():
     jenis = st.radio("Jenis", ["keluar", "masuk"], format_func={"keluar": "Pengeluaran", "masuk": "Pemasukan"}.get,
                      horizontal=True, key="tb_kat_jenis", label_visibility="collapsed")
     p = kat_dari(st.session_state.get("tb_kat_buka"))
-    if p and (p["jenis"] != jenis or p.get("induk")):
+    if p and p["jenis"] != jenis:
         st.session_state.pop("tb_kat_buka", None)
         p = None
     if p is None:
@@ -199,19 +202,25 @@ def halaman_kategori():
                 catat("kategori", f"Tambah kategori {isi['nama']}")
                 selesai_simpan("Kategori ditambah.")
         return
-    st.button("← Kembali ke semua kategori", key="kembali_kat", on_click=atur, args=("tb_kat_buka", None))
-    st.markdown('<div class="dgrup">Umum<span>kategori utama</span></div>', unsafe_allow_html=True)
+    induk_p = p.get("induk") if p.get("induk") and kat_dari(p["induk"]) else None
+    st.button("← Kembali ke " + (kat_dari(induk_p)["nama"] if induk_p else "semua kategori"), key="kembali_kat", on_click=atur, args=("tb_kat_buka", induk_p))
+    tp = tingkat(p["id"])
+    st.markdown(f'<div class="dgrup">{e(nama_kat(p["id"]))}<span>{["kategori utama", "sub kategori", "sub-sub kategori"][min(tp, 3) - 1]}</span></div>', unsafe_allow_html=True)
     _baris_kat(p, jenis)
     anak = sorted(anak_dari(p["id"]), key=lambda k: k["nama"].lower())
-    st.markdown(f'<div class="dgrup">Sub kategori<span>{len(anak)}</span></div>', unsafe_allow_html=True)
+    nama_anak = "Sub kategori" if tp == 1 else "Sub-sub kategori"
+    st.markdown(f'<div class="dgrup">{nama_anak}<span>{len(anak)}</span></div>', unsafe_allow_html=True)
     if not anak:
-        st.caption("Belum ada sub kategori. Transaksi bisa langsung memakai kategori utama.")
+        st.caption(f"Belum ada {nama_anak.lower()}. Transaksi bisa langsung memakai {'kategori utama' if tp == 1 else 'kategori ini'}.")
     for k in anak:
-        _baris_kat(k, jenis)
+        _baris_kat(k, jenis, buka=tingkat(k["id"]) < MAKS_TINGKAT)
+    if tp >= MAKS_TINGKAT:
+        st.caption("Tingkat paling dalam sudah tercapai (kategori, sub, sub-sub).")
+        return
     with st.container(key="kartu_g_sub_baru"):
-        st.markdown(f"**Tambah sub kategori di {p['nama']}**")
+        st.markdown(f"**Tambah {nama_anak.lower()} di {p['nama']}**")
         isi = _form_kat(f"f_sub_baru_{p['id']}_{versi()}", jenis, induk=p["id"])
         if isi:
             D["kategori"].append({"id": baru_id(), "jenis": jenis, **isi})
-            catat("kategori", f"Tambah sub kategori {isi['nama']} di {p['nama']}")
-            selesai_simpan("Sub kategori ditambah.")
+            catat("kategori", f"Tambah {nama_anak.lower()} {isi['nama']} di {nama_kat(p['id'])}")
+            selesai_simpan(f"{nama_anak} ditambah.")

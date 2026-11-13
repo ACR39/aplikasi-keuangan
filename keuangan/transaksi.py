@@ -5,6 +5,7 @@ from datetime import time as jam_t, timedelta
 import streamlit as st
 
 from keuangan.bantu import (
+    atur_kategori,
     barang_dalam, barang_dari, f_barang, perbarui_harga_barang, teks_barang,
     f_dompet, f_kat, turunan, harga_normal_barang, tampil_peringatan_harga, peringatan_harga, salin_transaksi, pilih_kategori, kolom_foto, proses_foto, kat_dari, f_toko, toko_dari, teks_toko, kunci_urut, akar,
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
@@ -57,8 +58,7 @@ def _cari_barcode(kunci: str, jenis: str):
     elif not k or k["jenis"] != jenis:
         st.session_state[f"{kunci}_bcpesan"] = f"{b['nama']} ada di kategori {'pengeluaran' if k and k['jenis'] == 'keluar' else 'pemasukan'}, bukan jenis ini."
     else:
-        st.session_state[f"{kunci}_kat"] = akar(b["kategori"])
-        st.session_state[f"{kunci}_sub"] = b["kategori"] if akar(b["kategori"]) != b["kategori"] else ""
+        atur_kategori(kunci, b["kategori"])
         st.session_state[f"{kunci}_brg"] = b["id"]
         st.session_state[f"{kunci}_bcpesan"] = f"Terpilih: {b['nama']}"
 
@@ -68,9 +68,7 @@ def _barang_dipilih(kunci: str):
     b = barang_dari(st.session_state.get(f"{kunci}_brg"))
     if not b or not kat_dari(b["kategori"]):
         return
-    utama = akar(b["kategori"])
-    st.session_state[f"{kunci}_kat"] = utama
-    st.session_state[f"{kunci}_sub"] = b["kategori"] if b["kategori"] != utama else ""
+    atur_kategori(kunci, b["kategori"])
 
 
 def barang_favorit(jenis: str, n: int = 6) -> list:
@@ -125,12 +123,12 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
         kat = pilih_kategori(kunci, jenis, awal.get("kategori", "") if kat_dari(awal.get("kategori", "")) else "", kosong=not awal.get("kategori"))
         ada_sub = bool(kat) and bool(anak_dari(kat))
         langsung = bool(kat) and any(b["kategori"] == kat for b in D["barang"])  # barang yang menempel di kategori utama tetap bisa dipilih
-        sub_ok = bool(kat) and (not ada_sub or bool(st.session_state.get(f"{kunci}_sub")) or langsung)
+        sub_ok = bool(kat) and (not ada_sub or langsung)
         c1, c2 = st.columns(2)
         if sub_ok:
             # daftar barang hanya yang berkategori sama dengan pilihan (sub kalau ada, kalau tidak kategori utama);
             # berubah hanya saat kategori/sub diganti, jadi pilihan lama memang perlu direset
-            efektif = st.session_state.get(f"{kunci}_sub") or kat
+            efektif = kat
             opsi = [""] + [b["id"] for b in sorted(D["barang"], key=lambda b: b["nama"].lower())
                            if b["kategori"] == efektif and (kat_dari(b["kategori"]) or {}).get("jenis") == jenis]
             if awal.get("barang") and awal["barang"] not in opsi and barang_dari(awal["barang"]) and (barang_dari(awal["barang"]) or {}).get("kategori") == efektif:

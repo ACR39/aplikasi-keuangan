@@ -6,7 +6,7 @@ lokasi, dompet, dan foto struk. Jadi laporan per kategori, barang, dan toko teta
 import pandas as pd
 import streamlit as st
 
-from keuangan.bantu import akar, anak_dari, pilih_kategori, kat_dari, nama_kat, perbarui_harga_barang, tambah_transaksi, transaksi_barang, toko_dari, barang_dari
+from keuangan.bantu import atur_kategori, akar, anak_dari, pilih_kategori, kat_dari, nama_kat, perbarui_harga_barang, tambah_transaksi, transaksi_barang, toko_dari, barang_dari
 from keuangan.inti import D, baru_id, rp
 
 KOLOM = ["Barang", "Kategori", "Keterangan", "Banyaknya", "Harga satuan"]
@@ -248,8 +248,7 @@ def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = Fal
             st.session_state[f"{kunci}_{n}_kat"] = r.get("Kategori") if r.get("Kategori") in id_k else ""
             kid = (barang_dari(id_b[r["Barang"]]) or {}).get("kategori", "") if r.get("Barang") in id_b else id_k.get(r.get("Kategori"), "")
             if kat_dari(kid):
-                st.session_state[f"{kunci}_{n}_c_kat"] = akar(kid)
-                st.session_state[f"{kunci}_{n}_c_sub"] = kid if kid != akar(kid) else ""
+                atur_kategori(f"{kunci}_{n}_c", kid)
             st.session_state[f"{kunci}_{n}_ket"] = r.get("Keterangan") if isinstance(r.get("Keterangan"), str) else ""
             st.session_state[f"{kunci}_{n}_qty"] = float(r["Banyaknya"]) if not _kosong(r.get("Banyaknya")) else 1.0
             st.session_state[f"{kunci}_{n}_hrg"] = int(r["Harga satuan"]) if not _kosong(r.get("Harga satuan")) else 0
@@ -284,9 +283,9 @@ def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = Fal
                     ket = st.text_input("Nama / keterangan", key=f"{k}_ket", max_chars=60)
             else:
                 efektif_k = pilih_kategori(f"{k}_c", "keluar", "", kosong=True)
-                utama_k = st.session_state.get(f"{k}_c_kat") or ""
-                langsung = bool(utama_k) and any(x["kategori"] == utama_k for x in D["barang"])
-                sub_ok = bool(utama_k) and (not anak_dari(utama_k) or bool(st.session_state.get(f"{k}_c_sub")) or langsung)
+                utama_k = efektif_k
+                langsung = bool(efektif_k) and any(x["kategori"] == efektif_k for x in D["barang"])
+                sub_ok = bool(efektif_k) and (not anak_dari(efektif_k) or langsung)
                 if sub_ok:
                     opsi_f = [""] + [lab for lab, bid in id_b.items() if (barang_dari(bid) or {}).get("kategori") == efektif_k]
                     if st.session_state.get(f"{k}_brg") not in opsi_f:

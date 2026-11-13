@@ -34,7 +34,7 @@ PENGATURAN_MENU = ["Tampilan", "Data master", "AI dan baca struk", "Perawatan da
 EDIT_SAJA = ("Catat transaksi",)
 # Halaman gabungan: nama halaman -> [(label bagian, nama halaman lama, hanya admin)]. Nama lama tetap dikenali sebagai pintasan (lihat ALIAS).
 GABUNGAN = {
-    "Data master": [("Barang dan produk", "Barang dan produk", False), ("Toko dan tempat beli", "Toko dan tempat beli", False),
+    "Data master": [("Barang dan produk", "Barang dan produk", False), ("Toko dan tempat beli", "Toko dan tempat beli", False), ("Jenis toko", "Jenis toko", False),
                     ("Platform beli online", "Platform beli online", False), ("Dompet", "Dompet", True), ("Kategori", "Kategori", True)],
     "AI dan baca struk": [("Privasi AI", "Privasi AI", False), ("Mesin baca struk", "Mesin baca struk", False)],
     "Laporan": [("Statistik", "Laporan", False), ("Tanya dan ringkasan AI", "Asisten AI", False)],
@@ -43,7 +43,7 @@ GABUNGAN = {
 }
 ALIAS = {lama: (hal, label) for hal, bagian in GABUNGAN.items() for label, lama, _ in bagian if lama != hal}
 IKON = {"Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Platform beli online": "delivery_dining", "Asisten AI": "auto_awesome", "Privasi AI": "shield", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
-        "Data master": "database", "AI dan baca struk": "document_scanner", "Perawatan data": "build", "Data dan cadangan": "backup",
+        "Data master": "database", "Jenis toko": "category", "AI dan baca struk": "document_scanner", "Perawatan data": "build", "Data dan cadangan": "backup",
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Transaksi berulang": "event_repeat", "Target tabungan": "savings",
         "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner", "Pemeriksa data": "fact_check",
         "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
@@ -55,6 +55,7 @@ LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.or
         '<path d="M19 13.5v11M15.5 16.5c0-1.3 1.5-2 3.5-2s3.5.8 3.5 2.1c0 3.2-7 1.6-7 4.8 0 1.3 1.6 2.1 3.5 2.1s3.5-.8 3.5-2.1" '
         'fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>')
 DESKRIPSI = {
+    "Jenis toko": "Tambah, ubah, atau hapus jenis toko (Minimarket, SPBU, Bengkel, dan lain-lain) untuk mengelompokkan daftar toko.",
     "Data master": "Daftar yang diatur sekali lalu dipakai terus: barang, toko, platform beli online, dompet, dan kategori.",
     "AI dan baca struk": "Semua pengaturan AI di satu tempat: fitur dan privasi, serta mesin pembaca foto struk.",
     "Perawatan data": "Riwayat perubahan, transaksi terhapus yang bisa dipulihkan, dan pemeriksa data yang janggal.",
@@ -210,6 +211,9 @@ def tampilkan_isi(halaman):
         halaman_barang()
     elif halaman == "Toko dan tempat beli":
         halaman_toko()
+    elif halaman == "Jenis toko":
+        from keuangan.toko import halaman_jenis_toko
+        halaman_jenis_toko()
     elif halaman == "Platform beli online":
         halaman_platform()
     elif halaman == "Asisten AI":

@@ -220,7 +220,10 @@ def halaman_impor():
                 if cocok:
                     return sorted(cocok, key=lambda k: bool(k.get("induk")))[0]["id"]
                 return satu_kat(bagian[0], "", jenis)
-            return satu_kat(bagian[1], satu_kat(bagian[0], "", jenis), jenis)
+            induk = ""
+            for b_ in bagian[:3]:  # sampai tiga tingkat: Kendaraan › Bahan bakar › Pertamax
+                induk = satu_kat(b_, induk, jenis)
+            return induk
 
         for i, r in df.iterrows():
             try:
@@ -282,7 +285,7 @@ def halaman_impor():
         if baru and st.button(f"Impor {len(baru)} transaksi", type="primary", key="impor_go"):
             for n, i in dom_baru.items():
                 D["dompet"].append({"id": i, "nama": n.title() if n.islower() else n, "jenis": "Lainnya", "saldo_awal": 0, "arsip": False})
-            for (_, _, j), (i, nama_k, induk) in sorted(kat_baru.items(), key=lambda x: bool(x[0][1])):
+            for (_, _, j), (i, nama_k, induk) in kat_baru.items():  # urutan pembuatan: induk selalu lebih dulu dari anaknya
                 p = next((k for k in D["kategori"] if k["id"] == induk), None)
                 D["kategori"].append({"id": i, "nama": nama_k, "jenis": j, "induk": induk, "ikon": p["ikon"] if p else "🏷️",
                                       "warna": p["warna"] if p else "#9aa0a6"})

@@ -524,6 +524,11 @@ def lengkapi_kategori(daftar: list) -> list:
     return daftar
 
 
+def jenis_toko_awal() -> list:
+    """Jenis toko bawaan (bisa ditambah, diubah, dan dihapus di Pengaturan > Data master > Jenis toko)."""
+    return [{"id": f"jt_{_slug(n)}", "nama": n, "ikon": ik} for n, ik in TOKO_IKON.items()]
+
+
 def platform_awal() -> list:
     """Platform beli online bawaan. Id tetap supaya data dari cadangan lama tetap cocok."""
     return [{"id": "p_gofood", "nama": "GoFood"}, {"id": "p_grabfood", "nama": "GrabFood"},
@@ -540,6 +545,7 @@ def data_kosong() -> dict:
         "templat": [],    # templat transaksi: [{"id","nama","jenis","dompet","kategori","jumlah","catatan","barang","qty","harga_satuan","toko","platform","lokasi"}]
         "belanja": [],    # daftar belanja: [{"id","nama","toko","dibuat","selesai","item":[],"riwayat":[]}]
         "toko": [],       # [{"id","nama","jenis","lokasi"}]  tempat beli / toko
+        "jenis_toko": jenis_toko_awal(),  # [{"id","nama","ikon"}]  daftar jenis toko; toko menyimpan namanya di "jenis"
         "platform": platform_awal(),  # [{"id","nama"}]  platform beli online (GoFood dst); transaksi menyimpan id-nya di "platform", kosong = offline
         "barang": [],     # [{"id","nama","kategori"(id kategori atau sub kategori),"harga"(harga satuan terakhir),"satuan"}]
         "anggaran": [],   # [{"id","kategori","batas"}]  batas per bulan, berlaku tiap bulan
