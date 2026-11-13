@@ -75,3 +75,56 @@ def pasang_pwa():
         return
     st.session_state.pwa_terpasang = True
     _sisipkan(_JS.replace("__NAMA__", NAMA).replace("__PENDEK__", NAMA_PENDEK).replace("__WARNA__", WARNA))
+
+
+_JS_SAMBUNG = """<script>
+(function () {
+  try {
+    const app = window.parent, doc = app.document;
+    if (app.__sambungUlang) return;
+    app.__sambungUlang = true;
+    let sembunyiSejak = 0, memeriksa = false;
+
+    // Streamlit menampilkan dialog "Connection error" atau status "Connecting" saat koneksi ke server putus
+    function keadaan() {
+      const teks = (doc.body && doc.body.innerText) || '';
+      if (/connection error|is streamlit still running/i.test(teks)) return 'galat';
+      const st = doc.querySelector('[data-testid="stConnectionStatus"]');
+      if (st && /connect/i.test(st.innerText || '')) return 'menyambung';
+      return 'baik';
+    }
+    function muatUlang() { try { app.location.reload(); } catch (e) {} }
+
+    function periksa() {
+      if (memeriksa) return;
+      memeriksa = true;
+      const lama = Date.now() - sembunyiSejak;
+      if (sembunyiSejak && lama > 30 * 60 * 1000) { muatUlang(); return; }   // terlalu lama di belakang: sesi server pasti sudah habis
+      let n = 0, baik = 0, menyambung = 0;
+      const t = setInterval(function () {                                      // beri waktu 20 detik untuk tersambung sendiri
+        n++;
+        const k = keadaan();
+        if (k === 'galat' && n >= 3) { clearInterval(t); muatUlang(); return; }
+        menyambung = k === 'menyambung' ? menyambung + 1 : 0;
+        if (menyambung >= 8) { clearInterval(t); muatUlang(); return; }
+        baik = k === 'baik' ? baik + 1 : 0;
+        if (baik >= 4 || n >= 20) { clearInterval(t); memeriksa = false; }
+      }, 1000);
+    }
+    doc.addEventListener('visibilitychange', function () {
+      if (doc.visibilityState === 'hidden') { sembunyiSejak = Date.now(); }
+      else { periksa(); }
+    });
+    app.addEventListener('pageshow', function (e) { if (e.persisted) periksa(); });
+    app.addEventListener('online', periksa);
+  } catch (e) { /* hanya tambahan */ }
+})();
+</script>"""
+
+
+def pasang_sambung_ulang():
+    """Bila HP kembali dari latar belakang dan koneksi ke server sudah putus, muat ulang halaman otomatis (tanpa disuruh refresh manual)."""
+    if st.session_state.get("sambung_terpasang"):
+        return
+    st.session_state.sambung_terpasang = True
+    _sisipkan(_JS_SAMBUNG)

@@ -4,6 +4,9 @@ Aplikasi Streamlit untuk mencatat keuangan pribadi: pemasukan, pengeluaran, tran
 tagihan berulang, target tabungan, utang-piutang, dan laporan. Tampilan dan cara pasangnya sama dengan Pelacak Barang.
 Data disimpan sebagai satu file `data.json` di repositori GitHub privat.
 
+## Kembali dari latar belakang (HP)
+Alamat aplikasi mencatat halaman yang sedang dibuka (`?h=...`), jadi muat ulang kembali ke halaman yang sama, dan login dipulihkan dari cookie. Bila HP kembali dari latar belakang dan koneksi ke server sudah putus (muncul "Connection error" atau "Connecting" terlalu lama), halaman dimuat ulang otomatis. Formulir yang belum disimpan hilang saat sesi server habis. Pada hosting yang menidurkan aplikasi (halaman "app has gone to sleep"), tombol bangunkan tetap harus ditekan manual.
+
 ## Menu
 Menu dirapikan jadi 15 halaman. Beberapa halaman punya pilihan bagian (pil) di bagian atas:
 - **Laporan**: Statistik dan Tanya dan ringkasan AI.

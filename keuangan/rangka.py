@@ -20,7 +20,7 @@ from keuangan.laporan import halaman_laporan
 from keuangan.ocr import halaman_mesin
 from keuangan.master import halaman_dompet, halaman_kategori
 from keuangan.penyimpanan import muat_ke_sesi
-from keuangan.pwa import pasang_pwa
+from keuangan.pwa import pasang_pwa, pasang_sambung_ulang
 from keuangan.tabungan import halaman_tabungan
 from keuangan.tagihan import catat_otomatis, halaman_tagihan
 from keuangan.tampilan import halaman_tampilan
@@ -126,6 +126,15 @@ def peringatan_uji():
 def pilih_halaman():
     PENGATURAN = list(PENGATURAN_MENU)
     HALAMAN = ["Beranda"] + menu_utama() + PANTAU + PENGATURAN
+    if "halaman" not in st.session_state:  # sesi baru (misalnya setelah muat ulang): kembali ke halaman terakhir dari alamat
+        try:
+            h, sb = st.query_params.get("h", ""), st.query_params.get("s", "")
+            if h in HALAMAN:
+                st.session_state.halaman = h
+                if sb and h in GABUNGAN:
+                    st.session_state[f"sub_{h}"] = sb
+        except Exception:
+            pass
     lama = st.session_state.get("halaman")
     if lama in ALIAS:  # nama halaman lama (pintasan dari tombol atau tautan): buka halaman gabungannya pada bagian yang sesuai
         hal, label = ALIAS[lama]
@@ -280,6 +289,7 @@ def tampilkan_halaman(halaman):
 def jalankan():
     pasang_css()
     pasang_pwa()
+    pasang_sambung_ulang()
     siapkan_sesi()
     peringatan_uji()
     catat_otomatis()
@@ -288,3 +298,18 @@ def jalankan():
     tampilkan_sidebar(halaman, PENGATURAN)
     tampilkan_kepala(halaman, PENGATURAN)
     tampilkan_halaman(halaman)
+    simpan_alamat(halaman)
+
+
+def simpan_alamat(halaman):
+    """Catat halaman (dan bagiannya) di alamat, supaya muat ulang atau sambung ulang kembali ke halaman yang sama."""
+    try:
+        if st.query_params.get("h") != halaman:
+            st.query_params["h"] = halaman
+        sb = st.session_state.get(f"sub_{halaman}") if halaman in GABUNGAN else None
+        if sb and st.query_params.get("s") != sb:
+            st.query_params["s"] = sb
+        elif not sb and "s" in st.query_params:
+            del st.query_params["s"]
+    except Exception:
+        pass
