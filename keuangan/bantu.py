@@ -6,6 +6,7 @@ from datetime import date, timedelta
 import streamlit as st
 
 from keuangan.inti import (
+    ikon_html,
     D, JENIS, MAKS_AKTIVITAS, SEP, TANPA_KAT, baru_id, fmt_iso, hari_ini, iso_ke_date, nama_bulan, pengguna_nama, rp,
     sekarang,
 )
@@ -163,7 +164,7 @@ def ikon_kat(id_) -> str:
     k = kat_dari(id_)
     if not k:
         return ""
-    return f'<span class="kc" style="background:{e(k.get("warna", "#9aa0a6"))}">{e(k.get("ikon", "🏷️"))}</span>'
+    return f'<span class="kc" style="background:{e(k.get("warna", "#9aa0a6"))}">{ikon_html(k.get("ikon", "🏷️"))}</span>'
 
 
 def kat_pertama(jenis: str, pilihan: str = ""):
@@ -480,7 +481,7 @@ def baris_transaksi(t: dict) -> str:
         ikon = "↓" if j == "masuk" else "↑"
         nom = ("+" if j == "masuk" else "-") + rp(t["jumlah"])
     k = kat_dari(t.get("kategori")) if j != "transfer" else None
-    kotak = (f'<div class="ic kat" style="background:{e(k.get("warna", "#9aa0a6"))}">{e(k.get("ikon", "🏷️"))}</div>' if k
+    kotak = (f'<div class="ic kat" style="background:{e(k.get("warna", "#9aa0a6"))}">{ikon_html(k.get("ikon", "🏷️"))}</div>' if k
              else f'<div class="ic {j}">{ikon}</div>')
     mt = "".join(f'<div class="mt">{e(x)}</div>' for x in baris)
     return (f'<div class="rt">{kotak}<div class="isi"><div class="jd">{e(judul)}</div>{mt}</div>'
@@ -589,7 +590,7 @@ def ikon_foto(id_, fallback: str, warna: str = "#256b4a22") -> str:
     uri = _thumb(id_) if id_ else ""
     if uri:
         return f'<div class="ic kat" style="background:#fff center/cover no-repeat url({uri})"></div>'
-    return f'<div class="ic kat" style="background:{html.escape(warna)}">{html.escape(fallback)}</div>'
+    return f'<div class="ic kat" style="background:{html.escape(warna)}">{ikon_html(fallback)}</div>'
 
 
 def kolom_foto(label: str, kunci: str, saat_ubah: str = "", jenis: str = "barang"):

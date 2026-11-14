@@ -4,7 +4,8 @@ import streamlit as st
 from keuangan.bantu import daftar_jenis_toko, ikon_jenis_toko, jumlah_kunjungan
 from keuangan.bantu import atur, catat, e, ikon_foto, kolom_foto, link_aman, proses_foto, selesai_simpan, transaksi_toko, versi
 from keuangan.peta import peta_semua, pilih_titik, proses_gps, terdekat, teks_jarak, titik_dari, tombol_gps, url_peta
-from keuangan.inti import D, IKON_NAMA, IKON_PILIHAN, baru_id, fmt_iso, hanya_lihat, rp
+from keuangan.inti import D, IKON_PILIHAN, baru_id, fmt_iso, hanya_lihat, ikon_html, rp
+from keuangan.ikon_pilih import pilih_ikon
 from keuangan.pwa import gulir_ke_atas_bila_baru
 
 
@@ -82,7 +83,7 @@ def _toko_terdekat():
         st.markdown("**Toko terdekat dari Anda**")
         for x, km in terdekat(pos, D["toko"]):
             tautan = f"https://www.google.com/maps/dir/?api=1&destination={titik_dari(x)[0]:.6f},{titik_dari(x)[1]:.6f}&origin={pos[0]:.6f},{pos[1]:.6f}"
-            st.markdown(f'{ikon_jenis_toko(x.get("jenis"))} **{e(x["nama"])}** · {teks_jarak(km)} · '
+            st.markdown(f'{ikon_html(ikon_jenis_toko(x.get("jenis")))} **{e(x["nama"])}** · {teks_jarak(km)} · '
                         f'<a href="{e(tautan)}" target="_blank" rel="noopener noreferrer">Rute</a>', unsafe_allow_html=True)
         st.button("Sembunyikan", key="tk_dekat_tutup", on_click=lambda: st.session_state.update(tk_posisi=None))
 
@@ -189,7 +190,7 @@ def halaman_jenis_toko():
         for j in sorted(D["jenis_toko"], key=lambda x: x["nama"].lower()):
             n = sum(1 for x in D["toko"] if x.get("jenis") == j["nama"])
             c = st.columns([1, 0.001, 0.001])
-            c[0].markdown(f'<div class="itm"><div class="isi"><div class="jd">{e(j.get("ikon", "📍"))} {e(j["nama"])}</div>'
+            c[0].markdown(f'<div class="itm"><div class="isi"><div class="jd">{ikon_html(j.get("ikon", "📍"))} {e(j["nama"])}</div>'
                           f'<div class="mt">{n} toko</div></div></div>', unsafe_allow_html=True)
             if not hanya_lihat():
                 c[1].button("Ubah", key=f"ub_jt_{j['id']}", on_click=atur, args=("edit_jenis_toko", j["id"]))
@@ -199,13 +200,10 @@ def halaman_jenis_toko():
         if hanya_lihat():
             return
         edit = next((x for x in D["jenis_toko"] if x["id"] == st.session_state.get("edit_jenis_toko")), None)
+        ikon = pilih_ikon(f"ikjt_{edit['id'] if edit else 'baru'}", (edit or {}).get("ikon") or "mdi:storefront")
         with st.form(f"f_jenis_toko_{versi()}_{edit['id'] if edit else 'baru'}", clear_on_submit=not edit):
             st.markdown(f"**{'Ubah jenis toko' if edit else 'Tambah jenis toko'}**")
-            c1, c2 = st.columns([2, 1])
-            nama = c1.text_input("Nama", value=edit["nama"] if edit else "", max_chars=30, placeholder="Contoh: Bengkel, Laundry, Toko bangunan")
-            ikon_awal = (edit or {}).get("ikon") or "🏪"
-            pilihan_ikon = IKON_TOKO_PILIHAN if ikon_awal in IKON_TOKO_PILIHAN else [ikon_awal] + IKON_TOKO_PILIHAN
-            ikon = c2.selectbox("Ikon (ketik untuk mencari)", pilihan_ikon, index=pilihan_ikon.index(ikon_awal), format_func=lambda x: f"{x}  {IKON_NAMA.get(x, '')}")
+            nama = st.text_input("Nama", value=edit["nama"] if edit else "", max_chars=30, placeholder="Contoh: Bengkel, Laundry, Toko bangunan")
             if st.form_submit_button("Simpan perubahan" if edit else "Tambah", type="primary"):
                 if not nama.strip():
                     st.error("Isi nama jenis toko.")

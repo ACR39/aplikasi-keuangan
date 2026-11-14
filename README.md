@@ -200,3 +200,7 @@ tidak perlu per barang. Tombol "Hapus foto" melepasnya dari semua barang.
 **Jenis toko**: Pengaturan > Data master > Jenis toko. Tambah, ubah nama (toko ikut berganti), atau hapus (jika dipakai, toko dipindah ke jenis lain dulu). Dipakai di form toko dan filter Daftar toko.
 
 **Aplikasi lama**: Pengaturan > Data dan cadangan > Ekspor dan impor > tab Aplikasi lama. Impor membaca file Excel (.xls atau .xlsx) dengan sheet Records dan Debts: account menjadi dompet, category menjadi kategori, payee menjadi toko, amount negatif menjadi pengeluaran, pasangan baris transfer menjadi satu transfer, Debts menjadi utang-piutang. Data identik yang sudah ada dilewati. Ekspor menghasilkan file dengan kolom yang sama persis. Butuh paket python-calamine untuk membaca .xls.
+
+
+## Ikon
+Kategori dan jenis toko memakai ikon glyph satu warna (Material Design Icons, lisensi Apache 2.0, 271 ikon dalam `keuangan/ikon_svg.py`). Pilih lewat tombol "Ganti ikon" (ada pencarian); emoji lama tetap berfungsi dan masih bisa dipilih. Ikon disimpan sebagai `mdi:nama`.

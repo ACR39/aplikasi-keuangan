@@ -314,6 +314,8 @@ CSS_TAMBAH_TERANG = """
 .rt .nom{flex:0 0 auto;text-align:right;font-weight:800;font-size:1.05rem;white-space:nowrap}
 .nom.masuk,.nm-masuk{color:#166534}.nom.keluar,.nm-keluar{color:#b42318}.nom.transfer,.nm-transfer{color:#2f5d9e}
 .rt .ic.kat{color:#fff;font-size:1.2rem}
+.gl{width:1.15em;height:1.15em;fill:currentColor;vertical-align:-.2em}
+.kc .gl,.ic.kat .gl{width:1.1em;height:1.1em;vertical-align:middle}
 .kc{display:inline-flex;width:1.7rem;height:1.7rem;border-radius:50%;align-items:center;justify-content:center;font-size:.95rem;margin-right:.5rem;vertical-align:middle;color:#fff}
 .sub-rinci{margin:.25rem 0 .3rem 2.2rem;font-size:.82rem;color:#475569}
 .sub-rinci div{display:flex;justify-content:space-between;gap:.6rem;padding:.12rem 0;border-bottom:1px dashed #e8ebf0}
@@ -481,6 +483,16 @@ IKON_KELOMPOK = {
     'Hewan dan alam': [["🐾", "Hewan"], ["🐶", "Anjing"], ["🐱", "Kucing"], ["🐟", "Ikan hias"], ["🐦", "Burung"], ["🐇", "Kelinci"], ["🐹", "Hamster"], ["🐢", "Kura-kura"], ["🌿", "Tanaman"], ["🌱", "Bibit"], ["🌳", "Pohon"], ["🌸", "Bunga"], ["🌻", "Bunga matahari"], ["🍀", "Semanggi"], ["🌾", "Padi"], ["🪴", "Pot"], ["☀️", "Cuaca"], ["🌧️", "Hujan"], ["🌙", "Malam"], ["⭐", "Favorit"], ["🔥", "Api"], ["💧", "Air"], ["🌍", "Dunia"], ["♻️", "Daur ulang"]],
     'Lain-lain': [["📦", "Lainnya"], ["🏷️", "Umum"], ["📍", "Tempat"], ["⭐", "Penting"], ["❤️", "Suka"], ["🔑", "Kunci"], ["🎁", "Hadiah"], ["🤝", "Teman"], ["👨‍👩‍👧", "Keluarga"], ["👤", "Pribadi"], ["🙏", "Ibadah"], ["🕋", "Haji"], ["⚙️", "Pengaturan"], ["❓", "Tak diketahui"], ["✅", "Selesai"], ["⚠️", "Waspada"], ["🚫", "Dilarang"], ["🔒", "Terkunci"], ["📌", "Penanda"], ["🧰", "Peralatan"], ["🛠️", "Perkakas"], ["🧲", "Magnet"], ["🔍", "Cari"], ["🪄", "Sulap"], ["🎀", "Pita"], ["🗝️", "Kunci tua"]],
 }
+def ikon_html(v) -> str:
+    """HTML aman untuk satu ikon: glyph SVG satu warna bila nilainya 'mdi:nama', kalau tidak teks/emoji apa adanya."""
+    from html import escape
+    from keuangan.ikon_svg import GLIF
+    v = str(v or "")
+    if v.startswith("mdi:") and v[4:] in GLIF:
+        return f'<svg class="gl" viewBox="0 0 24 24" aria-hidden="true"><path d="{GLIF[v[4:]][2]}"/></svg>'
+    return escape(v)
+
+
 IKON_NAMA = {}
 IKON_PILIHAN = []
 for _g, _isi in IKON_KELOMPOK.items():

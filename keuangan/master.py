@@ -5,7 +5,8 @@ from keuangan.bantu import (
     MAKS_TINGKAT, anak_dari, atur, catat, e, f_dompet, f_kat, kat_dari, kategori_jenis, kategori_utama, nama_kat, saldo_dompet,
     selesai_simpan, tingkat, tinggi, turunan, versi,
 )
-from keuangan.inti import D, IKON_NAMA, IKON_PILIHAN, JENIS_DOMPET, PALET, baru_id, rp
+from keuangan.inti import D, IKON_PILIHAN, JENIS_DOMPET, PALET, baru_id, ikon_html, rp
+from keuangan.ikon_pilih import pilih_ikon
 
 
 def _dipakai_dompet(id_) -> int:
@@ -79,12 +80,11 @@ def _form_kat(kunci: str, jenis: str, awal: dict | None = None, induk: str = "",
     """Form kategori. Kembalikan dict isian bila sah dan tombol ditekan."""
     awal = awal or {}
     p = kat_dari(induk or awal.get("induk"))
+    ikon_awal = awal.get("ikon") or (p.get("ikon") if p else "") or "mdi:tag"
+    ikon = pilih_ikon(f"{kunci}_ik", ikon_awal)
     with st.form(kunci, clear_on_submit=not awal):
-        c1, c2, c3 = st.columns([2, 1, 1])
+        c1, c3 = st.columns([2, 1])
         nama = c1.text_input("Nama", value=awal.get("nama", ""), placeholder=("Contoh: Pertamax" if p and tingkat(p["id"]) >= 2 else "Contoh: Listrik") if induk else "Contoh: Rumah")
-        ikon_awal = awal.get("ikon") or (p.get("ikon") if p else "") or IKON_PILIHAN[0]
-        pilihan_ikon = IKON_PILIHAN if ikon_awal in IKON_PILIHAN else [ikon_awal] + IKON_PILIHAN
-        ikon = c2.selectbox("Ikon (ketik untuk mencari)", pilihan_ikon, index=pilihan_ikon.index(ikon_awal), format_func=lambda x: f"{x}  {IKON_NAMA.get(x, '')}")
         warna = c3.color_picker("Warna", value=awal.get("warna") or (p["warna"] if p else PALET[len(D["kategori"]) % len(PALET)]))
         letak = awal.get("induk", induk)
         if awal:
@@ -156,7 +156,7 @@ def _baris_kat(k: dict, jenis: str, buka: bool = False, ubah: bool = True):
     n = len(anak_dari(k["id"]))
     with st.container(key=f"tx_kt_{k['id']}"):
         kolom = st.columns([1] + [0.001] * (1 + 2 * ubah))
-        kolom[0].markdown(f'<div class="rt"><div class="ic kat" style="background:{e(k.get("warna", "#9aa0a6"))}">{e(k.get("ikon", "🏷️"))}</div>'
+        kolom[0].markdown(f'<div class="rt"><div class="ic kat" style="background:{e(k.get("warna", "#9aa0a6"))}">{ikon_html(k.get("ikon", "🏷️"))}</div>'
                           f'<div class="isi"><div class="jd">{e(k["nama"])}</div></div>'
                           f'<div class="mt">{f"({n})" if n and buka else ""}</div></div>', unsafe_allow_html=True)
         i = 1
