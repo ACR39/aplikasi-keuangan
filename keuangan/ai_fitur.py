@@ -224,7 +224,7 @@ def panel_layar(berkas, base: str):
         if jawab is None:
             return
         try:
-            h = terapkan_layar(jawab, ai.mesin_dipakai())
+            h = terapkan_layar(jawab, ai._cfg()["log"][-1]["mesin"])
         except RuntimeError as ex:
             st.error(str(ex))
             return

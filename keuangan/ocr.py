@@ -39,17 +39,59 @@ PENYEDIA_OA = {
     "openai": ("https://api.openai.com/v1", "gpt-4o-mini"),
     "openrouter": ("https://openrouter.ai/api/v1", "google/gemini-2.5-flash"),
     "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.5-flash"),
+    "kimi": ("https://api.moonshot.ai/v1", "kimi-latest"),
+    "deepseek": ("https://api.deepseek.com/v1", "deepseek-chat"),
 }
+# Penyedia yang bawaannya tidak bisa membaca gambar (bisa diubah per bagian secrets dengan teks_saja = true/false)
+TEKS_SAJA_BAWAAN = {"deepseek"}
 
 
-def _cfg_oa(nama: str):
-    """Secrets [openai] / [openrouter] / [gemini]: api_key, opsional base_url dan model."""
+def _bagian(nama: str) -> dict:
+    """Bagian secrets mentah, atau {}."""
     try:
+        return dict(st.secrets[nama])
+    except Exception:
+        return {}
+
+
+def _model_daftar(nama: str) -> list:
+    """Model yang diisi untuk satu kunci. 'models = [...]' memberi beberapa model dari kunci yang sama; tanpa itu hanya 'model' (atau bawaan)."""
+    a = _bagian(nama)
+    daftar = a.get("models")
+    if not isinstance(daftar, (list, tuple)):
+        daftar = a.get("model")  # 'model' pun boleh berisi daftar
+    if isinstance(daftar, (list, tuple)) and [x for x in daftar if str(x).strip()]:
+        return [str(x).strip() for x in daftar if str(x).strip()]
+    return [str(a.get("model", PENYEDIA_OA[nama][1]))]
+
+
+def _cfg_oa(kode: str):
+    """Secrets [openai] / [openrouter] / [gemini] / [kimi] / [deepseek]: api_key, opsional base_url, model atau models (daftar).
+    Kode mesin = nama, atau 'nama:model' bila satu kunci dipakai untuk beberapa model."""
+    try:
+        nama, _, model = kode.partition(":")
         a = st.secrets[nama]
-        base, model = PENYEDIA_OA[nama]
-        return {"key": a["api_key"], "base": str(a.get("base_url", base)).rstrip("/"), "model": a.get("model", model), "nama": nama}
+        base, bawaan = PENYEDIA_OA[nama]
+        return {"key": a["api_key"], "base": str(a.get("base_url", base)).rstrip("/"), "model": model or _model_daftar(nama)[0], "nama": nama}
     except Exception:
         return None
+
+
+def teks_saja(kode: str) -> bool:
+    """True bila mesin ini tidak bisa membaca gambar (tidak dipakai untuk foto struk dan tangkapan layar)."""
+    if kode in ("claude", "tesseract"):
+        return False
+    nama, _, model = kode.partition(":")
+    pilihan = _bagian(nama).get("teks_saja")
+    if isinstance(pilihan, bool):
+        return pilihan
+    c = _cfg_oa(kode)
+    return nama in TEKS_SAJA_BAWAAN or "deepseek" in (c["model"] if c else model).lower()
+
+
+def nama_mesin(kode: str) -> str:
+    nama, _, model = kode.partition(":")
+    return f"{nama} ({model})" if model else kode
 
 
 def _ada_tesseract() -> bool:
@@ -68,16 +110,24 @@ def _urutan_pilihan() -> list:
         return []
 
 
-def daftar_mesin() -> list:
+def daftar_mesin(gambar: bool = False) -> list:
     """Mesin yang sudah diisi. Urutan mengikuti pilihan pengguna; yang belum diatur memakai urutan bawaan:
     claude, openai, openrouter, gemini, tesseract (mesin baru muncul di belakang pilihan yang sudah ada)."""
     m = []
     if _cfg_claude():
         m.append("claude")
-    m += [n for n in PENYEDIA_OA if _cfg_oa(n)]
+    for n in PENYEDIA_OA:
+        if not _cfg_oa(n):
+            continue
+        ada = _model_daftar(n)
+        b = _bagian(n)
+        daftar = any(isinstance(b.get(k), (list, tuple)) for k in ("models", "model"))
+        m += [f"{n}:{x}" for x in ada] if daftar else [n]
     if _ada_tesseract():
         m.append("tesseract")
     pilih = _urutan_pilihan()
+    if gambar:
+        m = [x for x in m if not teks_saja(x)]
     return sorted(m, key=lambda x: pilih.index(x) if x in pilih else len(pilih) + m.index(x))
 
 
@@ -284,7 +334,7 @@ def _rapikan(h: dict, mesin: str) -> dict:
 
 def baca_struk(mentah: bytes, nama_kategori: list) -> dict:
     """Coba tiap mesin yang aktif berurutan; bila gagal lanjut ke berikutnya. Melempar RuntimeError berpesan jelas."""
-    mesin = daftar_mesin()
+    mesin = daftar_mesin(gambar=True)
     if not mesin:
         raise RuntimeError("Belum ada mesin baca struk. Lihat README bagian Baca struk otomatis.")
     gagal = []
@@ -297,13 +347,13 @@ def baca_struk(mentah: bytes, nama_kategori: list) -> dict:
             else:
                 h = _openai(mentah, nama_kategori, m)
         except Exception as ex:
-            gagal.append(f"{m}: {ex}")
+            gagal.append(f"{nama_mesin(m)}: {ex}")
             continue
         if h["item"] or m == mesin[-1]:
             if gagal:
                 h["gagal"] = gagal
             return h
-        gagal.append(f"{m}: tidak ada barang terbaca")
+        gagal.append(f"{nama_mesin(m)}: tidak ada barang terbaca")
     raise RuntimeError("Semua mesin gagal. " + " | ".join(gagal))
 
 
@@ -469,6 +519,13 @@ def tes_mesin(nama: str):
     import time
     mulai = time.time()
     gambar = _struk_contoh()
+    if teks_saja(nama):
+        try:
+            from keuangan import ai
+            jawab = ai._kirim(nama, "Balas satu kata saja.", "Balas dengan kata: OK", None, 30)
+        except Exception as ex:
+            return False, str(ex)[:300]
+        return (True, f"Terhubung ({time.time() - mulai:.1f} dtk). Mesin hanya-teks: tidak diuji dengan gambar.") if jawab.strip() else (False, "Terhubung tapi jawabannya kosong.")
     try:
         if nama == "claude":
             h = _claude(gambar, ["Makanan"])
@@ -483,6 +540,10 @@ def tes_mesin(nama: str):
     if not n:
         return False, f"Terhubung ({dt:.1f} dtk), tapi tidak ada barang yang terbaca dari struk contoh."
     return True, f"Terhubung ({dt:.1f} dtk). Terbaca {n} barang, total {h.get('total') or '?'} (seharusnya 2 barang, total 22000)."
+
+
+def _kunci(m: str) -> str:
+    return re.sub(r"\W", "_", m)
 
 
 def halaman_mesin():
@@ -512,13 +573,15 @@ def halaman_mesin():
         elif m != "tesseract":
             c = _cfg_oa(m)
             info = f'{c["model"]} · {c["base"]}'
-        with st.container(border=True, key=f"kartu_g_mesin_{m}"):
-            st.markdown(f"**{i}. {m}**" + (f"  \n`{info}`" if info else ""))
+        with st.container(border=True, key=f"kartu_g_mesin_{_kunci(m)}"):
+            st.markdown(f"**{i}. {nama_mesin(m)}**" + (f"  \n`{info}`" if info else ""))
+            if teks_saja(m):
+                st.caption("Hanya teks: dipakai untuk fitur AI berbasis teks, dilewati untuk foto struk dan tangkapan layar.")
             b1, b2, b3, _ = st.columns([1.2, 0.6, 0.6, 3])
-            tes = b1.button("Tes koneksi", key=f"tes_{m}")
-            if b2.button("↑", key=f"naik_{m}", help="Naikkan urutan", disabled=i == 1 or hanya_lihat()):
+            tes = b1.button("Tes koneksi", key=f"tes_{_kunci(m)}")
+            if b2.button("↑", key=f"naik_{_kunci(m)}", help="Naikkan urutan", disabled=i == 1 or hanya_lihat()):
                 geser(m, -1)
-            if b3.button("↓", key=f"turun_{m}", help="Turunkan urutan", disabled=i == len(mesin) or hanya_lihat()):
+            if b3.button("↓", key=f"turun_{_kunci(m)}", help="Turunkan urutan", disabled=i == len(mesin) or hanya_lihat()):
                 geser(m, 1)
             if tes:
                 with st.spinner("Menguji…"):

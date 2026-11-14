@@ -30,6 +30,21 @@ def ubah_banyak(ids: set, kategori: str = "", dompet: str = "", toko: str = "") 
     return {"diubah": diubah, "dilewati": lewat}
 
 
+def hapus_banyak(ids: set) -> int:
+    """Pindahkan transaksi berid ids ke Tempat sampah (bisa dipulihkan). Kembalikan jumlah yang dipindah."""
+    from keuangan.bantu import baru_id, perbarui_harga_barang
+    from keuangan.inti import hari_ini
+    ada = [t for t in D["transaksi"] if t["id"] in ids]
+    if not ada:
+        return 0
+    D["transaksi"] = [t for t in D["transaksi"] if t["id"] not in ids]
+    for t in ada:
+        D["sampah"].append({"id": baru_id(), "transaksi": t, "dihapus": hari_ini().isoformat()})
+    for b in {t["barang"] for t in ada if t.get("barang")}:
+        perbarui_harga_barang(b)
+    return len(ada)
+
+
 def panel_massal(hasil: list):
     with st.expander("✏️ Ubah banyak sekaligus", expanded=False):
         st.caption("Pilih transaksi dari hasil filter di atas, lalu tentukan yang ingin diganti. Kolom yang dibiarkan 'tidak diubah' tidak disentuh.")
@@ -46,3 +61,18 @@ def panel_massal(hasil: list):
             r = ubah_banyak(set(ids), kat, dom, tk)
             catat("ubah", f"Ubah banyak: {r['diubah']} transaksi")
             selesai_simpan(f"{r['diubah']} transaksi diubah" + (f", {r['dilewati']} dilewati (jenis kategori tidak cocok)." if r["dilewati"] else "."))
+        st.divider()
+        konfirm = st.session_state.get("tb_konfirm_hapus")
+        if konfirm and set(konfirm) == set(ids) and ids:
+            st.warning(f"Hapus {len(ids)} transaksi terpilih? Semuanya masuk Tempat sampah dan bisa dipulihkan selama 30 hari.")
+            a, b, _ = st.columns([2, 1, 2])
+            if a.button("Ya, hapus semua", key="tb_ya_hapus", type="primary"):
+                n = hapus_banyak(set(ids))
+                catat("hapus", f"Hapus banyak: {n} transaksi")
+                selesai_simpan(f"{n} transaksi dihapus (ada di Tempat sampah).", tb_konfirm_hapus=None)
+            if b.button("Batal", key="tb_batal_hapus"):
+                st.session_state.pop("tb_konfirm_hapus", None)
+                st.rerun()
+        elif st.button(f"🗑 Hapus {len(ids)} terpilih" if ids else "🗑 Hapus terpilih", key="tb_hapus", disabled=not ids):
+            st.session_state["tb_konfirm_hapus"] = list(ids)
+            st.rerun()

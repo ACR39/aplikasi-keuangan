@@ -49,7 +49,7 @@ FITUR = {
         "tidak": "Transaksi satu per satu, catatan, tanggal, nama dompet, dan nominal yang tidak dibulatkan.",
     },
 }
-NAMA_PENYEDIA = {"claude": "Anthropic", "openai": "OpenAI", "openrouter": "OpenRouter (diteruskan ke model pilihan)", "gemini": "Google (Gemini)"}
+NAMA_PENYEDIA = {"claude": "Anthropic", "openai": "OpenAI", "openrouter": "OpenRouter (diteruskan ke model pilihan)", "gemini": "Google (Gemini)", "kimi": "Moonshot (Kimi)", "deepseek": "DeepSeek"}
 MAKS_LOG = 50
 
 
@@ -67,10 +67,20 @@ def mesin_awan() -> list:
     return [m for m in ocr.daftar_mesin() if m != "tesseract"]
 
 
+def nama_tampil(kode: str) -> str:
+    nama, _, model = kode.partition(":")
+    return NAMA_PENYEDIA.get(nama, nama) + (f" · {model}" if model else "")
+
+
+def urutan_coba(gambar: bool = False) -> list:
+    """Mesin awan sesuai urutan di Pengaturan > Mesin baca struk. Dengan gambar, mesin hanya-teks dilewati."""
+    return [m for m in ocr.daftar_mesin(gambar=gambar) if m != "tesseract"]
+
+
 def mesin_dipakai() -> str:
+    """Mesin pertama dalam urutan (yang dicoba lebih dulu)."""
     ada = mesin_awan()
-    pilihan = _cfg().get("mesin")
-    return pilihan if pilihan in ada else (ada[0] if ada else "")
+    return ada[0] if ada else ""
 
 
 def aktif(fitur: str) -> bool:
@@ -169,8 +179,9 @@ def _kirim(mesin: str, sistem: str, pengguna: str, jpeg: bytes | None = None, ma
     c = ocr._cfg_oa(mesin)
     if not c:
         raise RuntimeError(f"Kunci {mesin} tidak ditemukan.")
-    isi = [{"type": "text", "text": pengguna}]
+    isi = pengguna  # teks biasa: penyedia hanya-teks (DeepSeek) tidak menerima daftar bagian
     if jpeg:
+        isi = [{"type": "text", "text": pengguna}]
         isi.append({"type": "image_url", "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(jpeg).decode("ascii")}})
     r = requests.post(c["base"] + "/chat/completions", timeout=90, headers={"Authorization": f"Bearer {c['key']}", "Content-Type": "application/json"},
                       json={"model": c["model"], "temperature": 0, "max_tokens": maks,
@@ -189,10 +200,22 @@ def tanya(fitur: str, sistem: str, pengguna: str, jpeg: bytes | None = None, mak
     ok, alasan = boleh(fitur)
     if not ok:
         raise PermissionError(alasan)
-    mesin = mesin_dipakai()
-    teks = _kirim(mesin, sistem, pengguna, jpeg, maks)
+    antrean = urutan_coba(gambar=bool(jpeg))
+    if not antrean:
+        raise RuntimeError("Tidak ada penyedia yang bisa membaca gambar. Isi kunci Gemini, OpenAI, Anthropic, atau model lain yang mendukung gambar.")
+    if not _cfg().get("fallback", True):
+        antrean = antrean[:1]
+    gagal = []
+    for mesin in antrean:
+        try:
+            teks = _kirim(mesin, sistem, pengguna, jpeg, maks)
+            break
+        except Exception as ex:
+            gagal.append(f"{nama_tampil(mesin)}: {str(ex)[:160]}")
+    else:
+        raise RuntimeError("Semua penyedia gagal. " + " | ".join(gagal))
     log = _cfg()["log"]
-    log.append({"waktu": sekarang().strftime("%Y-%m-%d %H:%M"), "fitur": fitur, "mesin": mesin, "item": int(item)})
+    log.append({"waktu": sekarang().strftime("%Y-%m-%d %H:%M"), "fitur": fitur, "mesin": mesin, "item": int(item), **({"gagal": len(gagal)} if gagal else {})})
     del log[:-MAKS_LOG]
     return teks
 
@@ -244,7 +267,7 @@ def kirim_dengan_pratinjau(fitur: str, paket: dict, kunci: str, label: str = "Ki
     paket: {"sistem", "pengguna", "jpeg" (opsional), "ringkas", "samar" (jumlah bagian disamarkan), "item", "maks" (opsional)}
     """
     mesin = mesin_dipakai()
-    st.caption(f"Akan dikirim ke **{NAMA_PENYEDIA.get(mesin, mesin)}**: {paket['ringkas']}"
+    st.caption(f"Akan dikirim ke **{nama_tampil(mesin)}**: {paket['ringkas']}"
                + (f" ({paket['samar']} bagian disamarkan)" if paket.get("samar") else ""))
     with st.expander("Lihat persis yang akan dikirim"):
         st.code(paket["pengguna"], language="json")
@@ -267,12 +290,10 @@ def halaman_privasi_ai():
     ada = mesin_awan()
     if not ada:
         st.warning("Belum ada kunci penyedia AI, jadi fitur di bawah belum bisa dipakai. Isi kunci di secrets seperti untuk Baca struk otomatis (lihat README).")
-    elif len(ada) > 1:
-        pilih = st.selectbox("Penyedia yang dipakai", ada, index=ada.index(mesin_dipakai()), format_func=lambda m: NAMA_PENYEDIA.get(m, m), key="ai_mesin",
-                             disabled=hanya_lihat())
     else:
-        pilih = ada[0]
-        st.caption(f"Penyedia: **{NAMA_PENYEDIA.get(pilih, pilih)}**")
+        st.caption("Urutan dicoba: " + " → ".join(nama_tampil(m) for m in ada) + ". Ubah di Pengaturan > AI dan baca struk > Mesin baca struk.")
+        fb = st.checkbox("Bila gagal, coba penyedia berikutnya", value=bool(c.get("fallback", True)), key="ai_fallback", disabled=hanya_lihat(),
+                         help="Kiriman yang sama dikirim ke penyedia berikutnya hanya saat yang sebelumnya gagal. Matikan bila data hanya boleh ke penyedia pertama.")
     with st.form("f_privasi_ai"):
         nilai = {}
         for kode, f in FITUR.items():
@@ -282,7 +303,7 @@ def halaman_privasi_ai():
         if st.form_submit_button("Simpan pengaturan", type="primary", disabled=hanya_lihat()):
             c["fitur"] = {k: bool(v) for k, v in nilai.items()}
             if ada:
-                c["mesin"] = pilih
+                c["fallback"] = bool(fb)
             catat("pengaturan", "Ubah pengaturan Privasi AI: " + (", ".join(FITUR[k]["nama"] for k, v in nilai.items() if v) or "semua mati"))
             selesai_simpan("Pengaturan Privasi AI disimpan.")
     st.markdown("**Yang perlu kamu tahu**")
@@ -295,7 +316,7 @@ def halaman_privasi_ai():
     if not log:
         st.caption("Belum ada kiriman. Riwayat hanya mencatat waktu, fitur, penyedia, dan jumlah butir, tidak pernah isinya.")
     for x in reversed(log[-10:]):
-        st.caption(f"{x['waktu']} · {FITUR.get(x['fitur'], {}).get('nama', x['fitur'])} · {NAMA_PENYEDIA.get(x['mesin'], x['mesin'])} · {x['item']} butir")
+        st.caption(f"{x['waktu']} · {FITUR.get(x['fitur'], {}).get('nama', x['fitur'])} · {nama_tampil(x['mesin'])+(' (setelah ' + str(x['gagal']) + ' gagal)' if x.get('gagal') else '')} · {x['item']} butir")
     if log and not hanya_lihat() and st.button("Hapus riwayat kiriman", key="ai_hapus_log"):
         c["log"] = []
         selesai_simpan("Riwayat kiriman AI dihapus.")

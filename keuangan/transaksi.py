@@ -710,6 +710,29 @@ def _simpan_foto_struk(g: str, berkas, hapus: bool):
     selesai_simpan(pesan)
 
 
+def _tambah_ke_struk(g: str, t0: dict):
+    """Tambah barang yang terlupa ke struk yang sudah tersimpan (tanggal, toko, dompet, foto sama)."""
+    kunci = f"tbs_{g}_{versi()}"
+    df = editor_kartu(kunci, None)
+    baris, salah = baca_baris(df)
+    if baris:
+        st.caption(f"Akan ditambahkan {len(baris)} barang, {rp(sum(round(x['qty'] * x['harga']) for x in baris))}.")
+    if st.button("Tambahkan ke struk", key=f"{kunci}_ok", type="primary"):
+        if salah:
+            st.error("\n\n".join(salah))
+        elif not baris:
+            st.error("Isi minimal satu barang.")
+        else:
+            for x in baris:
+                qty = int(x["qty"]) if float(x["qty"]).is_integer() else x["qty"]
+                tambah_transaksi("keluar", t0["tgl"], round(x["qty"] * x["harga"]), t0["dompet"], x["kategori"], x["ket"],
+                                 barang=x["barang"], qty=qty if x["barang"] else 0, harga_satuan=x["harga"] if x["barang"] else 0,
+                                 harga_normal=x.get("normal", 0) if x["barang"] else 0, toko=t0.get("toko"), platform=t0.get("platform"),
+                                 lokasi=t0.get("lokasi"), waktu=t0.get("waktu"), struk=t0.get("struk"), grup=g, foto_hash=t0.get("foto_hash"))
+            catat("tambah", f"Tambah {len(baris)} barang ke struk {teks_toko(t0) or ''}".strip())
+            selesai_simpan(f"{len(baris)} barang ditambahkan ke struk.")
+
+
 def _kartu_struk(isi: list, edit_id, hapus_id):
     """Satu kartu untuk satu struk (beberapa barang); barangnya bisa dibuka."""
     isi = sorted(isi, key=lambda x: x.get("dibuat", ""))
@@ -740,6 +763,13 @@ def _kartu_struk(isi: list, edit_id, hapus_id):
         if not hanya_lihat():
             g = t0["grup"]
             ada = bool(t0.get("struk"))
+            if st.session_state.get("tbs_buka") == g:
+                with st.container(border=True):
+                    st.markdown("**Tambah barang yang terlupa**")
+                    _tambah_ke_struk(g, t0)
+                    st.button("Tutup", key=f"tbs_tutup_{g}", on_click=atur, args=("tbs_buka", None))
+            else:
+                st.button("➕ Tambah barang yang terlupa", key=f"tbs_buka_{g}", on_click=atur, args=("tbs_buka", g))
             with st.expander("📷 Ganti foto struk" if ada else "📷 Tambah foto struk (untuk semua barang)"):
                 f = st.file_uploader("Foto struk", type=["jpg", "jpeg", "png", "webp"],
                                      key=f"fs_{g}_{versi()}", label_visibility="collapsed")

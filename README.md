@@ -46,7 +46,7 @@ Kategori dan Sub kategori dipilih di dua kotak terpisah. Toko / tempat beli dipi
 
 ## Fitur AI dan privasi
 
-Lima fitur memakai AI di internet. Semuanya **mati secara bawaan** dan dinyalakan satu per satu di Pengaturan > AI dan baca struk > Privasi AI. Kuncinya memakai secrets yang sama dengan Baca struk otomatis (`[anthropic]`, `[openai]`, `[openrouter]`, atau `[gemini]`); Tesseract tidak dihitung karena berjalan di server sendiri.
+Lima fitur memakai AI di internet. Semuanya **mati secara bawaan** dan dinyalakan satu per satu di Pengaturan > AI dan baca struk > Privasi AI. Kuncinya memakai secrets yang sama dengan Baca struk otomatis (`[anthropic]`, `[openai]`, `[openrouter]`, `[gemini]`, `[kimi]`, atau `[deepseek]`); Tesseract tidak dihitung karena berjalan di server sendiri.
 
 | Fitur | Di mana | Yang dikirim | Yang tidak dikirim |
 |---|---|---|---|
@@ -126,6 +126,16 @@ Di Catat transaksi, mode Struk: unggah foto struk lalu tekan **Baca isi struk da
 Mesin dipilih otomatis, dicoba berurutan (Claude, OpenAI/gateway, OpenRouter, Gemini, Tesseract). Bila satu gagal (kuota habis, gangguan, tidak ada barang terbaca), otomatis pindah ke berikutnya:
 - **Claude** (lebih akurat, mengenali diskon): isi `[anthropic] api_key` di secrets. Foto dikirim ke Anthropic dan ada biaya per foto.
 - **OpenAI atau gateway kompatibel OpenAI** (misal relink): isi `[openai]` di secrets dengan `api_key`, `base_url` (sampai `/v1`), dan `model` yang bisa membaca gambar. Bagian `[openrouter]` (kunci dari openrouter.ai) dan `[gemini]` (kunci dari Google AI Studio) diisi dengan cara yang sama, `base_url` dan `model` sudah ada bawaannya.
+
+- **Beberapa penyedia dan model, dengan urutan cadangan.** `[kimi]` (Moonshot, kunci dari platform.moonshot.ai) dan `[deepseek]` diisi seperti penyedia lain. Satu kunci untuk beberapa model: isi `models = ["google/gemini-2.5-flash", "moonshotai/kimi-k2"]` (menggantikan `model`); tiap model jadi satu mesin sendiri. Contoh kunci A di OpenRouter untuk Gemini dan Kimi, kunci B di `[deepseek]`:
+  ```toml
+  [openrouter]
+  api_key = "..."
+  models = ["google/gemini-2.5-flash", "moonshotai/kimi-k2"]
+  [deepseek]
+  api_key = "..."
+  ```
+  Urutan diatur di Pengaturan > AI dan baca struk > Mesin baca struk (tombol panah), misalnya Gemini > DeepSeek > Kimi. Baca struk dan semua fitur AI memakai urutan itu dan pindah ke mesin berikutnya bila yang pertama gagal (di Privasi AI cadangan ini bisa dimatikan). DeepSeek tidak bisa membaca gambar, jadi dilewati untuk foto struk dan tangkapan layar; bagian secrets bisa diberi `teks_saja = true/false` untuk mengubah anggapan itu.
 - **Tesseract** (gratis, jalan di server sendiri, hasil lebih kasar): `packages.txt` sudah memuat `tesseract-ocr` dan paket bahasa Indonesia; di komputer sendiri pasang Tesseract dan `pytesseract`.
 
 Tanpa keduanya, formulir struk tetap bisa diisi manual.
