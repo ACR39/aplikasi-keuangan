@@ -4,7 +4,7 @@ import streamlit as st
 from keuangan.bantu import daftar_jenis_toko, ikon_jenis_toko, jumlah_kunjungan
 from keuangan.bantu import atur, catat, e, ikon_foto, kolom_foto, link_aman, proses_foto, selesai_simpan, transaksi_toko, versi
 from keuangan.peta import peta_semua, pilih_titik, proses_gps, terdekat, teks_jarak, titik_dari, tombol_gps, url_peta
-from keuangan.inti import D, IKON_PILIHAN, baru_id, fmt_iso, hanya_lihat, rp
+from keuangan.inti import D, IKON_NAMA, IKON_PILIHAN, baru_id, fmt_iso, hanya_lihat, rp
 from keuangan.pwa import gulir_ke_atas_bila_baru
 
 
@@ -103,11 +103,11 @@ def halaman_toko():
         total = sum(t["jumlah"] for t in pakai if t["jenis"] == "keluar")
         ket = ("★ " if x.get("favorit") else "") + x.get("jenis", "Lainnya") + (f' · {e(x["lokasi"])}' if x.get("lokasi") else "")
         if x.get("jam_buka"):
-            ket += f' · {e(x["jam_buka"])}'
+            ket += f' · 🕒 {e(x["jam_buka"])}'
         if x.get("telepon"):
-            ket += f' · {e(x["telepon"])}'
+            ket += f' · 📞 {e(x["telepon"])}'
         if url_peta(x):
-            ket += f' · <a href="{e(url_peta(x))}" target="_blank" rel="noopener noreferrer">{"Titik di peta" if titik_dari(x) else "Buka di peta"}</a>'
+            ket += f' · <a href="{e(url_peta(x))}" target="_blank" rel="noopener noreferrer">📍 {"Titik di peta" if titik_dari(x) else "Buka di peta"}</a>'
         ket += f" · dikunjungi {jumlah_kunjungan(pakai)}×" + (f" · total {rp(total)} · terakhir {fmt_iso(pakai[0]['tgl'])}" if pakai else "")
         with st.container(key=f"tx_tk_{x['id']}"):
             kolom = st.columns([1] + ([0.001, 0.001] if not hanya_lihat() else []))
@@ -131,7 +131,7 @@ def halaman_toko():
     with atas:
         if not edit and not st.session_state.get("edit_baru_toko"):
             gulir_ke_atas_bila_baru(None)
-            st.button("Tambah toko baru", key="tambah_toko_btn", type="primary", on_click=atur, args=("edit_baru_toko", True))
+            st.button("➕ Tambah toko baru", key="tambah_toko_btn", type="primary", on_click=atur, args=("edit_baru_toko", True))
             return
         gulir_ke_atas_bila_baru(("toko", edit["id"] if edit else "baru"))
         with st.container(key="kartu_g_form_tk"):
@@ -150,7 +150,7 @@ def halaman_toko():
 
 
 # ---------------------------------------------------------------- jenis toko
-IKON_TOKO_PILIHAN = ["🏪", "🛒", "🧺", "🏠", "📦", "🍽️", "⛽", "💊", "📍", "🥖", "🍜", "☕", "🍔", "🛍️", "🔧", "📚", "👕", "🧴", "🐾", "🚗", "🏥", "💻", "🌿", "🎁", "✂️", "🧾"]
+IKON_TOKO_PILIHAN = IKON_PILIHAN
 
 
 def _hapus_jenis(j: dict):
@@ -203,7 +203,9 @@ def halaman_jenis_toko():
             st.markdown(f"**{'Ubah jenis toko' if edit else 'Tambah jenis toko'}**")
             c1, c2 = st.columns([2, 1])
             nama = c1.text_input("Nama", value=edit["nama"] if edit else "", max_chars=30, placeholder="Contoh: Bengkel, Laundry, Toko bangunan")
-            ikon = c2.selectbox("Ikon", IKON_TOKO_PILIHAN, index=IKON_TOKO_PILIHAN.index(edit["ikon"]) if edit and edit.get("ikon") in IKON_TOKO_PILIHAN else 0)
+            ikon_awal = (edit or {}).get("ikon") or "🏪"
+            pilihan_ikon = IKON_TOKO_PILIHAN if ikon_awal in IKON_TOKO_PILIHAN else [ikon_awal] + IKON_TOKO_PILIHAN
+            ikon = c2.selectbox("Ikon (ketik untuk mencari)", pilihan_ikon, index=pilihan_ikon.index(ikon_awal), format_func=lambda x: f"{x}  {IKON_NAMA.get(x, '')}")
             if st.form_submit_button("Simpan perubahan" if edit else "Tambah", type="primary"):
                 if not nama.strip():
                     st.error("Isi nama jenis toko.")

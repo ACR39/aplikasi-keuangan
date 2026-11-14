@@ -84,7 +84,7 @@ def halaman_per_satuan():
             murah = daftar[0][1]
             for i, (b, h) in enumerate(daftar):
                 rinci = " · ".join(e(x) for x in (b.get("merek"), b.get("ukuran")) if x)
-                selisih = f' · +{(h / murah - 1) * 100:.0f}% dari termurah' if i else ' · termurah '
+                selisih = f' · +{(h / murah - 1) * 100:.0f}% dari termurah' if i else ' · termurah ✅'
                 st.markdown(f'<div class="perhatian"><b>{e(b["nama"])}</b> ({rinci}) · {rp(round(h))} per {per(dim)[0]}{selisih}</div>', unsafe_allow_html=True)
     if tanpa:
         st.caption(f"{len(tanpa)} barang belum bisa dibandingkan karena ukuran kemasannya kosong atau tidak terbaca.")

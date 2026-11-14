@@ -141,7 +141,7 @@ def halaman_platform():
             ts = [t for t in transaksi_platform(p["id"]) if t["jenis"] == "keluar"]
             total = sum(int(t["jumlah"]) for t in ts)
             c = st.columns([1, 0.001, 0.001])
-            c[0].markdown(f'<div class="itm"><div class="isi"><div class="jd">{e(p["nama"])}</div>'
+            c[0].markdown(f'<div class="itm"><div class="isi"><div class="jd">🛵 {e(p["nama"])}</div>'
                           f'<div class="mt">{len(ts)} transaksi · total {rp(total)}</div></div></div>', unsafe_allow_html=True)
             if not hanya_lihat():
                 c[1].button("Ubah", key=f"ub_pl_{p['id']}", on_click=atur, args=("edit_platform", p["id"]))

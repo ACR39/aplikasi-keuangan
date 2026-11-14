@@ -171,7 +171,7 @@ def _kartu_item(l: dict, kunci: str) -> list:
         with st.container(border=True, key=f"kartu_g_bi_{k}"):
             h1, h2 = st.columns([6, 1])
             beli = h1.checkbox("Sudah dibeli", key=f"{k}_beli")
-            if h2.button("", key=f"{k}_del", help="Hapus barang ini"):
+            if h2.button("🗑", key=f"{k}_del", help="Hapus barang ini"):
                 hapus = rid
             brg = st.selectbox("Barang", opsi, key=f"{k}_brg", format_func=lambda i: lab_b.get(i, "(pilih dari daftar barang)") if i else "(pilih dari daftar barang)")
             ket = ""
@@ -197,7 +197,7 @@ def _kartu_item(l: dict, kunci: str) -> list:
     if hapus is not None:
         st.session_state[sk] = [i for i in ids if i != hapus]
         st.rerun()
-    if st.button("Tambah barang", key=f"{kunci}_tambah"):
+    if st.button("➕ Tambah barang", key=f"{kunci}_tambah"):
         n = st.session_state[f"{kunci}_next"]
         st.session_state[f"{kunci}_{n}_qty"] = 1.0
         st.session_state[sk] = ids + [n]
@@ -211,7 +211,7 @@ def _banding_toko(items: list, biasa: int, kunci: str):
     if len(items) < 2:
         return
     hasil = bandingkan_toko(items)
-    with st.expander("Toko mana yang paling hemat?"):
+    with st.expander("🏪 Toko mana yang paling hemat?"):
         if not hasil:
             st.caption("Belum cukup riwayat harga. Perbandingan muncul setelah barang di daftar pernah dicatat dengan toko, "
                        "minimal separuh barang di toko yang sama.")
@@ -235,7 +235,7 @@ def _satu_daftar(l: dict):
                         format_func=f_toko(), key=f"{kunci}_toko")
     with c2:
         st.write("")
-        if st.button("Tambah semua barang langganan", key=f"{kunci}_lg", width="stretch"):
+        if st.button("➕ Tambah semua barang langganan", key=f"{kunci}_lg", width="stretch"):
             ada = {it.get("barang") for it in l["item"]}
             baru = [b for b in D["barang"] if b.get("langganan") and b["id"] not in ada]
             for b in baru:

@@ -64,7 +64,7 @@ def halaman_periksa():
     semua = temukan()
     st.caption("Mencari transaksi yang janggal. Perbaikan hanya mengubah data yang jelas salah; yang lain tetap kamu putuskan sendiri lewat Ubah di Daftar transaksi.")
     if not semua:
-        st.success("Tidak ada masalah. Datamu bersih ")
+        st.success("Tidak ada masalah. Datamu bersih ✅")
         return
     c = {k: sum(1 for m in semua if m["jenis"] == k) for k in JENIS_MASALAH}
     st.markdown(" · ".join(f"**{n}** {JENIS_MASALAH[k].lower()}" for k, n in c.items() if n))

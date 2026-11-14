@@ -121,7 +121,7 @@ def cadangan_otomatis():
 
 
 def _panel_otomatis():
-    with st.expander("Cadangan otomatis ke Excel" + (f" · tiap {interval_hari()} hari" if interval_hari() else " · mati"), expanded=False):
+    with st.expander("⏰ Cadangan otomatis ke Excel" + (f" · tiap {interval_hari()} hari" if interval_hari() else " · mati"), expanded=False):
         st.caption(f"Saat admin membuka aplikasi dan sudah waktunya, cadangan Excel dan JSON disimpan di folder cadangan penyimpanan data "
                    f"(maks {SIMPAN_CADANGAN} terakhir). Untuk memulihkan, muat berkas JSA-nya di bawah.".replace("JSA", "JSON"))
         pil = {0: "Mati", 1: "Tiap hari", 7: "Tiap minggu", 14: "Tiap 2 minggu", 30: "Tiap bulan"}

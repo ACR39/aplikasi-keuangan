@@ -143,7 +143,7 @@ def commit(pesan_ok: str | None = None) -> bool:
         st.error(f"Gagal menyimpan: {e}")
         return False
     if pesan_ok:
-        st.toast(pesan_ok)
+        st.toast(pesan_ok, icon="✅")
     return True
 
 

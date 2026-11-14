@@ -129,7 +129,7 @@ def _simpan(h: dict, kat: str, dompet: str, platform: str = ""):
 
 def panel_tangkap():
     """Kotak ketik cepat di atas form catat. Tanggal selalu hari ini; ubah lewat form lengkap bila perlu."""
-    with st.expander("Tangkap cepat", expanded=False):
+    with st.expander("⚡ Tangkap cepat", expanded=False):
         st.caption("Ketik satu kalimat, contoh: **es jeruk 8rb 2**, **bensin 30rb**, **gaji 5jt**, **nasi goreng 25rb gofood**. Barang, kategori, dompet, toko, dan platform ditebak dari kebiasaanmu; "
                    "periksa dulu sebelum menyimpan. Dengan banyaknya, nominal dihitung per satuan.")
         teks = st.text_input("Catat apa?", key=f"tc_teks_{versi()}", placeholder="es jeruk 8rb 2")
@@ -140,7 +140,7 @@ def panel_tangkap():
         h_ai = tombol_tangkap(teks.strip(), h, f"{versi()}_{teks.strip()}")
         if h_ai:
             h = h_ai
-            st.caption("Hasil tebakan AI. Periksa dulu sebelum menyimpan.")
+            st.caption("🤖 Hasil tebakan AI. Periksa dulu sebelum menyimpan.")
         sfx = "_ai" if h_ai else ""
         if not h["jumlah"]:
             st.warning("Belum ada nominal. Tambahkan angka, misalnya 8rb atau 25000.")

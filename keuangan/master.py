@@ -5,7 +5,7 @@ from keuangan.bantu import (
     MAKS_TINGKAT, anak_dari, atur, catat, e, f_dompet, f_kat, kat_dari, kategori_jenis, kategori_utama, nama_kat, saldo_dompet,
     selesai_simpan, tingkat, tinggi, turunan, versi,
 )
-from keuangan.inti import D, IKON_PILIHAN, JENIS_DOMPET, PALET, baru_id, rp
+from keuangan.inti import D, IKON_NAMA, IKON_PILIHAN, JENIS_DOMPET, PALET, baru_id, rp
 
 
 def _dipakai_dompet(id_) -> int:
@@ -82,8 +82,9 @@ def _form_kat(kunci: str, jenis: str, awal: dict | None = None, induk: str = "",
     with st.form(kunci, clear_on_submit=not awal):
         c1, c2, c3 = st.columns([2, 1, 1])
         nama = c1.text_input("Nama", value=awal.get("nama", ""), placeholder=("Contoh: Pertamax" if p and tingkat(p["id"]) >= 2 else "Contoh: Listrik") if induk else "Contoh: Rumah")
-        ikon = c2.selectbox("Ikon", IKON_PILIHAN, index=IKON_PILIHAN.index(awal["ikon"]) if awal.get("ikon") in IKON_PILIHAN else
-                            (IKON_PILIHAN.index(p["ikon"]) if p and p.get("ikon") in IKON_PILIHAN else 0))
+        ikon_awal = awal.get("ikon") or (p.get("ikon") if p else "") or IKON_PILIHAN[0]
+        pilihan_ikon = IKON_PILIHAN if ikon_awal in IKON_PILIHAN else [ikon_awal] + IKON_PILIHAN
+        ikon = c2.selectbox("Ikon (ketik untuk mencari)", pilihan_ikon, index=pilihan_ikon.index(ikon_awal), format_func=lambda x: f"{x}  {IKON_NAMA.get(x, '')}")
         warna = c3.color_picker("Warna", value=awal.get("warna") or (p["warna"] if p else PALET[len(D["kategori"]) % len(PALET)]))
         letak = awal.get("induk", induk)
         if awal:
@@ -192,7 +193,7 @@ def halaman_kategori():
         utama = kategori_utama(jenis)
         st.markdown(f'<div class="dgrup">Semua kategori<span>{len(utama)} kategori utama · {len(kategori_jenis(jenis)) - len(utama)} sub</span></div>',
                     unsafe_allow_html=True)
-        with st.expander("Tambah kategori utama", expanded=False):
+        with st.expander("➕ Tambah kategori utama", expanded=False):
             with st.container(key="kartu_g_kat_baru"):
                 isi = _form_kat(f"f_kat_baru_{jenis}_{versi()}", jenis)
                 if isi:
@@ -213,7 +214,7 @@ def halaman_kategori():
     if not anak:
         st.caption(f"Belum ada {nama_anak.lower()}. Transaksi bisa langsung memakai {'kategori utama' if tp == 1 else 'kategori ini'}.")
     if tp < MAKS_TINGKAT:
-        with st.expander(f"Tambah {nama_anak.lower()}", expanded=False):
+        with st.expander(f"➕ Tambah {nama_anak.lower()}", expanded=False):
             with st.container(key="kartu_g_sub_baru"):
                 isi = _form_kat(f"f_sub_baru_{p['id']}_{versi()}", jenis, induk=p["id"])
                 if isi:

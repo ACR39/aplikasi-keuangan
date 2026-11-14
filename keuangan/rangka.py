@@ -16,7 +16,7 @@ from keuangan.cari import halaman_cari
 from keuangan.cadangan import cadangan_otomatis, halaman_cadangan, halaman_pulih
 from keuangan.aplikasi_lama import halaman_aplikasi_lama
 from keuangan.ekspor import halaman_ekspor, halaman_impor
-from keuangan.inti import CSS_GELAP, CSS_RAPI, CSS_RAPI_GELAP, CSS_RAPI_TERANG, CSS_TAMBAH_GELAP, D, adalah_admin, cfg_github, data_kosong, hanya_lihat
+from keuangan.inti import CSS_GELAP, CSS_TAMBAH_GELAP, D, adalah_admin, cfg_github, data_kosong, hanya_lihat
 from keuangan.laporan import halaman_laporan
 from keuangan.ocr import halaman_mesin
 from keuangan.master import halaman_dompet, halaman_kategori
@@ -48,6 +48,13 @@ IKON = {"Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Transaksi berulang": "event_repeat", "Target tabungan": "savings",
         "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner", "Pemeriksa data": "fact_check",
         "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
+LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">'
+        '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+        '<stop offset="0" stop-color="#34a874"/><stop offset="1" stop-color="#1f6b49"/></linearGradient></defs>'
+        '<rect width="38" height="38" rx="10" fill="url(#g)"/>'
+        '<circle cx="19" cy="19" r="9" fill="none" stroke="#fff" stroke-width="2"/>'
+        '<path d="M19 13.5v11M15.5 16.5c0-1.3 1.5-2 3.5-2s3.5.8 3.5 2.1c0 3.2-7 1.6-7 4.8 0 1.3 1.6 2.1 3.5 2.1s3.5-.8 3.5-2.1" '
+        'fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>')
 DESKRIPSI = {
     "Jenis toko": "Tambah, ubah, atau hapus jenis toko (Minimarket, SPBU, Bengkel, dan lain-lain) untuk mengelompokkan daftar toko.",
     "Data master": "Daftar yang diatur sekali lalu dipakai terus: barang, toko, platform beli online, dompet, dan kategori.",
@@ -80,6 +87,7 @@ DESKRIPSI = {
     "Cadangan dan pulihkan": "Unduh cadangan data, muat dari berkas, atau pulihkan ke versi sebelumnya.",
 }
 
+
 def menu_utama() -> list:
     return [h for h in UTAMA if not (hanya_lihat() and h in EDIT_SAJA)]
 
@@ -108,9 +116,7 @@ def siapkan_sesi():
     from keuangan.pin import cek_pin
     cek_pin()
     if st.session_state.gelap:
-        st.markdown(CSS_GELAP + CSS_TAMBAH_GELAP + CSS_RAPI + CSS_RAPI_GELAP, unsafe_allow_html=True)
-    else:
-        st.markdown(CSS_RAPI + CSS_RAPI_TERANG, unsafe_allow_html=True)
+        st.markdown(CSS_GELAP + CSS_TAMBAH_GELAP, unsafe_allow_html=True)
 
 
 def peringatan_uji():
@@ -143,7 +149,7 @@ def pilih_halaman():
 
 def tampilkan_sidebar(halaman, PENGATURAN):
     with st.sidebar:
-        st.markdown(f'<div class="brand"><div><div class="b1">Pelacak Keuangan</div>'
+        st.markdown(f'<div class="brand">{LOGO}<div><div class="b1">Pelacak Keuangan</div>'
                     '<div class="b2">Ke mana uangku?</div></div></div>', unsafe_allow_html=True)
 
         def tombol_nav(h):
@@ -176,7 +182,7 @@ def tampilkan_sidebar(halaman, PENGATURAN):
         if cfg_github():
             st.caption(f"Data: {cfg_github()['repo']}")
         if hanya_lihat():
-            st.caption("Akun ini hanya bisa melihat.")
+            st.caption("🔒 Akun ini hanya bisa melihat.")
         us = st.session_state.get("user")
         if us:
             st.markdown(f'<div class="pengguna sb"><div class="av">{html.escape(us["nama"][:1].upper())}</div><div>'

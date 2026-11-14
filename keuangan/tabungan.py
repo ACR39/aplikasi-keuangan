@@ -12,7 +12,7 @@ def terkumpul(g: dict) -> int:
 def _perkiraan(g: dict) -> str:
     sisa = int(g["target"]) - terkumpul(g)
     if sisa <= 0:
-        return "Target tercapai "
+        return "Target tercapai 🎉"
     h = sisa_hari(g.get("tenggat"))
     if h is None:
         return f"Kurang {rp(sisa)}"

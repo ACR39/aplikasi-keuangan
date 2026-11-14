@@ -92,7 +92,7 @@ def terapkan_mutasi(teks: str, paket: dict) -> dict:
 def panel_mutasi(baris: list, usulan_lokal, kunci: str) -> dict:
     """Panel di halaman impor mutasi. Kembalikan saran AI yang sudah tersimpan untuk berkas ini (kosong bila belum ada)."""
     sk = f"mt_ai_{kunci}"
-    with st.expander("Bantu kategorikan dengan AI", expanded=False):
+    with st.expander("🤖 Bantu kategorikan dengan AI", expanded=False):
         if gerbang("mutasi", "mt"):
             perlu = [r for r in baris if not usulan_lokal(r["ket"], r["jenis"])]
             if not perlu:
@@ -158,10 +158,10 @@ def tombol_tangkap(kalimat: str, dasar: dict, kunci: str):
     ok, _ = ai.boleh("tangkap")
     if not ok:
         if not ai.aktif("tangkap"):
-            st.caption("Tebakan AI belum dinyalakan (Pengaturan > AI dan baca struk > Privasi AI).")
+            st.caption("🤖 Tebakan AI belum dinyalakan (Pengaturan > AI dan baca struk > Privasi AI).")
         return st.session_state.get(sk)
     paket = paket_tangkap(kalimat)
-    jawab = kirim_dengan_pratinjau("tangkap", paket, kunci, "Tebak dengan AI", bentuk_json=True)
+    jawab = kirim_dengan_pratinjau("tangkap", paket, kunci, "🤖 Tebak dengan AI", bentuk_json=True)
     if jawab is not None:
         try:
             st.session_state[sk] = terapkan_tangkap(jawab, dasar)
@@ -207,7 +207,7 @@ def terapkan_layar(teks: str, mesin: str) -> dict:
 
 def panel_layar(berkas, base: str):
     """Di bawah pengunggah foto pada form struk: baca tangkapan layar pesanan online. Hasil disimpan ke sesi seperti baca struk biasa."""
-    with st.expander("Atau baca tangkapan layar pesanan online (AI)", expanded=False):
+    with st.expander("🛵 Atau baca tangkapan layar pesanan online (AI)", expanded=False):
         if not gerbang("layar", base):
             return
         st.caption("Potong bagian atas atau bawah yang memuat nama, alamat, atau nomor telepon sebelum dikirim. Pratinjau di bawah adalah gambar yang akan dikirim.")

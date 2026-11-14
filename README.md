@@ -190,7 +190,3 @@ tidak perlu per barang. Tombol "Hapus foto" melepasnya dari semua barang.
 **Jenis toko**: Pengaturan > Data master > Jenis toko. Tambah, ubah nama (toko ikut berganti), atau hapus (jika dipakai, toko dipindah ke jenis lain dulu). Dipakai di form toko dan filter Daftar toko.
 
 **Aplikasi lama**: Pengaturan > Data dan cadangan > Ekspor dan impor > tab Aplikasi lama. Impor membaca file Excel (.xls atau .xlsx) dengan sheet Records dan Debts: account menjadi dompet, category menjadi kategori, payee menjadi toko, amount negatif menjadi pengeluaran, pasangan baris transfer menjadi satu transfer, Debts menjadi utang-piutang. Data identik yang sudah ada dilewati. Ekspor menghasilkan file dengan kolom yang sama persis. Butuh paket python-calamine untuk membaca .xls.
-
-## Bahasa visual
-
-Tampilan mengikuti gaya buku kas: latar kertas hangat, teks tinta gelap, satu aksen hijau tua, garis tipis sebagai pemisah, radius kecil, tanpa bayangan pada kartu, angka tabular supaya kolom sejajar. Judul halaman memakai satu baris judul dan satu kalimat keterangan, tanpa kartu dan tanpa garis warna di tepi. Tidak ada emoji dekoratif di teks antarmuka; emoji hanya muncul sebagai ikon kategori, jenis toko, dan pilihan ikon yang Anda pilih sendiri. Gaya ada di `CSS_RAPI`, `CSS_RAPI_TERANG`, dan `CSS_RAPI_GELAP` (keuangan/inti.py), dipasang setelah CSS dasar.

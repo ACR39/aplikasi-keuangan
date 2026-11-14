@@ -6,7 +6,8 @@ import streamlit as st
 from keuangan.bantu import atur, baris_transaksi, catat, e, perbarui_harga_barang, ringkas_teks, selesai_simpan
 from keuangan.inti import D, HARI_SAMPAH, fmt_iso, fmt_waktu, hanya_lihat, hari_ini, iso_ke_date
 
-IKON = {k: "" for k in ("tambah", "ubah", "hapus", "pulih", "tagihan", "anggaran", "tabungan", "utang", "barang", "toko", "platform", "belanja", "dompet", "kategori", "impor", "data", "pengaturan")}
+IKON = {"tambah": "➕", "ubah": "✏️", "hapus": "🗑️", "pulih": "♻️", "tagihan": "⏰", "anggaran": "🎯", "tabungan": "🐷",
+        "utang": "🤝", "barang": "📦", "toko": "🏪", "platform": "🛵", "belanja": "🛒", "dompet": "👛", "kategori": "🏷️", "impor": "📥", "data": "💾", "pengaturan": "⚙️"}
 
 
 def bersihkan_sampah():
@@ -23,7 +24,7 @@ def halaman_aktivitas():
     if not log:
         st.info("Belum ada aktivitas tercatat.")
     for a in log[:150]:
-        st.markdown(f'<div class="akt"><div class="ah">{e(a["jenis"].capitalize())}</div>'
+        st.markdown(f'<div class="akt"><div class="ah">{IKON.get(a["jenis"], "•")} {e(a["jenis"].capitalize())}</div>'
                     f'<div class="ar">{e(a["rincian"])}</div><div class="am">{fmt_waktu(a["waktu"])} · {e(a["oleh"])}</div></div>',
                     unsafe_allow_html=True)
     if len(log) > 150:

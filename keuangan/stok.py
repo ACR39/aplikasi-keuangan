@@ -88,7 +88,7 @@ def panel_stok(l: dict):
     ab = [b for b in D["barang"] if b["id"] in set(abaikan())]
     if not daftar and not ab:
         return
-    with st.expander(f"Waktunya beli lagi ({len(daftar)})", expanded=bool(daftar)):
+    with st.expander(f"🔔 Waktunya beli lagi ({len(daftar)})", expanded=bool(daftar)):
         if not daftar:
             st.caption("Belum ada yang perlu dibeli lagi menurut kebiasaan Anda.")
         else:
@@ -110,7 +110,7 @@ def panel_stok(l: dict):
 def baris_perhatian() -> list:
     """Teks HTML untuk kotak Perlu perhatian di Beranda."""
     d = waktunya_beli()
-    baris = [f'<b>{e(b["nama"])}</b>: {e(teks_stok(b, k))}' for b, k in d[:3]]
+    baris = [f'🛒 <b>{e(b["nama"])}</b>: {e(teks_stok(b, k))}' for b, k in d[:3]]
     if len(d) > 3:
-        baris.append(f'dan {len(d) - 3} barang lain mungkin perlu dibeli lagi (lihat Daftar belanja)')
+        baris.append(f'🛒 dan {len(d) - 3} barang lain mungkin perlu dibeli lagi (lihat Daftar belanja)')
     return baris

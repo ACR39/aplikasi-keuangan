@@ -84,7 +84,7 @@ def _tandai(kunci: str, daftar: str, pesan: str):
 
 def panel_langganan():
     hasil = deteksi()
-    with st.expander(f"Pengeluaran rutin yang belum dijadwalkan ({len(hasil)})", expanded=bool(hasil)):
+    with st.expander(f"🔎 Pengeluaran rutin yang belum dijadwalkan ({len(hasil)})", expanded=bool(hasil)):
         if not hasil:
             st.caption("Belum ada pola. Aplikasi mencari pengeluaran dengan jumlah mirip yang muncul tiap bulan, minimal 3 bulan berturut-turut.")
             return
@@ -93,7 +93,7 @@ def panel_langganan():
         for x in hasil:
             with st.container(key=f"kartu_g_lg_{x['kunci']}"):
                 st.markdown(f"**{e(x['nama'])}** · {rp(x['jumlah'])} per bulan · {x['kali']} kali · terakhir {fmt_iso(x['terakhir'].isoformat())}"
-                            f"{' · mau dihentikan' if x['henti'] else ''}")
+                            f"{' · ⛔ mau dihentikan' if x['henti'] else ''}")
                 st.caption(f"Setahun sekitar {rp(x['setahun'])}. Perkiraan berikutnya {fmt_iso(x['berikut'].isoformat())}.")
                 c1, c2, c3 = st.columns(3)
                 c1.button("Jadwalkan", key=f"lg_j_{x['kunci']}_{versi()}", on_click=_jadwalkan, args=(x,), width="stretch")

@@ -468,8 +468,26 @@ def baru_id() -> str:
 
 
 SEP = " › "
-IKON_PILIHAN = ["🍽️", "🛒", "🛍️", "🏠", "💡", "🚌", "🚗", "🏥", "🎬", "🎓", "💻", "📱", "🎁", "🏦", "🤝", "📦", "💼", "🪙", "📈", "💸",
-                "🧾", "🔧", "👕", "🧴", "🍼", "🐾", "✈️", "☕", "⚽", "📚", "🔑", "❤️", "🏷️"]
+IKON_KELOMPOK = {
+    'Makan dan minum': [["🍽️", "Makan"], ["🍔", "Burger"], ["🍕", "Pizza"], ["🍜", "Mie"], ["🍲", "Sup"], ["🍛", "Nasi kari"], ["🍚", "Nasi"], ["🍣", "Sushi"], ["🍗", "Ayam"], ["🥩", "Daging"], ["🥖", "Roti"], ["🥐", "Pastri"], ["🍩", "Donat"], ["🍰", "Kue"], ["🍦", "Es krim"], ["🍫", "Cokelat"], ["🍿", "Camilan"], ["🥗", "Salad"], ["🥪", "Sandwich"], ["🌮", "Taco"], ["🍳", "Telur"], ["🥞", "Panekuk"], ["🧀", "Keju"], ["🍎", "Buah"], ["🥦", "Sayur"], ["🥕", "Wortel"], ["🌽", "Jagung"], ["🥔", "Kentang"], ["🐟", "Ikan"], ["🦐", "Udang"], ["☕", "Kopi"], ["🍵", "Teh"], ["🧋", "Boba"], ["🥤", "Minuman"], ["🧃", "Jus"], ["🍺", "Bir"], ["🍷", "Anggur"], ["💧", "Air minum"], ["🥛", "Susu"], ["🍯", "Madu"], ["🧂", "Bumbu"], ["🛵", "Antar makanan"]],
+    'Belanja': [["🛒", "Belanja"], ["🛍️", "Tas belanja"], ["🏪", "Minimarket"], ["🏬", "Pusat belanja"], ["🧺", "Keranjang"], ["📦", "Paket"], ["🏷️", "Label"], ["💳", "Kartu"], ["🎁", "Hadiah"], ["🧴", "Perawatan"], ["🧼", "Sabun"], ["🧽", "Spons"], ["🧻", "Tisu"], ["🪥", "Sikat gigi"], ["🪒", "Cukur"], ["🕯️", "Lilin"], ["🛋️", "Sofa"], ["🪑", "Kursi"], ["🛏️", "Kasur"], ["🖼️", "Dekorasi"], ["🪴", "Tanaman"], ["🧸", "Mainan"], ["🎈", "Balon"], ["🏪", "Warung"]],
+    'Rumah dan tagihan': [["🏠", "Rumah"], ["🏡", "Rumah taman"], ["🏢", "Gedung"], ["🏘️", "Perumahan"], ["🔑", "Kunci"], ["💡", "Listrik"], ["🚰", "Air"], ["🔥", "Gas"], ["🌐", "Internet"], ["📶", "Wifi"], ["📞", "Telepon"], ["📺", "Televisi"], ["🧹", "Kebersihan"], ["🧯", "Keamanan"], ["🔧", "Perbaikan"], ["🔨", "Palu"], ["🪛", "Obeng"], ["🪜", "Tangga"], ["🚿", "Mandi"], ["🧺", "Cucian"], ["🗑️", "Sampah"], ["📮", "Pos"], ["📄", "Dokumen"], ["🧾", "Struk"], ["📋", "Catatan"], ["⏰", "Pengingat"], ["🔔", "Notifikasi"], ["🏦", "Bank"]],
+    'Transportasi': [["🚗", "Mobil"], ["🚙", "SUV"], ["🚕", "Taksi"], ["🛵", "Motor"], ["🏍️", "Motor besar"], ["🚲", "Sepeda"], ["🛴", "Skuter"], ["🚌", "Bus"], ["🚆", "Kereta"], ["🚇", "Metro"], ["🚊", "Trem"], ["✈️", "Pesawat"], ["🚢", "Kapal"], ["⛵", "Perahu"], ["🚁", "Helikopter"], ["⛽", "Bensin"], ["🅿️", "Parkir"], ["🛞", "Ban"], ["🚦", "Lalu lintas"], ["🛣️", "Tol"], ["🗺️", "Peta"], ["📍", "Lokasi"], ["🧭", "Kompas"], ["🛻", "Pikap"], ["🚚", "Truk"], ["🚐", "Mobil keluarga"], ["🪖", "Helm"], ["⚙️", "Servis"]],
+    'Kesehatan': [["🏥", "Rumah sakit"], ["💊", "Obat"], ["💉", "Suntik"], ["🩺", "Dokter"], ["🩹", "Plester"], ["🦷", "Gigi"], ["👓", "Kacamata"], ["🧬", "Lab"], ["🌡️", "Termometer"], ["😷", "Masker"], ["🧘", "Yoga"], ["🏋️", "Gym"], ["🏃", "Lari"], ["⚕️", "Medis"], ["🩸", "Donor"], ["👶", "Bayi"], ["🍼", "Susu bayi"], ["🧸", "Anak"], ["🤰", "Kehamilan"], ["💆", "Pijat"], ["🧖", "Spa"], ["💇", "Potong rambut"], ["💅", "Kuku"], ["🧴", "Losion"]],
+    'Pendidikan dan kerja': [["🎓", "Kuliah"], ["📚", "Buku"], ["📖", "Bacaan"], ["✏️", "Alat tulis"], ["🖊️", "Pulpen"], ["📝", "Tugas"], ["🏫", "Sekolah"], ["🧑‍🏫", "Guru"], ["🔬", "Sains"], ["🧪", "Praktikum"], ["💻", "Laptop"], ["🖥️", "Komputer"], ["⌨️", "Keyboard"], ["🖱️", "Mouse"], ["🖨️", "Printer"], ["📱", "Ponsel"], ["🎧", "Headset"], ["💼", "Pekerjaan"], ["🏢", "Kantor"], ["📊", "Laporan"], ["📈", "Grafik naik"], ["📉", "Grafik turun"], ["🗂️", "Arsip"], ["📎", "Klip"], ["🧮", "Hitung"], ["💡", "Ide"], ["🔌", "Colokan"], ["🔋", "Baterai"], ["📷", "Kamera"], ["🎙️", "Mikrofon"]],
+    'Hiburan dan hobi': [["🎬", "Film"], ["🎮", "Gim"], ["🎲", "Permainan"], ["🧩", "Puzzle"], ["🎵", "Musik"], ["🎸", "Gitar"], ["🎹", "Piano"], ["🎤", "Karaoke"], ["🎨", "Seni"], ["🖌️", "Lukis"], ["🎭", "Teater"], ["🎟️", "Tiket"], ["🎪", "Pameran"], ["📺", "Streaming"], ["🎯", "Target"], ["⚽", "Sepak bola"], ["🏀", "Basket"], ["🏸", "Bulu tangkis"], ["🎾", "Tenis"], ["🏊", "Renang"], ["🚴", "Bersepeda"], ["🥾", "Mendaki"], ["⛺", "Kemah"], ["🎣", "Memancing"], ["📸", "Foto"], ["🎉", "Pesta"], ["🎂", "Ulang tahun"], ["🏖️", "Pantai"], ["🏔️", "Gunung"], ["🧳", "Liburan"], ["🏨", "Hotel"], ["🗓️", "Acara"]],
+    'Pakaian dan penampilan': [["👕", "Kaos"], ["👔", "Kemeja"], ["👖", "Celana"], ["👗", "Gaun"], ["🧥", "Jaket"], ["🧣", "Syal"], ["🧢", "Topi"], ["👟", "Sepatu"], ["👠", "Sepatu hak"], ["🥿", "Flat"], ["🎒", "Tas"], ["👜", "Tas tangan"], ["⌚", "Jam tangan"], ["💍", "Cincin"], ["👓", "Kacamata"], ["🕶️", "Kacamata hitam"], ["🧦", "Kaus kaki"], ["🩳", "Celana pendek"], ["🧵", "Jahit"], ["✂️", "Gunting"], ["💄", "Kosmetik"], ["🪞", "Cermin"]],
+    'Keuangan': [["💰", "Uang"], ["💵", "Tunai"], ["💴", "Lembaran"], ["💳", "Kartu kredit"], ["🏦", "Bank"], ["🪙", "Koin"], ["💸", "Keluar uang"], ["💱", "Tukar"], ["📈", "Investasi"], ["📉", "Rugi"], ["🧾", "Tagihan"], ["🤝", "Bantuan"], ["💼", "Gaji"], ["🏧", "ATM"], ["📒", "Buku kas"], ["🧮", "Hitung"], ["🔐", "Aman"], ["🛡️", "Asuransi"], ["⚖️", "Hukum"], ["🏛️", "Pajak"], ["🎗️", "Donasi"], ["🕌", "Zakat"], ["⛪", "Persembahan"], ["🛕", "Sumbangan"], ["❤️", "Sosial"], ["🌱", "Tabungan"], ["🐷", "Celengan"], ["🎯", "Tujuan"], ["📅", "Cicilan"], ["🔁", "Langganan"], ["💎", "Aset"]],
+    'Hewan dan alam': [["🐾", "Hewan"], ["🐶", "Anjing"], ["🐱", "Kucing"], ["🐟", "Ikan hias"], ["🐦", "Burung"], ["🐇", "Kelinci"], ["🐹", "Hamster"], ["🐢", "Kura-kura"], ["🌿", "Tanaman"], ["🌱", "Bibit"], ["🌳", "Pohon"], ["🌸", "Bunga"], ["🌻", "Bunga matahari"], ["🍀", "Semanggi"], ["🌾", "Padi"], ["🪴", "Pot"], ["☀️", "Cuaca"], ["🌧️", "Hujan"], ["🌙", "Malam"], ["⭐", "Favorit"], ["🔥", "Api"], ["💧", "Air"], ["🌍", "Dunia"], ["♻️", "Daur ulang"]],
+    'Lain-lain': [["📦", "Lainnya"], ["🏷️", "Umum"], ["📍", "Tempat"], ["⭐", "Penting"], ["❤️", "Suka"], ["🔑", "Kunci"], ["🎁", "Hadiah"], ["🤝", "Teman"], ["👨‍👩‍👧", "Keluarga"], ["👤", "Pribadi"], ["🙏", "Ibadah"], ["🕋", "Haji"], ["⚙️", "Pengaturan"], ["❓", "Tak diketahui"], ["✅", "Selesai"], ["⚠️", "Waspada"], ["🚫", "Dilarang"], ["🔒", "Terkunci"], ["📌", "Penanda"], ["🧰", "Peralatan"], ["🛠️", "Perkakas"], ["🧲", "Magnet"], ["🔍", "Cari"], ["🪄", "Sulap"], ["🎀", "Pita"], ["🗝️", "Kunci tua"]],
+}
+IKON_NAMA = {}
+IKON_PILIHAN = []
+for _g, _isi in IKON_KELOMPOK.items():
+    for _e, _n in _isi:
+        if _e not in IKON_NAMA:
+            IKON_NAMA[_e] = f"{_n} ({_g.lower()})"
+            IKON_PILIHAN.append(_e)
 PALET = ["#e8502a", "#f2a43a", "#f5c542", "#7ed348", "#34a874", "#4dbba3", "#6ebcf0", "#3b82c4", "#5b6cf0", "#8a2be2",
          "#d97aa0", "#e8527a", "#e05a5a", "#7a8c9b", "#9aa0a6"]
 
@@ -556,94 +574,6 @@ def data_kosong() -> dict:
         "sampah": [],     # [{"id","transaksi":{...},"dihapus"}]
         "pengaturan": {},  # {"beranda":[bagian yang disembunyikan]}
     }
-
-
-# Lapisan rapi: bahasa visual "buku kas". Dipasang setelah CSS lain supaya menang urutan.
-# Alasan tiap keputusan: kertas hangat dan tinta gelap (aplikasi catatan uang, bukan dasbor SaaS), satu aksen hijau tua
-# (identitas yang sudah ada), garis tipis sebagai pemisah (bayangan hanya untuk yang melayang), radius kecil seragam,
-# label kecil berhuruf biasa (huruf kapital berjarak lebar terbaca seperti templat), angka tabular supaya kolom sejajar.
-CSS_RAPI = """
-<style>
-html,body,[data-testid="stApp"]{font-variant-numeric:tabular-nums}
-.kepala{background:transparent !important;border:0 !important;border-bottom:1px solid rgba(128,128,128,.28) !important;border-radius:0 !important;
-  box-shadow:none !important;padding:.2rem 0 .9rem !important;margin:0 0 1.2rem !important}
-.kepala .eyebrow{display:none}
-.judul-hal{font-size:1.45rem;font-weight:650;letter-spacing:-.012em;margin:0 0 .15rem}
-.kepala .desk{font-size:.88rem;max-width:70ch}
-.st-key-kartu_filter,.st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_perhatian,[class*="st-key-kartu_g"],[class*="st-key-kartu_tgl"],
-[class*="st-key-item_"],[class*="st-key-tx_"],.statcard,[data-testid="stExpander"],[data-testid="stForm"],[data-testid="stMetric"],.akt,.pohon details{
-  border-radius:8px !important;box-shadow:none !important}
-.statcard{display:flex}
-.sc-stat{text-align:left;padding:.9rem 1.1rem}
-.sc-stat:first-of-type{flex:1.5 1 140px}
-.sc-lab,.top-h,.dgrup,.thead-s,.bidang{text-transform:none !important;letter-spacing:0 !important;font-weight:600 !important}
-.sc-lab{font-size:.78rem}
-.sc-val{font-size:1.45rem;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
-.sc-stat:first-of-type .sc-val{font-size:1.75rem}
-.bidang{border-left:0 !important;border-radius:4px !important;font-size:.82rem}
-.grup{text-transform:none !important;letter-spacing:.01em !important;font-size:.76rem !important;font-weight:600 !important}
-.tag,.dh .dn,.lencana,.pohon .pc,.dpt .dh1 span{border-radius:4px !important}
-.itm .ic,.rt .ic,.kc,.pengguna .av{border-radius:8px !important}
-.rt .ic.kat,.kc{background:#ebe7dc !important;color:inherit !important}
-.pengguna .av{background:#256b4a !important}
-.pengguna{border-radius:8px !important}
-[class*="st-key-kartu_g_daftar"] [data-testid="stHorizontalBlock"]{border-left:1px solid #e6eaf0 !important;border-radius:8px !important}
-.dpt{border-top-width:1px !important;border-radius:8px !important}
-[class*="st-key-nav_"] button{box-shadow:none !important;border-radius:6px !important;min-height:2.2rem}
-[class*="st-key-nav_"] button[kind="primary"]{box-shadow:none !important}
-.bar,.bar > i{border-radius:2px !important}
-.bar{height:8px}
-button[kind],[data-baseweb="select"] > div,[data-baseweb="input"],[data-baseweb="base-input"],textarea{border-radius:6px !important}
-.brand{gap:0 !important;padding-bottom:1rem}
-.brand .b1{font-size:1.1rem;font-weight:650;letter-spacing:-.01em}
-button:focus-visible,[role="radio"]:focus-visible,[data-baseweb="select"]:focus-within{outline:2px solid #256b4a !important;outline-offset:2px}
-@media (max-width:640px){.sc-stat{padding:.8rem .9rem}.sc-val{font-size:1.15rem}.sc-stat:first-of-type .sc-val{font-size:1.4rem}.sc-lab{font-size:.74rem}}
-@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
-</style>
-"""
-
-CSS_RAPI_GELAP = """
-<style>
-.rt .ic.kat,.kc{background:#243044 !important}
-</style>
-"""
-
-CSS_RAPI_TERANG = """
-<style>
-[data-testid="stApp"],[data-testid="stAppViewContainer"],[data-testid="stMain"]{background:#f4f1ea}
-[data-testid="stHeader"]{background:transparent}
-[data-testid="stSidebar"]{background:#ebe7dc;border-right:1px solid #d9d4c7}
-[data-testid="stSidebar"] *{color:#1d2420}
-[data-testid="stSidebar"] [data-testid="stCaptionContainer"] *,.brand .b2,.grup{color:#5a625c !important}
-.brand{border-bottom-color:#d9d4c7}
-.brand .b1{color:#1d2420}
-[data-testid="stSidebar"] [data-testid="stExpander"] summary{color:#1d2420 !important}
-[data-testid="stSidebar"] [data-testid="stExpander"] summary:hover{background:rgba(29,36,32,.06) !important}
-[data-testid="stSidebar"] [data-testid="stExpanderDetails"]{border-left-color:#cfc9ba}
-[class*="st-key-nav_"] button{color:#2f3833 !important}
-[class*="st-key-nav_"] button:hover{background:rgba(29,36,32,.07) !important;color:#1d2420 !important}
-[class*="st-key-nav_"] button[kind="primary"]{background:#fdfcf8 !important;color:#1f6b4a !important;font-weight:650;border:1px solid #d9d4c7 !important}
-[class*="st-key-nav_muat"] button{border:1px solid #cfc9ba !important}
-.pengguna.sb{border-top-color:#d9d4c7}
-[data-testid="stSidebar"] .pengguna.sb .nm{color:#1d2420}
-[data-testid="stSidebar"] .pengguna.sb .pr{color:#5a625c}
-.judul-hal{color:#1d2420}
-.kepala{border-bottom-color:#d9d4c7 !important}
-.kepala .desk,.sc-ket,.sc-lab{color:#5a625c !important}
-.st-key-kartu_filter,.st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_perhatian,[class*="st-key-kartu_g"],[class*="st-key-kartu_tgl"],
-[class*="st-key-item_"],[class*="st-key-tx_"],.statcard,[data-testid="stExpander"],[data-testid="stForm"],[data-testid="stMetric"],.akt,.pohon details{
-  background:#fdfcf8;border-color:#d9d4c7}
-.sc-stat{border-left-color:#e7e2d6}
-.sc-val{color:#1d2420}.sc-val.g{color:#1d2420}.sc-val.m{color:#a8281c}
-.nom.masuk,.nm-masuk{color:#1f6b4a}.nom.keluar,.nm-keluar{color:#a8281c}
-.garis,.perhatian{border-color:#e7e2d6}
-.tag,.dh .dn,.pohon .pc,.dpt .dh1 span{background:#e6eee7;color:#1f6b4a}
-.thead-s{background:#e6eee7;color:#1d2420}
-.bidang{background:#e6eee7;color:#1f6b4a}
-.bar{background:#e7e2d6}.bar > i{background:#1f6b4a}
-.dgrup{border-bottom-color:#d9d4c7;color:#1f6b4a}
-</style>
-"""
 
 
 def pasang_css():

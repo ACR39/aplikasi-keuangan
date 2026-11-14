@@ -31,7 +31,7 @@ def ubah_banyak(ids: set, kategori: str = "", dompet: str = "", toko: str = "") 
 
 
 def panel_massal(hasil: list):
-    with st.expander("Ubah banyak sekaligus", expanded=False):
+    with st.expander("✏️ Ubah banyak sekaligus", expanded=False):
         st.caption("Pilih transaksi dari hasil filter di atas, lalu tentukan yang ingin diganti. Kolom yang dibiarkan 'tidak diubah' tidak disentuh.")
         semua = st.checkbox(f"Pilih semua {len(hasil)} hasil filter", key="tb_semua")
         pilihan = {t["id"]: f"{fmt_iso(t['tgl'])} · {ringkas_teks(t)}"[:90] for t in hasil[:300]}
