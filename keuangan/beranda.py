@@ -50,6 +50,8 @@ def _perhatian() -> list:
         if n_ is not None and n_ <= 14:
             baris.append(f'⏳ <b>{e(b_["nama"])}</b> {e(sisa_hari_teks(b_["kedaluwarsa"]))}')
     baris += baris_perhatian()
+    from keuangan.harga_naik import baris_perhatian as _naik
+    baris += _naik()
     if teks_ringkas():
         baris.append(teks_ringkas())
     from keuangan.langganan import jumlah_belum_dijadwalkan

@@ -5,7 +5,7 @@ from datetime import date, timedelta
 import streamlit as st
 
 from keuangan.anggaran import label_ag, status_anggaran
-from keuangan.bantu import batang, e
+from keuangan.bantu import batang, dompet_aktif, e, saldo_dompet
 from keuangan.inti import D, hari_ini, rp
 
 
@@ -95,6 +95,11 @@ def kartu_prakiraan():
             aman = max(0, sisa_uang) // p["sisa_hari"]
             st.caption(f"Agar tidak melewati total anggaran, batas harian yang aman: **{rp(aman)}** per hari." if sisa_uang > 0
                        else "Total anggaran sudah habis terpakai.")
+        if p["sisa_hari"] > 0:
+            saldo = sum(saldo_dompet(d["id"]) for d in dompet_aktif())
+            sisa_keluar = p["proyeksi"] - p["terpakai"]
+            st.markdown(f'<div class="ag"><b>Perkiraan saldo akhir bulan</b><span>{rp(saldo - sisa_keluar)}</span></div>', unsafe_allow_html=True)
+            st.caption(f"Saldo semua dompet aktif sekarang {rp(saldo)} dikurangi perkiraan pengeluaran {p['sisa_hari']} hari lagi {rp(sisa_keluar)}. Pemasukan yang belum terjadi tidak dihitung.")
         for ag, pakai, proy, lewat in prakiraan_anggaran():
             st.markdown(f'<div class="perhatian">🟠 <b>{e(label_ag(ag))}</b>: perkiraan {rp(proy)} dari batas {rp(ag["batas"])}'
                         + (f', batas tercapai sekitar tanggal {lewat.day}' if lewat else ', sudah terlewati') + '</div>', unsafe_allow_html=True)

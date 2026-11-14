@@ -10,9 +10,13 @@ def ubah_banyak(ids: set, kategori: str = "", dompet: str = "", toko: str = "") 
     Kembalikan {'diubah': n, 'dilewati': n}."""
     from keuangan.bantu import kat_dari
     kj = (kat_dari(kategori) or {}).get("jenis") if kategori else None
+    from keuangan.tutup_buku import terkunci
     diubah = lewat = 0
     for t in D["transaksi"]:
         if t["id"] not in ids:
+            continue
+        if terkunci(t["tgl"]):
+            lewat += 1
             continue
         berubah = False
         if kategori:
@@ -34,7 +38,9 @@ def hapus_banyak(ids: set) -> int:
     """Pindahkan transaksi berid ids ke Tempat sampah (bisa dipulihkan). Kembalikan jumlah yang dipindah."""
     from keuangan.bantu import baru_id, perbarui_harga_barang
     from keuangan.inti import hari_ini
-    ada = [t for t in D["transaksi"] if t["id"] in ids]
+    from keuangan.tutup_buku import terkunci
+    ada = [t for t in D["transaksi"] if t["id"] in ids and not terkunci(t["tgl"])]
+    ids = {t["id"] for t in ada}
     if not ada:
         return 0
     D["transaksi"] = [t for t in D["transaksi"] if t["id"] not in ids]

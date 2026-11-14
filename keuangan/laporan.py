@@ -114,6 +114,8 @@ def _bulanan():
             st.markdown("**Pemasukan per kategori**")
             _tabel_kategori(ym, "masuk")
     _banding_bulan(ym)
+    from keuangan.laporan_lanjut import tombol_unduh_bulan
+    tombol_unduh_bulan(ym)
     from keuangan.daring import kartu_online
     kartu_online(transaksi_bulan(ym), "kartu_g_lp_online")
     with st.container(key="kartu_g_lp_harian"):
@@ -308,7 +310,7 @@ def _toko():
 
 
 def halaman_laporan():
-    t1, t2, t3, t4, t5, t6, t7 = st.tabs(["Bulanan", "Tren", "Per dompet", "Barang", "Toko", "Per satuan", "Akhir tahun"])
+    t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(["Bulanan", "Tren", "Per dompet", "Barang", "Toko", "Per satuan", "Akhir tahun", "Kuartal dan tahun"])
     with t1:
         _bulanan()
     with t2:
@@ -325,3 +327,6 @@ def halaman_laporan():
     with t7:
         from keuangan.tahun import halaman_tahun
         halaman_tahun()
+    with t8:
+        from keuangan.laporan_lanjut import halaman_periode
+        halaman_periode()

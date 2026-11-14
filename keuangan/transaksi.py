@@ -4,6 +4,7 @@ from datetime import time as jam_t, timedelta
 
 import streamlit as st
 
+from keuangan.tutup_buku import tolak
 from keuangan.bantu import (
     atur_kategori,
     barang_dalam, barang_dari, f_barang, perbarui_harga_barang, teks_barang,
@@ -434,6 +435,8 @@ def form_struk():
             if baris_biaya_online:
                 pastikan_kategori_biaya()
                 baris = baris + baris_biaya_online
+            if tolak(tgl):
+                return
             simpan_struk(baris, tgl, w.strftime("%H:%M"), dari, toko, lokasi.strip(), struk, foto_hash=foto_hash, platform=platform)
             catat("tambah", ringkas_struk(baris, toko))
             selesai_simpan(f"Struk dicatat: {len(baris)} barang" + (f" · {n_belajar} koreksi dipelajari" if n_belajar else "") + (f" · {teks_jatah()}" if tgl == hari_ini() and teks_jatah() else ""), struk_ocr=None, struk_up_n=n_up + 1)
@@ -534,7 +537,7 @@ def halaman_catat():
                 panel_tangkap()
                 panel_favorit(kunci, jenis)
             isi = form_transaksi(kunci, jenis, awal=awal_salin, tombol="Simpan transaksi", bersih=True)
-        if isi:
+        if isi and not tolak(isi["tgl"]):
             struk = proses_foto(isi["struk_berkas"], False, "", "struk")
             ph = peringatan_harga(isi["barang"], isi["harga_satuan"]) if jenis == "keluar" and isi["barang"] else None
             t = tambah_transaksi(jenis, isi["tgl"], isi["jumlah"], isi["dompet"], isi["kategori"], isi["catatan"],
@@ -595,6 +598,8 @@ def _filter() -> list:
 
 
 def _hapus(t: dict):
+    if tolak(t["tgl"]):
+        return
     D["transaksi"] = [x for x in D["transaksi"] if x["id"] != t["id"]]
     D["sampah"].append({"id": baru_id(), "transaksi": t, "dihapus": hari_ini().isoformat()})
     if t.get("barang"):
@@ -612,7 +617,7 @@ def _tampil_tx(t: dict, edit_id, hapus_id, foto: bool = True):
             if st.button("Batal", key=f"batal_e_{t['id']}"):
                 st.session_state.pop("edit_tx", None)
                 st.rerun()
-            if isi:
+            if isi and not tolak(t["tgl"], isi["tgl"]):
                 lama = ringkas_teks(t)
                 barang_lama = t.get("barang")
                 t.update({"tgl": isi["tgl"].isoformat(), "jumlah": isi["jumlah"], "dompet": isi["dompet"],
@@ -667,7 +672,7 @@ def _tampil_tx(t: dict, edit_id, hapus_id, foto: bool = True):
 def _hapus_struk(g: str):
     """Pindahkan semua barang satu struk ke Tempat sampah sekaligus."""
     semua = [x for x in D["transaksi"] if x.get("grup") == g]
-    if not semua:
+    if not semua or tolak(*(x["tgl"] for x in semua)):
         return
     D["transaksi"] = [x for x in D["transaksi"] if x.get("grup") != g]
     for x in semua:
@@ -718,6 +723,8 @@ def _tambah_ke_struk(g: str, t0: dict):
     if baris:
         st.caption(f"Akan ditambahkan {len(baris)} barang, {rp(sum(round(x['qty'] * x['harga']) for x in baris))}.")
     if st.button("Tambahkan ke struk", key=f"{kunci}_ok", type="primary"):
+        if tolak(t0["tgl"]):
+            return
         if salah:
             st.error("\n\n".join(salah))
         elif not baris:

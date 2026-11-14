@@ -10,6 +10,7 @@ JENIS_MASALAH = {
     "kategori_beda": "Kategori tidak sama dengan kategori barangnya",
     "jumlah_beda": "Jumlah tidak sama dengan banyaknya × harga satuan",
     "rujukan": "Merujuk ke barang atau toko yang sudah dihapus",
+    "ganda": "Kemungkinan transaksi ganda (tanggal, jumlah, dompet, dan catatan sama)",
 }
 
 
@@ -37,6 +38,14 @@ def temukan() -> list:
         if t.get("qty") and t.get("harga_satuan") and abs(round(float(t["qty"]) * int(t["harga_satuan"])) - int(t["jumlah"])) > 1 and not t.get("grup"):
             hasil.append({"jenis": "jumlah_beda", "tx": t, "saran": {"set": {"jumlah": int(round(float(t["qty"]) * int(t["harga_satuan"])))},
                                                                        "info": f"Jumlah jadi {int(round(float(t['qty']) * int(t['harga_satuan']))):,}".replace(",", ".")}})
+    kelompok = {}
+    for t in D["transaksi"]:
+        if t["jenis"] == "transfer" or t.get("grup"):
+            continue
+        kelompok.setdefault((t["tgl"], t["jenis"], int(t["jumlah"]), t.get("dompet"), _norm(t.get("catatan", "")), t.get("toko") or ""), []).append(t)
+    for isi in kelompok.values():
+        for t in sorted(isi, key=lambda x: x.get("dibuat", ""))[1:]:  # yang paling awal dicatat dianggap asli
+            hasil.append({"jenis": "ganda", "tx": t, "saran": {"buang": True, "info": "Pindahkan ke Tempat sampah"}})
     for i, m in enumerate(hasil):
         m["id"] = f"{m['jenis']}:{m['tx']['id']}:{i}"
     return hasil
@@ -52,10 +61,17 @@ def terapkan(m: dict):
 
 def _perbaiki(ids: list, semua: list):
     n = 0
+    buang = set()
     for m in semua:
         if m["id"] in ids:
-            terapkan(m)
+            if m["saran"].get("buang"):
+                buang.add(m["tx"]["id"])
+            else:
+                terapkan(m)
             n += 1
+    if buang:
+        from keuangan.massal import hapus_banyak
+        hapus_banyak(buang)
     catat("ubah", f"Pemeriksa data: {n} transaksi diperbaiki")
     selesai_simpan(f"{n} masalah diperbaiki.")
 

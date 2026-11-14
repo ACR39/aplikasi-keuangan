@@ -16,10 +16,13 @@ def _css(kunci: str, nama: list) -> str:
     for n in nama:
         uri = "data:image/svg+xml," + quote(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="{GLIF[n][2]}"/></svg>')
         aturan.append(f'.st-key-{kunci}_g_{n.replace("-", "_")} button::after{{-webkit-mask-image:url("{uri}");mask-image:url("{uri}")}}')
-    return (f'.st-key-{kunci}_kisi [data-testid="stHorizontalBlock"]{{flex-wrap:nowrap!important;gap:.4rem!important}}'
-            f'.st-key-{kunci}_kisi [data-testid="stColumn"]{{min-width:0!important;flex:1 1 0!important;width:auto!important}}'
-            f'.st-key-{kunci}_kisi button{{min-height:2.7rem;padding:0;display:flex;justify-content:center;align-items:center}}.st-key-{kunci}_kisi button p{{display:none}}'
-            f'.st-key-{kunci}_kisi button::after{{content:"";width:1.7rem;height:1.7rem;background:currentColor;-webkit-mask-size:contain;mask-size:contain;'
+    k = f".st-key-{kunci}_kisi"
+    return (f'{k} [data-testid="stVerticalBlock"]{{gap:.45rem!important}}'
+            f'{k} [data-testid="stHorizontalBlock"]{{flex-wrap:nowrap!important;gap:.45rem!important}}'
+            f'{k} [data-testid="stColumn"]{{min-width:0!important;flex:1 1 0!important;width:auto!important}}'
+            f'{k} button{{position:relative;min-height:0;aspect-ratio:1/1;height:auto;padding:0;width:100%}}'
+            f'{k} button>*{{display:none!important}}'
+            f'{k} button::after{{content:"";position:absolute;inset:0;margin:auto;width:58%;height:58%;background:currentColor;-webkit-mask-size:contain;mask-size:contain;'
             f'-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}}' + "".join(aturan))
 
 

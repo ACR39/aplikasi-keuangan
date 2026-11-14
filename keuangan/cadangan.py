@@ -75,12 +75,49 @@ def _hapus_cadangan(nama: str, sha: str):
         pass
 
 
+# ---------------------------------------------------------------- tempat kedua (repo GitHub lain, bagian [cadangan2] di secrets)
+def cfg_cermin():
+    try:
+        g = st.secrets["cadangan2"]
+        return {"token": g["token"], "repo": g["repo"], "branch": g.get("branch", "main"), "folder": str(g.get("folder", "cadangan")).strip("/")}
+    except Exception:
+        return None
+
+
+def _cermin(nama: str, isi: bytes):
+    c = cfg_cermin()
+    r = requests.put(_gh_url(c, posixpath.join(c["folder"], nama)), headers=_gh_headers(c), timeout=60,
+                     json={"message": f"Cadangan {nama}", "branch": c["branch"], "content": base64.b64encode(isi).decode("ascii")})
+    r.raise_for_status()
+
+
+def _pangkas_cermin():
+    c = cfg_cermin()
+    r = requests.get(_gh_url(c, c["folder"]), headers=_gh_headers(c), params={"ref": c["branch"]}, timeout=30)
+    if r.status_code != 200:
+        return
+    for jenis in (".xlsx", ".json"):
+        for x in sorted([x for x in r.json() if x["type"] == "file" and x["name"].endswith(jenis)], key=lambda x: x["name"], reverse=True)[SIMPAN_CADANGAN:]:
+            requests.delete(_gh_url(c, posixpath.join(c["folder"], x["name"])), headers=_gh_headers(c), timeout=30,
+                            json={"message": f"Hapus cadangan {x['name']}", "branch": c["branch"], "sha": x["sha"]})
+
+
 def buat_cadangan() -> str:
     """Tulis cadangan Excel dan JSON, buang yang lama. Mengembalikan stempel waktunya. Melempar error bila gagal."""
     from keuangan.ekspor import excel_lengkap
     st_ = sekarang().strftime("%Y%m%d-%H%M")
-    _tulis(f"keuangan-{st_}.xlsx", excel_lengkap())
-    _tulis(f"keuangan-{st_}.json", json.dumps(D.data, ensure_ascii=False, indent=1, sort_keys=True).encode("utf-8"))
+    xlsx = excel_lengkap()
+    js = json.dumps(D.data, ensure_ascii=False, indent=1, sort_keys=True).encode("utf-8")
+    _tulis(f"keuangan-{st_}.xlsx", xlsx)
+    _tulis(f"keuangan-{st_}.json", js)
+    st.session_state.pop("cd_cermin_galat", None)
+    if cfg_cermin():  # salinan kedua: kegagalannya tidak menggagalkan cadangan utama, hanya diberitahukan
+        try:
+            _cermin(f"keuangan-{st_}.xlsx", xlsx)
+            _cermin(f"keuangan-{st_}.json", js)
+            _pangkas_cermin()
+        except Exception as ex:
+            st.session_state["cd_cermin_galat"] = f"Salinan ke tempat kedua gagal: {ex}"
     for jenis in (".xlsx", ".json"):
         for nama, sha in [x for x in daftar_cadangan() if x[0].endswith(jenis)][SIMPAN_CADANGAN:]:
             _hapus_cadangan(nama, sha)
@@ -116,6 +153,8 @@ def cadangan_otomatis():
         st.warning(f"Cadangan otomatis gagal: {ex}")
         return
     D["pengaturan"]["cadangan_terakhir"] = hari_ini().isoformat()
+    if st.session_state.get("cd_cermin_galat"):
+        st.warning(st.session_state["cd_cermin_galat"])
     catat("data", "Cadangan otomatis dibuat")
     commit("Cadangan otomatis")
 
@@ -143,6 +182,13 @@ def _panel_otomatis():
                 selesai_simpan("Cadangan dibuat.")
         if D.get("pengaturan", {}).get("cadangan_terakhir"):
             st.caption(f"Terakhir: {D['pengaturan']['cadangan_terakhir']}")
+        cm = cfg_cermin()
+        if cm:
+            st.caption(f"Salinan kedua aktif: setiap cadangan juga ditulis ke repo {cm['repo']} (folder {cm['folder']}).")
+        else:
+            st.caption("Tempat kedua belum diatur. Tambahkan bagian [cadangan2] (token, repo, opsional branch dan folder) di secrets untuk menyalin tiap cadangan ke repo GitHub lain.")
+        if st.session_state.get("cd_cermin_galat"):
+            st.warning(st.session_state["cd_cermin_galat"])
         for nama, _ in daftar_cadangan()[:8]:
             isi = _baca(nama)
             if isi:

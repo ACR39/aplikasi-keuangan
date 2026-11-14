@@ -142,6 +142,8 @@ def halaman_anggaran():
                     b.button("Batal", key=f"batal_ag_{a['id']}", on_click=atur, args=("hapus_ag", None))
     if hanya_lihat():
         return
+    from keuangan.laporan_lanjut import panel_saran_anggaran
+    panel_saran_anggaran()
     edit = next((x for x in D["anggaran"] if x["id"] == st.session_state.get("edit_ag")), None)
     from keuangan.bantu import barang_dari
     with st.container(key="kartu_g_form_ag"):

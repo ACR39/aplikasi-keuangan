@@ -204,3 +204,23 @@ tidak perlu per barang. Tombol "Hapus foto" melepasnya dari semua barang.
 
 ## Ikon
 Kategori dan jenis toko memakai ikon glyph satu warna (Material Design Icons, lisensi Apache 2.0, 271 ikon dalam `keuangan/ikon_svg.py`). Pilih lewat tombol "Ganti ikon" (ada pencarian); emoji lama tetap berfungsi dan masih bisa dipilih. Ikon disimpan sebagai `mdi:nama`.
+
+## Fitur tambahan
+- **Harga naik** (Laporan > Harga naik, plus satu baris di Perlu perhatian bila naik 15% atau lebih): membandingkan harga beli terbaru tiap barang dengan median pembelian sebelumnya, dan menunjukkan toko yang pernah lebih murah. Dihitung lokal, tanpa AI.
+- **Tangkap cepat banyak baris**: tombol "Banyak baris sekaligus" di Catat transaksi. Satu transaksi per baris, kategori dan dompet ditebak, tanggal hari ini.
+- **Perkiraan saldo akhir bulan** ditambahkan ke kartu Prakiraan akhir bulan.
+- **Cadangan ke tempat kedua**: tambahkan di secrets
+  ```toml
+  [cadangan2]
+  token = "..."        # token GitHub dengan akses ke repo kedua
+  repo = "namaanda/cadangan-keuangan"
+  branch = "main"      # opsional
+  folder = "cadangan"  # opsional
+  ```
+  Setiap cadangan (otomatis maupun manual) juga ditulis ke repo itu, maksimal 10 terakhir. Bila salinan kedua gagal, cadangan utama tetap jadi dan muncul peringatan.
+- **Laporan > Kuartal dan tahun**: pengeluaran per kategori utama untuk satu kuartal atau tahun, dibanding periode yang sama tahun lalu (atau kuartal sebelumnya), lengkap dengan selisih dan persen.
+- **Laporan > Bulanan > unduh laporan**: satu halaman HTML berisi ringkasan, kategori, toko teratas, pengeluaran terbesar, dan harga naik; buka lalu cetak ke PDF dari browser untuk dibagikan.
+- **Anggaran > Saran batas dari riwayat**: rata-rata pengeluaran kategori utama dari maksimal 3 bulan penuh terakhir, dibulatkan ke atas ke Rp 10.000. Angkanya bisa diubah sebelum dibuat.
+- **Pemeriksa data** kini juga menandai kemungkinan transaksi ganda (tanggal, jenis, jumlah, dompet, toko, dan catatan sama). Yang paling awal dicatat dianggap asli; sisanya bisa dipindah ke Tempat sampah satu per satu. Transaksi dalam struk dan transfer tidak diperiksa.
+- **Aturan kategori** (Pengaturan > Data master > Aturan kategori): kata kunci di catatan mengisi kategori otomatis, dan dompet atau toko bila diatur. Dipakai di tangkap cepat dan impor mutasi; kata kunci yang lebih panjang menang. Form Catat transaksi lengkap tidak memakainya.
+- **Tutup buku** (Pengaturan > Perawatan data > Tutup buku): daftar periksa akhir bulan (tanpa kategori, kemungkinan ganda, masalah data, tagihan belum dicatat), lalu bulan dikunci. Bulan yang ditutup menolak catat, ubah, hapus, struk, ubah massal, dan impor mutasi sampai admin membukanya kembali. Transaksi otomatis dari tagihan, utang, dan patungan tidak ikut dikunci.

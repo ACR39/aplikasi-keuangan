@@ -35,6 +35,10 @@ def usulan_kategori(ket: str, jenis: str) -> str:
     n = _norm(ket)
     if not n:
         return ""
+    from keuangan.aturan import cocok
+    r = cocok(ket, jenis)
+    if r:
+        return r["kategori"]
     ada = [t for t in D["transaksi"] if t["jenis"] == jenis and t.get("kategori") and kat_dari(t["kategori"])]
     persis = Counter(t["kategori"] for t in ada if _norm(t.get("catatan", "")) == n)
     if persis:
@@ -152,6 +156,9 @@ def halaman_mutasi():
                                          "Jumlah": st.column_config.NumberColumn(format="%d")})
     pilih = edit[edit["Impor"]]
     if st.button(f"Impor {len(pilih)} transaksi", type="primary", key="mt_impor", disabled=pilih.empty):
+        from keuangan.tutup_buku import tolak
+        if tolak(*pilih["Tanggal"]):
+            return
         for _, b in pilih.iterrows():
             kat = nama_ke_id.get(b["Kategori"], "")
             if kat and (kat_dari(kat) or {}).get("jenis") != b["Jenis"]:

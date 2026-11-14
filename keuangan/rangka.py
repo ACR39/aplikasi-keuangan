@@ -36,10 +36,10 @@ EDIT_SAJA = ("Catat transaksi",)
 # Halaman gabungan: nama halaman -> [(label bagian, nama halaman lama, hanya admin)]. Nama lama tetap dikenali sebagai pintasan (lihat ALIAS).
 GABUNGAN = {
     "Data master": [("Barang dan produk", "Barang dan produk", False), ("Toko dan tempat beli", "Toko dan tempat beli", False), ("Jenis toko", "Jenis toko", False),
-                    ("Platform beli online", "Platform beli online", False), ("Dompet", "Dompet", True), ("Kategori", "Kategori", True)],
+                    ("Platform beli online", "Platform beli online", False), ("Aturan kategori", "Aturan kategori", False), ("Dompet", "Dompet", True), ("Kategori", "Kategori", True)],
     "AI dan baca struk": [("Privasi AI", "Privasi AI", False), ("Mesin baca struk", "Mesin baca struk", False)],
-    "Laporan": [("Statistik", "Laporan", False), ("Tanya dan ringkasan AI", "Asisten AI", False)],
-    "Perawatan data": [("Riwayat aktivitas", "Riwayat aktivitas", False), ("Tempat sampah", "Tempat sampah", False), ("Pemeriksa data", "Pemeriksa data", False)],
+    "Laporan": [("Statistik", "Laporan", False), ("Harga naik", "Harga naik", False), ("Tanya dan ringkasan AI", "Asisten AI", False)],
+    "Perawatan data": [("Riwayat aktivitas", "Riwayat aktivitas", False), ("Tempat sampah", "Tempat sampah", False), ("Pemeriksa data", "Pemeriksa data", False), ("Tutup buku", "Tutup buku", False)],
     "Data dan cadangan": [("Ekspor dan impor", "Ekspor dan impor", False), ("Cadangan dan pulihkan", "Cadangan dan pulihkan", True)],
 }
 ALIAS = {lama: (hal, label) for hal, bagian in GABUNGAN.items() for label, lama, _ in bagian if lama != hal}
@@ -47,7 +47,7 @@ IKON = {"Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle
         "Data master": "database", "Jenis toko": "category", "AI dan baca struk": "document_scanner", "Perawatan data": "build", "Data dan cadangan": "backup",
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Transaksi berulang": "event_repeat", "Target tabungan": "savings",
         "Utang-piutang": "handshake", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner", "Pemeriksa data": "fact_check",
-        "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
+        "Harga naik": "trending_up", "Aturan kategori": "rule", "Tutup buku": "lock", "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
 LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">'
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
         '<stop offset="0" stop-color="#34a874"/><stop offset="1" stop-color="#1f6b49"/></linearGradient></defs>'
@@ -68,6 +68,9 @@ DESKRIPSI = {
     "Daftar belanja": "Rencanakan belanja, lihat toko termurah, centang saat membeli, lalu catat jadi satu struk.",
     "Toko dan tempat beli": "Daftar toko atau tempat beli beserta lokasinya. Saat mencatat, toko bisa dipilih.",
     "Platform beli online": "Daftar aplikasi tempat beli online (GoFood, ShopeeFood, dan lainnya) yang bisa Anda atur sendiri. Saat mencatat, platform bisa dipilih.",
+    "Aturan kategori": "Kata kunci di catatan yang mengisi kategori (dan dompet atau toko) otomatis.",
+    "Tutup buku": "Tutup bulan yang sudah selesai setelah daftar periksa akhir bulan, lalu kunci dari perubahan.",
+    "Harga naik": "Barang yang harga belinya naik dibanding pembelian sebelumnya, beserta toko yang pernah lebih murah.",
     "Asisten AI": "Tanya data dengan bahasa biasa dan minta ringkasan bulanan tertulis. Perhitungan dikerjakan di server ini; AI tidak melihat transaksimu.",
     "Privasi AI": "Nyalakan fitur AI satu per satu, lihat apa yang dikirim dan tidak dikirim ke penyedia, dan riwayat kiriman. Semua mati secara bawaan.",
     "Barang dan produk": "Daftar barang per kategori atau sub kategori. Saat mencatat, barang bisa dipilih sesuai kategorinya.",
@@ -217,6 +220,15 @@ def tampilkan_isi(halaman):
         halaman_jenis_toko()
     elif halaman == "Platform beli online":
         halaman_platform()
+    elif halaman == "Aturan kategori":
+        from keuangan.aturan import halaman_aturan
+        halaman_aturan()
+    elif halaman == "Tutup buku":
+        from keuangan.tutup_buku import halaman_tutup_buku
+        halaman_tutup_buku()
+    elif halaman == "Harga naik":
+        from keuangan.harga_naik import halaman_harga_naik
+        halaman_harga_naik()
     elif halaman == "Asisten AI":
         from keuangan.ai_fitur import halaman_asisten
         halaman_asisten()

@@ -131,6 +131,9 @@ def _panel_selesai(l: dict):
         elif not baris:
             st.error("Tidak ada barang untuk dicatat.")
         else:
+            from keuangan.tutup_buku import tolak
+            if tolak(tgl):
+                return
             struk = proses_foto(berkas, False, "", "struk")
             simpan_struk(baris, tgl, w.strftime("%H:%M"), dari, toko, lokasi.strip(), struk)
             l["riwayat"].append({"tgl": tgl.isoformat(), "total": total_baris(baris), "toko": toko,

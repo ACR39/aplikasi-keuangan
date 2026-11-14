@@ -71,6 +71,8 @@ def tebak(teks: str) -> dict | None:
         if nb and (nb in n or (len(n) >= 4 and n in nb)) and (kat_dari(b["kategori"]) or {}).get("jenis") == jenis:
             cocok = b
             break
+    from keuangan.aturan import cocok as _aturan
+    aturan_ = _aturan(asli, jenis)
     toko = ""
     for x in sorted(D["toko"], key=lambda x: -len(x["nama"])):
         if _norm(x["nama"]) and _norm(x["nama"]) in n:
@@ -92,6 +94,10 @@ def tebak(teks: str) -> dict | None:
         if _norm(d["nama"]) and _norm(d["nama"]) in n.split() or _norm(d["nama"]) in n and len(_norm(d["nama"])) >= 3:
             dompet = d["id"]
             break
+    if not dompet and aturan_ and aturan_.get("dompet") in {d["id"] for d in dompet_aktif()}:
+        dompet = aturan_["dompet"]
+    if not toko and aturan_ and aturan_.get("toko") and any(x["id"] == aturan_["toko"] for x in D["toko"]):
+        toko = aturan_["toko"]
     if not dompet:
         pakai = Counter(t["dompet"] for t in D["transaksi"][-30:] if t["jenis"] == jenis)
         dompet = pakai.most_common(1)[0][0] if pakai else (dompet_aktif()[0]["id"] if dompet_aktif() else "")
@@ -115,16 +121,54 @@ def tebak(teks: str) -> dict | None:
             "kategori": kat, "dompet": dompet, "toko": toko, "platform": platform, "catatan": catatan}
 
 
-def _simpan(h: dict, kat: str, dompet: str, platform: str = ""):
+def _buat(h: dict, kat: str, dompet: str, platform: str = ""):
     kait = {}
     if h["barang"] or h["qty"] != 1:
         kait = {"qty": float(h["qty"]), "harga_satuan": h["harga_satuan"]}
         if h["barang"]:
             kait["barang"] = h["barang"]
-    t = tambah_transaksi(h["jenis"], hari_ini(), h["jumlah"], dompet, kat, h["catatan"], toko=h["toko"], platform=platform, **kait)
+    return tambah_transaksi(h["jenis"], hari_ini(), h["jumlah"], dompet, kat, h["catatan"], toko=h["toko"], platform=platform, **kait)
+
+
+def _simpan(h: dict, kat: str, dompet: str, platform: str = ""):
+    t = _buat(h, kat, dompet, platform)
     catat("tambah", f"Tangkap cepat: {t['jenis']} {rp(t['jumlah'])}")
     selesai_simpan(f"Tercatat: {'pengeluaran' if h['jenis'] == 'keluar' else 'pemasukan'} {rp(h['jumlah'])}"
                    + (f" ({barang_dari(h['barang'])['nama']} × {h['qty']})" if h["barang"] else ""))
+
+
+def _banyak():
+    """Beberapa kalimat sekaligus, satu transaksi per baris. Kategori dan dompet ditebak; yang kurang tepat bisa diubah di Daftar transaksi."""
+    teks = st.text_area("Satu transaksi per baris", key=f"tc_banyak_{versi()}", height=110, placeholder="es jeruk 8rb 2\nbensin 30rb\ngaji 5jt")
+    baris = [x.strip() for x in teks.splitlines() if x.strip()]
+    if not baris:
+        return
+    ok, gagal = [], []
+    for b in baris:
+        h = tebak(b)
+        (ok if h and h["jumlah"] else gagal).append((b, h))
+    if ok:
+        from keuangan.bantu import f_dompet, f_kat
+        fk, fd = f_kat(), f_dompet()
+        akhir = []
+        for b, h in ok:
+            ids = [k["id"] for k in kategori_jenis(h["jenis"])]
+            dom_ids = [d["id"] for d in dompet_aktif()]
+            kat = h["kategori"] if h["kategori"] in ids else (ids[0] if ids else "")
+            dom = h["dompet"] if h["dompet"] in dom_ids else (dom_ids[0] if dom_ids else "")
+            akhir.append((h, kat, dom))
+        st.dataframe([{"Jenis": "Keluar" if h["jenis"] == "keluar" else "Masuk", "Jumlah": rp(h["jumlah"]), "Keterangan": (barang_dari(h["barang"])["nama"] if h["barang"] else h["catatan"]) or "-",
+                       "Kategori": fk(k), "Dompet": fd(d)} for h, k, d in akhir], hide_index=True, use_container_width=True)
+    if gagal:
+        st.warning("Dilewati karena belum ada nominal: " + "; ".join(b for b, _ in gagal))
+    if ok and st.button(f"Simpan {len(ok)} transaksi", type="primary", key=f"tc_simpan_banyak_{versi()}"):
+        if any(not k or not d for _, k, d in akhir):
+            st.error("Belum ada kategori atau dompet yang bisa dipakai.")
+            return
+        for h, k, d in akhir:
+            _buat(h, k, d)
+        catat("tambah", f"Tangkap cepat banyak baris: {len(akhir)} transaksi")
+        selesai_simpan(f"{len(akhir)} transaksi tercatat (tanggal hari ini).")
 
 
 def panel_tangkap():
@@ -132,6 +176,8 @@ def panel_tangkap():
     with st.expander("⚡ Tangkap cepat", expanded=False):
         st.caption("Ketik satu kalimat, contoh: **es jeruk 8rb 2**, **bensin 30rb**, **gaji 5jt**, **nasi goreng 25rb gofood**. Barang, kategori, dompet, toko, dan platform ditebak dari kebiasaanmu; "
                    "periksa dulu sebelum menyimpan. Dengan banyaknya, nominal dihitung per satuan.")
+        with st.popover("Banyak baris sekaligus"):
+            _banyak()
         teks = st.text_input("Catat apa?", key=f"tc_teks_{versi()}", placeholder="es jeruk 8rb 2")
         h = tebak(teks)
         if not h:
