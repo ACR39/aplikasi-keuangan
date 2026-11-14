@@ -26,7 +26,7 @@ class _Berkas:
 
 def _blok_barcode(kk: str, awal: dict):
     """Pindai atau ketik barcode, lalu isi form dari data barang sendiri atau Open Food Facts."""
-    with st.expander("📷 Isi dari barcode: pindai atau ketik", expanded=False):
+    with st.expander("Isi dari barcode: pindai atau ketik", expanded=False):
         foto = st.camera_input("Arahkan kamera ke barcode", key=f"{kk}_cam")
         unggah = st.file_uploader("Atau unggah foto barcode", type=["jpg", "jpeg", "png", "webp"], key=f"{kk}_bcup")
         ketik = st.text_input("Atau ketik angka barcode", max_chars=32, key=f"{kk}_bcket", placeholder="Contoh: 8992388101011")
@@ -162,9 +162,9 @@ def halaman_barang():
             if b.get("barcode"):
                 ket += f' · ⫴ {e(b["barcode"])}'
             if b.get("langganan"):
-                ket += " · 🔁 langganan"
+                ket += " · langganan"
             if b.get("kedaluwarsa"):
-                ket += f' · ⏳ {e(sisa_hari_teks(b["kedaluwarsa"]))}'
+                ket += f' · {e(sisa_hari_teks(b["kedaluwarsa"]))}'
             ket += f' · dibeli {len(pakai)}×' + (f' · terakhir {fmt_iso(pakai[0]["tgl"])}' if pakai else "") + (f' · total {rp(total)}' if pakai else "")
             with st.container(key=f"tx_br_{b['id']}"):
                 kolom = st.columns([1] + ([0.001, 0.001] if not hanya_lihat() else []))
@@ -188,7 +188,7 @@ def halaman_barang():
     with atas:
         if not edit and not st.session_state.get("edit_baru_brg"):
             gulir_ke_atas_bila_baru(None)
-            st.button("➕ Tambah barang baru", key="tambah_brg_btn", type="primary", on_click=atur, args=("edit_baru_brg", True))
+            st.button("Tambah barang baru", key="tambah_brg_btn", type="primary", on_click=atur, args=("edit_baru_brg", True))
             return
         gulir_ke_atas_bila_baru(("brg", edit["id"] if edit else "baru"))
         with st.container(key="kartu_g_form_brg"):

@@ -82,7 +82,7 @@ def kartu_mingguan():
             tg = date.fromisoformat(r["boros"][0])
             st.caption(f"Hari paling boros: {HARI[tg.weekday()]} {fmt_iso(r['boros'][0])} ({rp(r['boros'][1])}).")
         if r["hemat"]:
-            st.caption(f"🏷️ Hemat dari diskon: {rp(r['hemat'])}.")
+            st.caption(f"Hemat dari diskon: {rp(r['hemat'])}.")
         if r["naik"]:
             st.markdown("**Barang yang harganya naik**")
             for id_, ref, rata, pct in r["naik"]:

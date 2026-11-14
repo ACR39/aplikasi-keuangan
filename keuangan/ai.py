@@ -233,7 +233,7 @@ def gerbang(fitur: str, kunci: str = "") -> bool:
     ok, alasan = boleh(fitur)
     if ok:
         return True
-    st.info(f"🔒 {FITUR[fitur]['nama']} memakai AI di internet. {alasan}")
+    st.info(f"{FITUR[fitur]['nama']} memakai AI di internet. {alasan}")
     st.button("Buka Privasi AI", key=f"gerbang_{fitur}_{kunci}", on_click=pindah_halaman, args=("Privasi AI",))
     return False
 

@@ -137,9 +137,9 @@ def halaman_tagihan():
         teks, kelas = status_tagihan(t)
         with st.container(key=f"tx_tg_{t['id']}"):
             st.markdown(
-                f'<div class="rt"><div class="ic {t.get("jenis", "keluar")}">{"💰" if t.get("jenis") == "masuk" else "⏰"}</div><div class="isi"><div class="jd">{e(t["nama"])}</div>'
+                f'<div class="rt"><div class="ic {t.get("jenis", "keluar")}">{"+" if t.get("jenis") == "masuk" else "−"}</div><div class="isi"><div class="jd">{e(t["nama"])}</div>'
                 f'<div class="mt">{fmt_iso(t["berikut"])} · {e(TIAP[t["tiap"]])} · {e(nama_dompet(t["dompet"]))} · {e(nama_kat(t["kategori"]))}'
-                f'{" · 🔄 otomatis" if t.get("otomatis") else ""}{" · " + e(t["catatan"]) if t.get("catatan") else ""}</div></div>'
+                f'{" · otomatis" if t.get("otomatis") else ""}{" · " + e(t["catatan"]) if t.get("catatan") else ""}</div></div>'
                 f'<div class="nom {t.get("jenis", "keluar")}">{rp(t["jumlah"])}<div class="{kelas}" style="font-size:.76rem;font-weight:600">{teks}</div></div></div>',
                 unsafe_allow_html=True)
             if hanya_lihat():

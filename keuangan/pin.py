@@ -48,7 +48,7 @@ def cek_pin():
     sisa = st.session_state.get("pin_kunci_sampai", 0) - time.time()
     st.markdown("""<style>[data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"],[data-testid="stToolbar"],[data-testid="stHeader"]{display:none !important}
 .block-container{max-width:420px !important;padding:14vh 1.2rem 3rem !important}</style>
-<div style="text-align:center;margin-bottom:1rem"><div style="font-size:2.4rem">🔒</div>
+<div style="text-align:center;margin-bottom:1rem"><div style="font-size:2.4rem"></div>
 <div style="font-size:1.4rem;font-weight:700">Aplikasi terkunci</div><div style="color:#64748b;font-size:.9rem">Masukkan PIN untuk melanjutkan</div></div>""",
                 unsafe_allow_html=True)
     with st.form("form_pin"):
@@ -77,7 +77,7 @@ def panel_pin():
     if hanya_lihat():
         return
     with st.container(key="kartu_g_pin"):
-        st.markdown("**🔒 Kunci PIN**")
+        st.markdown("**Kunci PIN**")
         st.caption("PIN dipakai untuk membuka aplikasi saat dibuka ulang di perangkat yang masih tersambung (tanpa mengetik kata sandi lagi). "
                    "Tombol Kunci di menu samping mengunci seketika. PIN ini khusus untuk akunmu.")
         if punya_pin():

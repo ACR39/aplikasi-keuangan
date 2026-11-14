@@ -305,7 +305,7 @@ def tampil_peringatan_harga(id_, harga: int):
     h = peringatan_harga(id_, harga)
     if not h:
         return
-    (st.warning if h[0] == "mahal" else st.success)(("⚠️ " if h[0] == "mahal" else "✅ ") + h[1])
+    (st.warning if h[0] == "mahal" else st.success)(h[1])
 
 
 def info_diskon(t: dict):
@@ -464,19 +464,19 @@ def baris_transaksi(t: dict) -> str:
         baris.append(f'{fmt_iso(t["tgl"])}{" · " + t["waktu"] if t.get("waktu") else ""} · {nama_dompet(t["dompet"])}')
         baris.append(nama_kat(t.get("kategori")))
         if t.get("catatan") and judul != t["catatan"]:
-            baris.append(f'📝 {t["catatan"]}')
+            baris.append(f'{t["catatan"]}')
         if teks_toko(t):
-            baris.append(f'📍 {teks_toko(t)}')
+            baris.append(f'{teks_toko(t)}')
         if t.get("platform"):
-            baris.append(f'🛵 Online via {nama_platform(t["platform"])}')
+            baris.append(f'Online via {nama_platform(t["platform"])}')
         d_ = info_diskon(t)
         if d_:
-            baris.append(f"🏷️ Diskon {d_[0]}% · normal {rp(d_[2])}, bayar {rp(t['harga_satuan'])}")
+            baris.append(f"Diskon {d_[0]}% · normal {rp(d_[2])}, bayar {rp(t['harga_satuan'])}")
         if t.get("grup"):
             n_ = sum(1 for x in D["transaksi"] if x.get("grup") == t["grup"])
-            baris.append(f"🧾 Satu struk, {n_} barang" if n_ > 1 else "🧾 Ada struk")
+            baris.append(f"Satu struk, {n_} barang" if n_ > 1 else "Ada struk")
         elif t.get("struk"):
-            baris.append("🧾 Ada struk")
+            baris.append("Ada struk")
         ikon = "↓" if j == "masuk" else "↑"
         nom = ("+" if j == "masuk" else "-") + rp(t["jumlah"])
     k = kat_dari(t.get("kategori")) if j != "transfer" else None

@@ -103,11 +103,11 @@ def halaman_toko():
         total = sum(t["jumlah"] for t in pakai if t["jenis"] == "keluar")
         ket = ("★ " if x.get("favorit") else "") + x.get("jenis", "Lainnya") + (f' · {e(x["lokasi"])}' if x.get("lokasi") else "")
         if x.get("jam_buka"):
-            ket += f' · 🕒 {e(x["jam_buka"])}'
+            ket += f' · {e(x["jam_buka"])}'
         if x.get("telepon"):
-            ket += f' · 📞 {e(x["telepon"])}'
+            ket += f' · {e(x["telepon"])}'
         if url_peta(x):
-            ket += f' · <a href="{e(url_peta(x))}" target="_blank" rel="noopener noreferrer">📍 {"Titik di peta" if titik_dari(x) else "Buka di peta"}</a>'
+            ket += f' · <a href="{e(url_peta(x))}" target="_blank" rel="noopener noreferrer">{"Titik di peta" if titik_dari(x) else "Buka di peta"}</a>'
         ket += f" · dikunjungi {jumlah_kunjungan(pakai)}×" + (f" · total {rp(total)} · terakhir {fmt_iso(pakai[0]['tgl'])}" if pakai else "")
         with st.container(key=f"tx_tk_{x['id']}"):
             kolom = st.columns([1] + ([0.001, 0.001] if not hanya_lihat() else []))
@@ -131,7 +131,7 @@ def halaman_toko():
     with atas:
         if not edit and not st.session_state.get("edit_baru_toko"):
             gulir_ke_atas_bila_baru(None)
-            st.button("➕ Tambah toko baru", key="tambah_toko_btn", type="primary", on_click=atur, args=("edit_baru_toko", True))
+            st.button("Tambah toko baru", key="tambah_toko_btn", type="primary", on_click=atur, args=("edit_baru_toko", True))
             return
         gulir_ke_atas_bila_baru(("toko", edit["id"] if edit else "baru"))
         with st.container(key="kartu_g_form_tk"):

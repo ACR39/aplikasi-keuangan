@@ -56,7 +56,7 @@ def hari_melewati(ym: str) -> int:
 
 def _form_harian():
     b = batas_harian()
-    with st.expander("📅 Batas pengeluaran harian" + (f" · {rp(b)}" if b else ""), expanded=False):
+    with st.expander("Batas pengeluaran harian" + (f" · {rp(b)}" if b else ""), expanded=False):
         st.caption("Jatah belanja per hari. Muncul di Beranda sebagai sisa jatah hari ini, dan diingatkan saat hampir atau sudah lewat. "
                    "Isi 0 untuk mematikan.")
         with st.form(f"f_harian_{versi()}"):
@@ -91,7 +91,7 @@ def label_ag(a: dict) -> str:
 
 
 def ikon_ag(a: dict) -> str:
-    return {"toko": "🏪 ", "barang": "🛒 "}.get(tipe_ag(a)) or ikon_kat(a["kategori"])
+    return {"toko": "", "barang": ""}.get(tipe_ag(a)) or ikon_kat(a["kategori"])
 
 
 def status_anggaran(ym: str) -> list:

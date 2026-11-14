@@ -270,7 +270,7 @@ def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = Fal
         with st.container(border=True, key=f"kartu_g_item_{k}"):
             h1, h2 = st.columns([6, 1])
             h1.markdown(f"**Barang {no}**")
-            if not tetap and len(ids) > 1 and h2.button("🗑", key=f"{k}_del", help="Hapus barang ini"):
+            if not tetap and len(ids) > 1 and h2.button("", key=f"{k}_del", help="Hapus barang ini"):
                 hapus = rid
             if tetap:
                 brg = st.selectbox("Barang", opsi_b, key=f"{k}_brg", disabled=bool(st.session_state.get(f"{k}_brg")),
@@ -328,7 +328,7 @@ def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = Fal
     if hapus is not None:
         st.session_state[sk] = [i for i in ids if i != hapus]
         st.rerun()
-    if not tetap and st.button("➕ Tambah barang", key=f"{kunci}_tambah"):
+    if not tetap and st.button("Tambah barang", key=f"{kunci}_tambah"):
         st.session_state[f"{kunci}_{st.session_state[f'{kunci}_next']}_qty"] = 1.0
         st.session_state[sk] = ids + [st.session_state[f"{kunci}_next"]]
         st.session_state[f"{kunci}_next"] += 1

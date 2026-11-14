@@ -192,15 +192,15 @@ def halaman_kategori():
         utama = kategori_utama(jenis)
         st.markdown(f'<div class="dgrup">Semua kategori<span>{len(utama)} kategori utama · {len(kategori_jenis(jenis)) - len(utama)} sub</span></div>',
                     unsafe_allow_html=True)
+        with st.expander("Tambah kategori utama", expanded=False):
+            with st.container(key="kartu_g_kat_baru"):
+                isi = _form_kat(f"f_kat_baru_{jenis}_{versi()}", jenis)
+                if isi:
+                    D["kategori"].append({"id": baru_id(), "jenis": jenis, **isi})
+                    catat("kategori", f"Tambah kategori {isi['nama']}")
+                    selesai_simpan("Kategori ditambah.")
         for k in utama:
             _baris_kat(k, jenis, buka=True, ubah=False)
-        with st.container(key="kartu_g_kat_baru"):
-            st.markdown("**Tambah kategori utama**")
-            isi = _form_kat(f"f_kat_baru_{jenis}_{versi()}", jenis)
-            if isi:
-                D["kategori"].append({"id": baru_id(), "jenis": jenis, **isi})
-                catat("kategori", f"Tambah kategori {isi['nama']}")
-                selesai_simpan("Kategori ditambah.")
         return
     induk_p = p.get("induk") if p.get("induk") and kat_dari(p["induk"]) else None
     st.button("← Kembali ke " + (kat_dari(induk_p)["nama"] if induk_p else "semua kategori"), key="kembali_kat", on_click=atur, args=("tb_kat_buka", induk_p))
@@ -212,15 +212,15 @@ def halaman_kategori():
     st.markdown(f'<div class="dgrup">{nama_anak}<span>{len(anak)}</span></div>', unsafe_allow_html=True)
     if not anak:
         st.caption(f"Belum ada {nama_anak.lower()}. Transaksi bisa langsung memakai {'kategori utama' if tp == 1 else 'kategori ini'}.")
+    if tp < MAKS_TINGKAT:
+        with st.expander(f"Tambah {nama_anak.lower()}", expanded=False):
+            with st.container(key="kartu_g_sub_baru"):
+                isi = _form_kat(f"f_sub_baru_{p['id']}_{versi()}", jenis, induk=p["id"])
+                if isi:
+                    D["kategori"].append({"id": baru_id(), "jenis": jenis, **isi})
+                    catat("kategori", f"Tambah {nama_anak.lower()} {isi['nama']} di {nama_kat(p['id'])}")
+                    selesai_simpan(f"{nama_anak} ditambah.")
     for k in anak:
         _baris_kat(k, jenis, buka=tingkat(k["id"]) < MAKS_TINGKAT)
     if tp >= MAKS_TINGKAT:
         st.caption("Tingkat paling dalam sudah tercapai (kategori, sub, sub-sub).")
-        return
-    with st.container(key="kartu_g_sub_baru"):
-        st.markdown(f"**Tambah {nama_anak.lower()} di {p['nama']}**")
-        isi = _form_kat(f"f_sub_baru_{p['id']}_{versi()}", jenis, induk=p["id"])
-        if isi:
-            D["kategori"].append({"id": baru_id(), "jenis": jenis, **isi})
-            catat("kategori", f"Tambah {nama_anak.lower()} {isi['nama']} di {nama_kat(p['id'])}")
-            selesai_simpan(f"{nama_anak} ditambah.")

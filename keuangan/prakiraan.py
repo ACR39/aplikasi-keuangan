@@ -71,14 +71,14 @@ def teks_ringkas() -> str:
         return ""
     b = total_batas()
     if b and p["proyeksi"] > b:
-        return f'📈 Prakiraan pengeluaran bulan ini {rp(p["proyeksi"])}, <b>melebihi</b> total anggaran {rp(b)} sekitar {rp(p["proyeksi"] - b)}'
+        return f'Prakiraan pengeluaran bulan ini {rp(p["proyeksi"])}, <b>melebihi</b> total anggaran {rp(b)} sekitar {rp(p["proyeksi"] - b)}'
     return ""
 
 
 def kartu_prakiraan():
     p = prakiraan()
     with st.container(key="kartu_g_br_prakiraan"):
-        st.markdown("**📈 Prakiraan akhir bulan**")
+        st.markdown("**Prakiraan akhir bulan**")
         if not p:
             st.caption("Muncul setelah ada pengeluaran bulan ini.")
             return
@@ -96,5 +96,5 @@ def kartu_prakiraan():
             st.caption(f"Agar tidak melewati total anggaran, batas harian yang aman: **{rp(aman)}** per hari." if sisa_uang > 0
                        else "Total anggaran sudah habis terpakai.")
         for ag, pakai, proy, lewat in prakiraan_anggaran():
-            st.markdown(f'<div class="perhatian">🟠 <b>{e(label_ag(ag))}</b>: perkiraan {rp(proy)} dari batas {rp(ag["batas"])}'
+            st.markdown(f'<div class="perhatian"><b>{e(label_ag(ag))}</b>: perkiraan {rp(proy)} dari batas {rp(ag["batas"])}'
                         + (f', batas tercapai sekitar tanggal {lewat.day}' if lewat else ', sudah terlewati') + '</div>', unsafe_allow_html=True)

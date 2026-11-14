@@ -31,34 +31,34 @@ def _perhatian() -> list:
     baris = []
     for t in tagihan_mendekat(7):
         teks, _ = status_tagihan(t)
-        baris.append(f'⏰ Tagihan <b>{e(t["nama"])}</b> {rp(t["jumlah"])}: {teks.lower()} ({fmt_iso(t["berikut"])})')
+        baris.append(f'Tagihan <b>{e(t["nama"])}</b> {rp(t["jumlah"])}: {teks.lower()} ({fmt_iso(t["berikut"])})')
     j = jatah_hari_ini()
     if j and j[2] >= 100:
-        baris.append(f'🔴 Pengeluaran hari ini {rp(j[0])} sudah melewati batas harian {rp(j[1])}')
+        baris.append(f'Pengeluaran hari ini {rp(j[0])} sudah melewati batas harian {rp(j[1])}')
     elif j and j[2] >= 80:
-        baris.append(f'🟡 Pengeluaran hari ini {rp(j[0])}, sudah {j[2]:.0f}% dari batas harian {rp(j[1])}')
+        baris.append(f'Pengeluaran hari ini {rp(j[0])}, sudah {j[2]:.0f}% dari batas harian {rp(j[1])}')
     for u in jatuh_tempo_dekat(7):
         arah = "bayar utang ke" if u["arah"] == "utang" else "tagih piutang dari"
-        baris.append(f'🤝 Waktunya {arah} <b>{e(u["orang"])}</b>: sisa {rp(sisa(u))} (tenggat {fmt_iso(u["tenggat"])})')
+        baris.append(f'Waktunya {arah} <b>{e(u["orang"])}</b>: sisa {rp(sisa(u))} (tenggat {fmt_iso(u["tenggat"])})')
     for a, pakai, persen in status_anggaran(ym_ini()):
         if persen >= 100:
-            baris.append(f'🔴 Anggaran <b>{e(label_ag(a))}</b> terlewati: {rp(pakai)} dari {rp(a["batas"])}')
+            baris.append(f'Anggaran <b>{e(label_ag(a))}</b> terlewati: {rp(pakai)} dari {rp(a["batas"])}')
         elif persen >= 80:
-            baris.append(f'🟡 Anggaran <b>{e(label_ag(a))}</b> sudah {persen:.0f}% ({rp(pakai)} dari {rp(a["batas"])})')
+            baris.append(f'Anggaran <b>{e(label_ag(a))}</b> sudah {persen:.0f}% ({rp(pakai)} dari {rp(a["batas"])})')
     for b_ in D["barang"]:
         n_ = sisa_hari(b_.get("kedaluwarsa"))
         if n_ is not None and n_ <= 14:
-            baris.append(f'⏳ <b>{e(b_["nama"])}</b> {e(sisa_hari_teks(b_["kedaluwarsa"]))}')
+            baris.append(f'<b>{e(b_["nama"])}</b> {e(sisa_hari_teks(b_["kedaluwarsa"]))}')
     baris += baris_perhatian()
     if teks_ringkas():
         baris.append(teks_ringkas())
     from keuangan.langganan import jumlah_belum_dijadwalkan
     nl = jumlah_belum_dijadwalkan()
     if nl:
-        baris.append(f"🔎 {nl} pengeluaran rutin belum dijadwalkan (lihat Transaksi berulang)")
+        baris.append(f"{nl} pengeluaran rutin belum dijadwalkan (lihat Transaksi berulang)")
     for d in dompet_aktif():
         if saldo_dompet(d["id"]) < 0 and d.get("jenis") != "Kartu kredit":
-            baris.append(f'⚠️ Saldo dompet <b>{e(d["nama"])}</b> negatif: {rp(saldo_dompet(d["id"]))}. Cek transaksi atau saldo awalnya.')
+            baris.append(f'Saldo dompet <b>{e(d["nama"])}</b> negatif: {rp(saldo_dompet(d["id"]))}. Cek transaksi atau saldo awalnya.')
     return baris
 
 
@@ -190,7 +190,7 @@ def halaman_beranda():
     if j and "harian" not in sembunyi:
         with st.container(key="kartu_g_br_harian"):
             terpakai, batas, persen = j
-            st.markdown(f'<div class="ag"><b>📅 Jatah hari ini</b><span>{rp(terpakai)} / {rp(batas)}</span></div>'
+            st.markdown(f'<div class="ag"><b>Jatah hari ini</b><span>{rp(terpakai)} / {rp(batas)}</span></div>'
                         f'{batang(terpakai, batas)}', unsafe_allow_html=True)
             st.caption(f"Sisa {rp(batas - terpakai)} hari ini." if terpakai <= batas else f"Melewati jatah {rp(terpakai - batas)} hari ini.")
             lewat = hari_melewati(hari_ini().strftime("%Y-%m"))
@@ -215,7 +215,6 @@ def halaman_beranda():
         st.markdown("**Saldo per dompet**")
         if not dompet_aktif():
             st.info("Belum ada dompet aktif. Tambahkan di Pengaturan > Data master > Dompet.")
-        IKON_D = {"tunai": "💵", "bank": "🏦", "e-wallet": "📱", "ewallet": "📱", "kartu kredit": "💳", "investasi": "📈"}
         WARNA_D = {"tunai": "#34a874", "bank": "#3b82c4", "e-wallet": "#8b5cf6", "ewallet": "#8b5cf6", "kartu kredit": "#e0a63a", "investasi": "#0ea5a4"}
         total_pos = sum(max(0, saldo_dompet(d["id"])) for d in dompet_aktif()) or 1
         kartu = ""
@@ -223,7 +222,7 @@ def halaman_beranda():
             sd, jn = saldo_dompet(d["id"]), (d.get("jenis") or "").lower()
             warna = WARNA_D.get(jn, "#64748b")
             sub = "" if (d.get("jenis") or "").lower() == d["nama"].lower() or not d.get("jenis") else f'<div class="j">{e(d["jenis"])}</div>'
-            kartu += (f'<div class="dk2" style="--aksen:{warna};--aksen-lemah:{warna}22"><div class="h"><div class="i">{IKON_D.get(jn, "👛")}</div>'
+            kartu += (f'<div class="dk2" style="--aksen:{warna};--aksen-lemah:{warna}22"><div class="h"><div class="i">{e(d["nama"][:1].upper())}</div>'
                       f'<div><div class="n">{e(d["nama"])}</div>{sub}</div></div>'
                       f'<div class="s{" neg" if sd < 0 else ""}">{rp(sd)}</div>'
                       f'<div class="p">{round(max(0, sd) / total_pos * 100)}% dari total saldo</div></div>')
@@ -256,8 +255,8 @@ def halaman_beranda():
                     kum = terkumpul(g)
                     pers = kum / g["target"] * 100 if g["target"] else 0
                     kurang = max(0, g["target"] - kum)
-                    ket = f"{rp(kum)} dari {rp(g['target'])} · " + ("tercapai 🎉" if kurang == 0 else f"kurang {rp(kurang)}")
-                    st.markdown(f'<div class="kem"><div class="a"><span class="kc" style="background:#3b82c4">🎯</span><span class="nm">{e(g["nama"])}</span>'
+                    ket = f"{rp(kum)} dari {rp(g['target'])} · " + ("tercapai " if kurang == 0 else f"kurang {rp(kurang)}")
+                    st.markdown(f'<div class="kem"><div class="a"><span class="kc" style="background:#3b82c4"></span><span class="nm">{e(g["nama"])}</span>'
                                 f'<span class="pc {"" if kurang == 0 else "bl"}">{pers:.0f}%</span></div>'
                                 f'{batang(kum, g["target"], "bl" if kurang else "")}<div class="kt">{ket}</div></div>', unsafe_allow_html=True)
                 st.button("Kelola target", key="lompat_tab", on_click=pindah_halaman, args=("Target tabungan",))
@@ -322,8 +321,8 @@ def halaman_beranda():
             e1, e2 = st.columns(2)
             from keuangan.bantu import jumlah_kunjungan
             for kol, judul, kunci_t, nama, satuan in (
-                    (e1, "🏪 Toko", lambda t: t.get("toko"), lambda i: (toko_dari(i) or {}).get("nama", ""), "kunjungan"),
-                    (e2, "🛒 Barang", lambda t: t.get("barang"), lambda i: (barang_dari(i) or {}).get("nama", ""), "kali dibeli")):
+                    (e1, "Toko", lambda t: t.get("toko"), lambda i: (toko_dari(i) or {}).get("nama", ""), "kunjungan"),
+                    (e2, "Barang", lambda t: t.get("barang"), lambda i: (barang_dari(i) or {}).get("nama", ""), "kali dibeli")):
                 with kol:
                     isi = _teratas(ts, kunci_t)
                     html = f'<div class="top-h">{judul}</div>'

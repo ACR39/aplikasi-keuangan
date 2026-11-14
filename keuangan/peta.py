@@ -46,7 +46,7 @@ def pilih_titik(kunci: str, awal):
         return cur
     ver = st.session_state.setdefault(f"{sk}_ver", 0)
     c1, c2 = st.columns(2)
-    if c1.button("📍 Pakai lokasi saya sekarang", key=f"{sk}_gps", help="Browser akan meminta izin lokasi."):
+    if c1.button("Pakai lokasi saya sekarang", key=f"{sk}_gps", help="Browser akan meminta izin lokasi."):
         st.session_state[f"{sk}_minta"] = True
     if cur and c2.button("Hapus titik", key=f"{sk}_hapus"):
         st.session_state[sk] = None
@@ -140,6 +140,6 @@ def proses_gps(sk: str):
     return None
 
 
-def tombol_gps(sk: str, label: str = "📍 Toko terdekat dari saya"):
+def tombol_gps(sk: str, label: str = "Toko terdekat dari saya"):
     st.button(label, key=f"{sk}_btn", on_click=lambda: st.session_state.update({f"{sk}_minta": True}),
               help="Browser akan meminta izin lokasi. Lokasi tidak disimpan.")

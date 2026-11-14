@@ -430,7 +430,7 @@ def _panel_koreksi():
     from keuangan.bantu import barang_dari, catat, selesai_simpan, toko_dari
     kor = D.get("pengaturan", {}).get("koreksi_ocr") or {}
     jml = sum(len(kor.get(k, {})) for k in ("toko", "barang", "nama"))
-    with st.expander(f"🧠 Koreksi yang sudah dipelajari ({jml})"):
+    with st.expander(f"Koreksi yang sudah dipelajari ({jml})"):
         if not jml:
             st.caption("Belum ada. Saat Anda mengoreksi hasil baca (mengganti barang, nama, atau toko) lalu menyimpan struk, "
                        "koreksinya diingat dan dipakai di struk berikutnya.")
@@ -523,6 +523,6 @@ def halaman_mesin():
             if tes:
                 with st.spinner("Menguji…"):
                     ok, ket = tes_mesin(m)
-                (st.success if ok else st.error)(("✅ " if ok else "❌ ") + ket)
+                (st.success if ok else st.error)(ket)
     st.caption("Tes memakai gambar struk contoh buatan aplikasi, tanpa data Anda. Mesin berbayar dikenai biaya sangat kecil per tes.")
     _panel_koreksi()
