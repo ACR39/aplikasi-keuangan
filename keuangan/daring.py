@@ -5,7 +5,7 @@ from collections import Counter
 import streamlit as st
 
 from keuangan.bantu import (
-    atur, catat, deretan_stat, e, f_platform, kartu_stat, nama_platform, selesai_simpan, transaksi_platform, versi,
+    atur, catat, cincin, deretan_stat, e, f_platform, kartu_stat, nama_platform, selesai_simpan, transaksi_platform, versi,
 )
 from keuangan.inti import D, _slug, baru_id, hanya_lihat, rp
 
@@ -88,13 +88,19 @@ def kartu_online(ts: list, kunci: str = "kartu_g_br_online"):
         st.markdown("**Belanja online vs offline**")
         (n_on, t_on), (n_off, t_off) = r["online"], r["offline"]
         semua = t_on + t_off
-        deretan_stat(kartu_stat("Online", rp(t_on), f"{n_on} pesanan", "m"), kartu_stat("Offline", rp(t_off), f"{n_off} transaksi"))
-        if semua:
-            st.caption(f"{round(t_on / semua * 100)}% pengeluaran lewat aplikasi.")
+        p_on = round(t_on / semua * 100) if semua else 0
+        st.markdown(
+            f'<div class="donat">{cincin(p_on, f"{p_on}%")}<div class="lg v">'
+            f'<div><span class="lab"><s class="on"></s>Online</span><b>{e(rp(t_on))}</b><small>{n_on} pesanan</small></div>'
+            f'<div><span class="lab"><s class="off"></s>Offline</span><b>{e(rp(t_off))}</b><small>{n_off} transaksi</small></div></div></div>',
+            unsafe_allow_html=True)
         if r["biaya"] and t_on:
             st.caption(f"Biaya pesan (ongkir, layanan, kemasan, dan lain-lain) {rp(r['biaya'])}, {round(r['biaya'] / t_on * 100)}% dari belanja online.")
         for i, n, total in r["per_platform"]:
-            st.caption(f"{nama_platform(i)} · {rp(total)} · {n} pesanan" + (f" · biaya pesan {rp(r['biaya_platform'][i])}" if r["biaya_platform"].get(i) else ""))
+            bp = r["biaya_platform"].get(i)
+            st.markdown(f'<div class="ag"><b>{e(nama_platform(i))}</b><span>{rp(total)}</span></div>'
+                        f'<div class="sc-ket" style="margin-bottom:.4rem">{n} pesanan' + (f' · biaya pesan {rp(bp)}' if bp else '') + '</div>',
+                        unsafe_allow_html=True)
 
 
 def _dipakai(id_) -> int:

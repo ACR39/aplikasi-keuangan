@@ -3,7 +3,7 @@ from datetime import date, timedelta
 
 import streamlit as st
 
-from keuangan.bantu import akar, barang_dari, e, info_diskon, nama_kat, transaksi_barang
+from keuangan.bantu import akar, barang_dari, e, kolom_harian, info_diskon, nama_kat, transaksi_barang
 from keuangan.inti import D, fmt_iso, hari_ini, rp
 
 HARI = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
@@ -49,7 +49,7 @@ def ringkasan(a: date, b: date) -> dict:
     naik.sort(key=lambda x: -x[3])
     boros = max(per_hari.items(), key=lambda x: x[1]) if per_hari else None
     return {"n": len(ts), "struk": len({t["grup"] for t in ts if t.get("grup")}), "keluar": keluar, "masuk": masuk, "sebelum": sebelum,
-            "kategori": sorted(per_kat.items(), key=lambda x: -x[1])[:3], "boros": boros, "hemat": round(hemat), "naik": naik[:3]}
+            "harian": per_hari, "kategori": sorted(per_kat.items(), key=lambda x: -x[1])[:3], "boros": boros, "hemat": round(hemat), "naik": naik[:3]}
 
 
 def kartu_mingguan():
@@ -72,17 +72,21 @@ def kartu_mingguan():
             banding = f"{'naik' if p > 0 else 'turun'} {abs(p):.0f}% dari {'pekan sebelumnya' if pilih == 'lalu' else 'rentang yang sama pekan lalu'}" if abs(p) >= 0.5 else "sama seperti pembandingnya"
         else:
             banding = "belum ada pembanding"
-        st.markdown(f'<div class="ag"><b>Pengeluaran</b><span>{rp(r["keluar"])}</span></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="sc-lab">Pengeluaran</div><div class="mg-val">{e(rp(r["keluar"]))}</div>', unsafe_allow_html=True)
         st.caption(f"{banding} · pemasukan {rp(r['masuk'])} · {r['n']} transaksi" + (f" · {r['struk']} struk" if r["struk"] else ""))
+        hari7 = [a + timedelta(days=i) for i in range(7)]
+        st.markdown(kolom_harian([r["harian"].get(h.isoformat(), 0) for h in hari7], [HARI[h.weekday()][0] for h in hari7]), unsafe_allow_html=True)
         if r["kategori"]:
             st.markdown("**Kategori terbesar**")
             for k, v in r["kategori"]:
-                st.markdown(f'<div class="ag"><b>{e(nama_kat(k))}</b><span>{rp(v)} · {v / r["keluar"] * 100:.0f}%</span></div>', unsafe_allow_html=True)
+                pk = v / r["keluar"] * 100
+                st.markdown(f'<div class="ag"><b>{e(nama_kat(k))}</b><span>{rp(v)} · {pk:.0f}%</span></div>'
+                            f'<div class="bar"><i style="width:{min(100, pk):.0f}%"></i></div>', unsafe_allow_html=True)
         if r["boros"]:
             tg = date.fromisoformat(r["boros"][0])
             st.caption(f"Hari paling boros: {HARI[tg.weekday()]} {fmt_iso(r['boros'][0])} ({rp(r['boros'][1])}).")
         if r["hemat"]:
-            st.caption(f"🏷️ Hemat dari diskon: {rp(r['hemat'])}.")
+            st.caption(f"Hemat dari diskon: {rp(r['hemat'])}.")
         if r["naik"]:
             st.markdown("**Barang yang harganya naik**")
             for id_, ref, rata, pct in r["naik"]:

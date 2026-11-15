@@ -71,24 +71,28 @@ def teks_ringkas() -> str:
         return ""
     b = total_batas()
     if b and p["proyeksi"] > b:
-        return f'📈 Prakiraan pengeluaran bulan ini {rp(p["proyeksi"])}, <b>melebihi</b> total anggaran {rp(b)} sekitar {rp(p["proyeksi"] - b)}'
+        return f'Prakiraan pengeluaran bulan ini {rp(p["proyeksi"])}, <b>melebihi</b> total anggaran {rp(b)} sekitar {rp(p["proyeksi"] - b)}'
     return ""
 
 
 def kartu_prakiraan():
     p = prakiraan()
     with st.container(key="kartu_g_br_prakiraan"):
-        st.markdown("**📈 Prakiraan akhir bulan**")
+        st.markdown("**Prakiraan akhir bulan**")
         if not p:
             st.caption("Muncul setelah ada pengeluaran bulan ini.")
             return
-        st.markdown(f'<div class="ag"><b>Perkiraan total pengeluaran</b><span>{rp(p["proyeksi"])}</span></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="sc-lab">Perkiraan total pengeluaran</div><div class="mg-val">{e(rp(p["proyeksi"]))}</div>', unsafe_allow_html=True)
+        sudah = round(p["terpakai"] / p["proyeksi"] * 100) if p["proyeksi"] else 0
+        st.markdown(f'<div class="stk"><i class="a" style="width:{sudah}%"></i><i class="b" style="width:{100 - sudah}%"></i></div>'
+                    f'<div class="lg-ket"><span><s class="a"></s>Sudah keluar {sudah}%</span><span><s class="b"></s>Perkiraan sisa bulan</span></div>',
+                    unsafe_allow_html=True)
         b = total_batas()
         if b:
             st.markdown(batang(p["proyeksi"], b), unsafe_allow_html=True)
             sel = b - p["proyeksi"]
             st.caption(f"Total anggaran kategori {rp(b)}: " + (f"diperkirakan sisa {rp(sel)}." if sel >= 0 else f"diperkirakan lewat {rp(-sel)}."))
-        st.caption(f'Sudah keluar {rp(p["terpakai"])} · laju {rp(p["laju"])}/hari (14 hari terakhir) × {p["sisa_hari"]} hari lagi'
+        st.caption(f'Laju dihitung dari 14 hari terakhir × {p["sisa_hari"]} hari lagi'
                    + (f' · tagihan belum dicatat {rp(p["tagihan"])}' if p["tagihan"] else ""))
         if b and p["sisa_hari"] > 0:
             sisa_uang = b - p["terpakai"] - p["tagihan"]
@@ -98,8 +102,11 @@ def kartu_prakiraan():
         if p["sisa_hari"] > 0:
             saldo = sum(saldo_dompet(d["id"]) for d in dompet_aktif())
             sisa_keluar = p["proyeksi"] - p["terpakai"]
-            st.markdown(f'<div class="ag"><b>Perkiraan saldo akhir bulan</b><span>{rp(saldo - sisa_keluar)}</span></div>', unsafe_allow_html=True)
-            st.caption(f"Saldo semua dompet aktif sekarang {rp(saldo)} dikurangi perkiraan pengeluaran {p['sisa_hari']} hari lagi {rp(sisa_keluar)}. Pemasukan yang belum terjadi tidak dihitung.")
+            st.markdown(f'<div class="lg" style="margin-top:.6rem"><div><span class="lab">Sudah keluar</span><b>{e(rp(p["terpakai"]))}</b>'
+                        f'<small>laju {e(rp(p["laju"]))} per hari</small></div>'
+                        f'<div><span class="lab">Saldo akhir bulan</span><b>{e(rp(saldo - sisa_keluar))}</b>'
+                        f'<small>sekarang {e(rp(saldo))}</small></div></div>', unsafe_allow_html=True)
+            st.caption(f"Saldo akhir = saldo semua dompet aktif dikurangi perkiraan pengeluaran {p['sisa_hari']} hari lagi ({rp(sisa_keluar)}). Pemasukan yang belum terjadi tidak dihitung.")
         for ag, pakai, proy, lewat in prakiraan_anggaran():
-            st.markdown(f'<div class="perhatian">🟠 <b>{e(label_ag(ag))}</b>: perkiraan {rp(proy)} dari batas {rp(ag["batas"])}'
+            st.markdown(f'<div class="perhatian"><b>{e(label_ag(ag))}</b>: perkiraan {rp(proy)} dari batas {rp(ag["batas"])}'
                         + (f', batas tercapai sekitar tanggal {lewat.day}' if lewat else ', sudah terlewati') + '</div>', unsafe_allow_html=True)

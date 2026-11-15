@@ -448,6 +448,32 @@ def kartu_utama(label: str, nilai: str, ket: str, kelas: str, *sel: tuple):
                 f'<div class="sc-ket">{e(ket)}</div><div class="hero-baris">{sel_html}</div></div>', unsafe_allow_html=True)
 
 
+def cincin(persen: float, tengah: str) -> str:
+    """Cincin dua warna (bagian pertama = `persen`, sisanya warna kedua) dengan teks di tengah."""
+    p = max(0.0, min(100.0, persen))
+    return ('<svg class="ring" viewBox="0 0 36 36" role="img" aria-label="' + e(tengah) + '">'
+            '<circle class="rg b" cx="18" cy="18" r="15.9155"/>'
+            f'<circle class="rg a" cx="18" cy="18" r="15.9155" stroke-dasharray="{p:.2f} {100 - p:.2f}" transform="rotate(-90 18 18)"/>'
+            f'<text x="18" y="20.4" text-anchor="middle" class="rt-t">{e(tengah)}</text></svg>')
+
+
+def kolom_harian(nilai: list, label: list) -> str:
+    """Diagram batang tegak kecil (satu batang per hari); batang tertinggi disorot."""
+    puncak = max(nilai) if nilai else 0
+    isi = ""
+    for v, lb in zip(nilai, label):
+        tinggi = round(v / puncak * 100) if puncak and v else 0
+        kelas = "kol top" if puncak and v == puncak else "kol"
+        isi += (f'<div class="kc"><div class="kb"><i class="{kelas}" style="height:{max(tinggi, 3) if v else 0}%" title="{e(label_rp(v))}"></i></div>'
+                f'<span>{e(lb)}</span></div>')
+    return f'<div class="kolom">{isi}</div>'
+
+
+def label_rp(v) -> str:
+    from keuangan.inti import rp
+    return rp(v)
+
+
 def batang(pakai: float, batas: float, tebal: str = "") -> str:
     """Batang kemajuan. Warna berubah jadi kuning di 80% dan merah kalau lewat 100% (kecuali `tebal` diisi)."""
     persen = (pakai / batas * 100) if batas else 0
