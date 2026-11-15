@@ -164,3 +164,51 @@ def panel_saran_anggaran():
                 D["anggaran"].append({"id": baru_id(), "tipe": "kategori", "target": "", "kategori": kid, "batas": batas})
             catat("anggaran", f"Buat {len(pilih)} anggaran dari saran riwayat")
             selesai_simpan(f"{len(pilih)} anggaran dibuat.")
+
+
+# ---------------------------------------------------------------- kekayaan bersih
+def utang_pada(tgl: str) -> tuple:
+    """(utang saya, piutang) yang masih tersisa pada tanggal tgl (ISO), dari tanggal utang dan tanggal tiap pembayaran."""
+    utang = piutang = 0
+    for u in D["utang"]:
+        if u["tgl"] > tgl:
+            continue
+        sisa = int(u["jumlah"]) - sum(int(b["jumlah"]) for b in u.get("bayar", []) if b["tgl"] <= tgl)
+        if u["arah"] == "utang":
+            utang += max(sisa, 0)
+        else:
+            piutang += max(sisa, 0)
+    return utang, piutang
+
+
+def grafik_kekayaan(bulan: list, label: list):
+    """Kekayaan bersih di akhir tiap bulan: total saldo dompet aktif + piutang - utang."""
+    from keuangan.bantu import geser_bulan, saldo_dompet
+    saldo, bersih = [], []
+    for b in bulan:
+        akhir = (pd.Timestamp(geser_bulan(b, 1) + "-01") - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        s = sum(saldo_dompet(d["id"], akhir) for d in D["dompet"] if not d.get("arsip"))
+        u, p = utang_pada(akhir)
+        saldo.append(s)
+        bersih.append(s + p - u)
+    with st.container(key="kartu_g_tren3"):
+        st.markdown("**Kekayaan bersih di akhir tiap bulan**")
+        st.line_chart(pd.DataFrame({"Bulan": label, "Total saldo": saldo, "Kekayaan bersih": bersih}).set_index("Bulan"), color=["#9aa7b8", "#34a874"])
+        u, p = utang_pada("9999-12-31")
+        st.caption(f"Kekayaan bersih = total saldo dompet aktif + piutang ({rp(p)}) - utang ({rp(u)}). Aset lain seperti emas, kendaraan, atau investasi tidak dihitung.")
+
+
+# ---------------------------------------------------------------- biaya per pemakaian
+def halaman_biaya_pakai():
+    ada = [b for b in D["barang"] if b.get("umur_bulan") and b.get("harga")]
+    if not ada:
+        st.info("Belum ada barang dengan perkiraan umur pakai. Isi di Pengaturan > Data master > Barang dan produk, bagian Rincian lain.")
+        return
+    baris = [{"Barang": b["nama"], "Harga": int(b["harga"]), "Umur (bulan)": int(b["umur_bulan"]), "Per bulan": round(b["harga"] / b["umur_bulan"]),
+              "Per hari": round(b["harga"] / (b["umur_bulan"] * 30.4))} for b in ada]
+    baris.sort(key=lambda r: -r["Per bulan"])
+    total = sum(r["Per bulan"] for r in baris)
+    st.markdown(f"**Total biaya barang awet: {rp(total)} per bulan** ({rp(round(total / 30.4))} per hari)")
+    st.dataframe(pd.DataFrame(baris), hide_index=True, use_container_width=True,
+                 column_config={x: st.column_config.NumberColumn(format="Rp %d") for x in ("Harga", "Per bulan", "Per hari")})
+    st.caption("Harga memakai harga beli terakhir barang. Umur pakai adalah perkiraan Anda sendiri.")

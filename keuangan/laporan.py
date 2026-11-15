@@ -150,6 +150,8 @@ def _tren():
             tgl_akhir = (pd.Timestamp(batas) - pd.Timedelta(days=1)).strftime("%Y-%m-%d")
             akhir.append(sum(saldo_dompet(d["id"], tgl_akhir) for d in D["dompet"] if not d.get("arsip")))
         st.line_chart(pd.DataFrame({"Bulan": label, "Saldo": akhir}).set_index("Bulan"), color="#3b82c4")
+    from keuangan.laporan_lanjut import grafik_kekayaan
+    grafik_kekayaan(bulan, label)
     ada = [(m, k) for m, k in zip(masuk, keluar) if m or k]
     if ada:
         st.caption(f"Rata-rata bulanan: pemasukan {rp(sum(m for m, _ in ada) / len(ada))}, pengeluaran {rp(sum(k for _, k in ada) / len(ada))}.")
@@ -310,7 +312,7 @@ def _toko():
 
 
 def halaman_laporan():
-    t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(["Bulanan", "Tren", "Per dompet", "Barang", "Toko", "Per satuan", "Akhir tahun", "Kuartal dan tahun"])
+    t1, t2, t3, t4, t5, t6, t7, t8, t9 = st.tabs(["Bulanan", "Tren", "Per dompet", "Barang", "Toko", "Per satuan", "Akhir tahun", "Kuartal dan tahun", "Barang awet"])
     with t1:
         _bulanan()
     with t2:
@@ -330,3 +332,6 @@ def halaman_laporan():
     with t8:
         from keuangan.laporan_lanjut import halaman_periode
         halaman_periode()
+    with t9:
+        from keuangan.laporan_lanjut import halaman_biaya_pakai
+        halaman_biaya_pakai()

@@ -35,7 +35,7 @@ def temukan() -> list:
         if b and t.get("kategori") != b["kategori"] and kat_dari(b["kategori"]) and not t.get("grup"):
             hasil.append({"jenis": "kategori_beda", "tx": t, "saran": {"set": {"kategori": b["kategori"]},
                                                                          "info": f"Ganti kategori ke {nama_kat(b['kategori'])}"}})
-        if t.get("qty") and t.get("harga_satuan") and abs(round(float(t["qty"]) * int(t["harga_satuan"])) - int(t["jumlah"])) > 1 and not t.get("grup"):
+        if t.get("qty") and t.get("harga_satuan") and not t.get("mu") and abs(round(float(t["qty"]) * int(t["harga_satuan"])) - int(t["jumlah"])) > 1 and not t.get("grup"):
             hasil.append({"jenis": "jumlah_beda", "tx": t, "saran": {"set": {"jumlah": int(round(float(t["qty"]) * int(t["harga_satuan"])))},
                                                                        "info": f"Jumlah jadi {int(round(float(t['qty']) * int(t['harga_satuan']))):,}".replace(",", ".")}})
     kelompok = {}

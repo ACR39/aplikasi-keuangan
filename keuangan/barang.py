@@ -95,6 +95,8 @@ def _form(awal: dict | None, kat_awal: str = ""):
             ukuran = r3.text_input("Ukuran / isi kemasan", value=awal.get("ukuran") or pra.get("ukuran", ""), max_chars=30, placeholder="85 g, 1 liter")
             exp = r4.date_input("Kedaluwarsa, opsional", value=iso_ke_date(awal.get("kedaluwarsa")), min_value=TGL_MIN, max_value=TGL_MAX,
                                 format="DD/MM/YYYY", help="Tanggal kedaluwarsa stok terbaru. Pengingat muncul di Beranda saat sudah dekat.")
+            umur = st.number_input("Perkiraan umur pakai (bulan), opsional", min_value=0, step=1, value=int(awal.get("umur_bulan") or 0),
+                                   help="Untuk barang awet seperti sepatu atau alat elektronik. Harga dibagi umur ini jadi biaya per bulan dan per hari.")
             langganan = st.checkbox("Barang langganan (dibeli rutin)", value=bool(awal.get("langganan")))
             catatan_b = st.text_input("Catatan", value=awal.get("catatan", ""), max_chars=120)
             berkas, hapus_f = kolom_foto("Foto barang", f"{kk}_foto", awal.get("foto", ""))
@@ -112,7 +114,7 @@ def _form(awal: dict | None, kat_awal: str = ""):
                     berkas = _Berkas(pra["foto_bytes"])
                 foto = proses_foto(berkas, hapus_f, awal.get("foto", ""), "barang")
                 for k_, v_ in (("barcode", barcode.strip()), ("merek", merek.strip()), ("ukuran", ukuran.strip()),
-                               ("kedaluwarsa", exp.isoformat() if exp else ""), ("langganan", bool(langganan)),
+                               ("kedaluwarsa", exp.isoformat() if exp else ""), ("langganan", bool(langganan)), ("umur_bulan", int(umur)),
                                ("catatan", catatan_b.strip()), ("foto", foto)):
                     if v_:
                         isi[k_] = v_
@@ -163,6 +165,8 @@ def halaman_barang():
                 ket += f' · ⫴ {e(b["barcode"])}'
             if b.get("langganan"):
                 ket += " · 🔁 langganan"
+            if b.get("umur_bulan") and b.get("harga"):
+                ket += f' · ≈ {rp(round(b["harga"] / b["umur_bulan"]))}/bulan'
             if b.get("kedaluwarsa"):
                 ket += f' · ⏳ {e(sisa_hari_teks(b["kedaluwarsa"]))}'
             ket += f' · dibeli {len(pakai)}×' + (f' · terakhir {fmt_iso(pakai[0]["tgl"])}' if pakai else "") + (f' · total {rp(total)}' if pakai else "")

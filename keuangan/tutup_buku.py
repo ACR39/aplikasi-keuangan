@@ -28,6 +28,7 @@ def tolak(*tgl) -> bool:
 
 def periksa_bulan(ym: str) -> list:
     """[(judul, jumlah, petunjuk)] hal yang sebaiknya dibereskan sebelum bulan ditutup. Jumlah 0 berarti beres."""
+    from keuangan.cocok_saldo import dompet_belum_cocok
     from keuangan.periksa import temukan
     ts = [t for t in D["transaksi"] if t["tgl"][:7] == ym]
     tanpa = [t for t in ts if t["jenis"] != "transfer" and not kat_dari(t.get("kategori"))]
@@ -39,7 +40,8 @@ def periksa_bulan(ym: str) -> list:
     return [("Transaksi tanpa kategori", len(tanpa), "Beri kategori lewat Daftar transaksi (ubah massal membantu)."),
             ("Kemungkinan transaksi ganda", len(ganda), "Periksa di Perawatan data > Pemeriksa data."),
             ("Masalah data lain", len(lain), "Periksa di Perawatan data > Pemeriksa data."),
-            ("Tagihan jatuh tempo yang belum dicatat", len(tagihan), "Catat atau jadwalkan di Transaksi berulang.")]
+            ("Tagihan jatuh tempo yang belum dicatat", len(tagihan), "Catat atau jadwalkan di Transaksi berulang."),
+            ("Dompet yang saldonya belum dicocokkan", len(dompet_belum_cocok(ym)), "Cocokkan di Perawatan data > Cocokkan saldo.")]
 
 
 def bulan_bisa_ditutup() -> list:

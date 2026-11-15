@@ -100,6 +100,16 @@ def panel_favorit(kunci: str, jenis: str):
         kolom[i % 3].button(b["nama"], key=f"{kunci}_fav_{b['id']}", on_click=_pilih_favorit, args=(kunci, b["id"]), width="stretch")
 
 
+MATA_UANG = ["USD", "EUR", "SGD", "MYR", "JPY", "SAR", "AUD", "GBP", "CNY", "KRW", "THB", "HKD", "AED"]
+
+
+def _ingat_kurs(isi: dict):
+    """Simpan kurs terakhir tiap mata uang sebagai isian awal berikutnya."""
+    if isi.get("mu") and isi.get("kurs"):
+        D["pengaturan"].setdefault("kurs", {})[isi["mu"]] = isi["kurs"]
+        D["pengaturan"]["mu_terakhir"] = isi["mu"]
+
+
 def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str = "Simpan", bersih: bool = False):
     """Form satu transaksi. Kembalikan dict isian kalau tombol ditekan dan isian sah, kalau tidak None.
 
@@ -228,12 +238,33 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             struk_berkas, struk_hapus = kolom_foto("Foto struk, opsional" if jenis == "keluar" else "Foto bukti, opsional", f"{kunci}_struk", awal.get("struk", ""), "struk")
         catatan = st.text_input("Catatan, opsional", value=awal.get("catatan", ""), max_chars=120,
                                 placeholder="Contoh: makan siang, bensin, gaji bulan ini")
+        mu_kode, mu_jml, mu_kurs = "", 0.0, 0.0
+        if jenis != "transfer":
+            with st.expander("🌍 Mata uang asing (opsional)", expanded=bool(awal.get("mu"))):
+                st.caption("Isi mata uang, jumlah asing, dan kurs untuk menghitung rupiahnya. Total rupiah menggantikan hitungan di atas; saldo tetap rupiah.")
+                m1, m2, m3 = st.columns(3)
+                opsi_mu = [""] + MATA_UANG
+                mu_kode = m1.selectbox("Mata uang", opsi_mu, index=opsi_mu.index(awal["mu"]) if awal.get("mu") in opsi_mu else 0, format_func=lambda x: x or "(rupiah)")
+                mu_jml = m2.number_input("Jumlah asing", min_value=0.0, step=1.0, format="%g", value=float(awal.get("mu_jumlah") or 0))
+                mu_kurs = m3.number_input("Kurs (Rp per 1)", min_value=0.0, step=100.0, format="%g",
+                                          value=float(awal.get("kurs") or D["pengaturan"].get("kurs", {}).get(D["pengaturan"].get("mu_terakhir", ""), 0) or 0))
         kirim = st.form_submit_button(tombol, type="primary")
     if not kirim:
         return None
     if jenis != "transfer" and not kat:
         st.error("Pilih kategori dulu.")
         return None
+    if mu_kode:
+        if mu_jml <= 0 or mu_kurs <= 0:
+            st.error("Isi jumlah asing dan kurs, atau kosongkan mata uang.")
+            return None
+        jumlah = int(round(mu_jml * mu_kurs))
+        if b and qty:
+            hs = int(round(jumlah / qty))
+        elif not b and qty and qty != 1:
+            hs = int(round(jumlah / qty))
+        else:
+            hs = jumlah
     if jumlah <= 0:
         st.error("Jumlah harus lebih dari nol." if not b else "Banyaknya dan harga satuan harus lebih dari nol.")
         return None
@@ -249,7 +280,8 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
     return {"tgl": tgl, "jumlah": int(jumlah), "dompet": dari, "kategori": kat, "ke": ke, "biaya": int(biaya),
             "catatan": catatan, "barang": brg, "qty": float(qty) if b else extra.get("qty", 0), "harga_satuan": int(hs) if b else extra.get("harga_satuan", 0), "harga_normal": int(hn) if b and hn > hs else 0,
             "toko": toko, "platform": platform, "lokasi": lokasi.strip(), "waktu": waktu,
-            "struk_berkas": struk_berkas, "struk_hapus": struk_hapus}
+            "struk_berkas": struk_berkas, "struk_hapus": struk_hapus,
+            "mu": mu_kode, "mu_jumlah": float(mu_jml) if mu_kode else 0, "kurs": float(mu_kurs) if mu_kode else 0}
 
 
 def form_struk():
@@ -542,7 +574,9 @@ def halaman_catat():
             ph = peringatan_harga(isi["barang"], isi["harga_satuan"]) if jenis == "keluar" and isi["barang"] else None
             t = tambah_transaksi(jenis, isi["tgl"], isi["jumlah"], isi["dompet"], isi["kategori"], isi["catatan"],
                                  isi["ke"], isi["biaya"], barang=isi["barang"], qty=isi["qty"], harga_satuan=isi["harga_satuan"],
-                                 harga_normal=isi["harga_normal"], toko=isi["toko"], platform=isi["platform"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk)
+                                 harga_normal=isi["harga_normal"], toko=isi["toko"], platform=isi["platform"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk,
+                                 mu=isi["mu"], mu_jumlah=isi["mu_jumlah"], kurs=isi["kurs"])
+            _ingat_kurs(isi)
             catat("tambah", ringkas_teks(t))
             selesai_simpan(f"Transaksi dicatat: {JENIS[jenis].lower()} {rp(isi['jumlah'])}"
                            + (f" ({teks_barang(t)})" if teks_barang(t) else "")
@@ -635,6 +669,11 @@ def _tampil_tx(t: dict, edit_id, hapus_id, foto: bool = True):
                         t["qty"], t["harga_satuan"] = isi["qty"], isi["harga_satuan"]
                 if t["jenis"] == "transfer":
                     t["ke"], t["biaya"] = isi["ke"], isi["biaya"]
+                for kk in ("mu", "mu_jumlah", "kurs"):
+                    t.pop(kk, None)
+                if isi["mu"]:
+                    t.update({"mu": isi["mu"], "mu_jumlah": isi["mu_jumlah"], "kurs": isi["kurs"]})
+                    _ingat_kurs(isi)
                 else:
                     t["kategori"] = isi["kategori"]
                     isi["struk"] = proses_foto(isi["struk_berkas"], isi["struk_hapus"], t.get("struk", ""), "struk")

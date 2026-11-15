@@ -470,6 +470,8 @@ def baris_transaksi(t: dict) -> str:
             baris.append(f'📍 {teks_toko(t)}')
         if t.get("platform"):
             baris.append(f'🛵 Online via {nama_platform(t["platform"])}')
+        if t.get("mu"):
+            baris.append(f'🌍 {t["mu"]} {float(t.get("mu_jumlah") or 0):g} × kurs Rp {float(t.get("kurs") or 0):g}')
         d_ = info_diskon(t)
         if d_:
             baris.append(f"🏷️ Diskon {d_[0]}% · normal {rp(d_[2])}, bayar {rp(t['harga_satuan'])}")

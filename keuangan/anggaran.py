@@ -4,7 +4,7 @@ import streamlit as st
 from keuangan.bantu import (
     f_kat, kat_dari, toko_dari,
     atur, batang, catat, deretan_stat, e, ikon_kat, kartu_stat, kategori_jenis, nama_kat, per_kategori, pilih_bulan,
-    selesai_simpan, turunan, versi,
+    selesai_simpan, turunan, versi, ym_ini,
 )
 from keuangan.inti import D, baru_id, hanya_lihat, nama_bulan, rp
 
@@ -94,19 +94,39 @@ def ikon_ag(a: dict) -> str:
     return {"toko": "🏪 ", "barang": "🛒 "}.get(tipe_ag(a)) or ikon_kat(a["kategori"])
 
 
-def status_anggaran(ym: str) -> list:
-    """[(anggaran, terpakai, persen)] diurutkan dari yang paling penuh."""
-    pakai = per_kategori(ym, "keluar")
+def _dipakai(a: dict, ym: str) -> int:
+    tp, tg = tipe_ag(a), target_ag(a)
     bulan_ini = [t for t in D["transaksi"] if t["jenis"] == "keluar" and t["tgl"][:7] == ym]
+    if tp == "toko":
+        return sum(int(t["jumlah"]) for t in bulan_ini if t.get("toko") == tg)
+    if tp == "barang":
+        return sum(int(t["jumlah"]) for t in bulan_ini if t.get("barang") == tg)
+    pakai = per_kategori(ym, "keluar")
+    return sum(pakai.get(i, 0) for i in turunan(a["kategori"]))
 
-    def dipakai(a):
-        tp, tg = tipe_ag(a), target_ag(a)
-        if tp == "toko":
-            return sum(int(t["jumlah"]) for t in bulan_ini if t.get("toko") == tg)
-        if tp == "barang":
-            return sum(int(t["jumlah"]) for t in bulan_ini if t.get("barang") == tg)
-        return sum(pakai.get(i, 0) for i in turunan(a["kategori"]))
-    hasil = [(a, dipakai(a), (dipakai(a) / a["batas"] * 100) if a["batas"] else 0) for a in D["anggaran"]]
+
+def batas_efektif(a: dict, ym: str) -> tuple:
+    """(batas bulan ini, sisa yang terbawa dari bulan lalu). Anggaran bergulir membawa sisa tiap bulan mulai bulan `gulir_mulai`."""
+    if not a.get("gulir"):
+        return int(a["batas"]), 0
+    from keuangan.bantu import geser_bulan
+    mulai = a.get("gulir_mulai") or ym
+    if ym <= mulai:
+        return int(a["batas"]), 0
+    lalu = geser_bulan(ym, -1)
+    sisa_lalu = max(0, batas_efektif(a, lalu)[0] - _dipakai(a, lalu))
+    return int(a["batas"]) + sisa_lalu, sisa_lalu
+
+
+def status_anggaran(ym: str) -> list:
+    """[(anggaran, terpakai, persen)] diurutkan dari yang paling penuh. Anggaran bergulir dikembalikan dengan batas yang sudah termasuk sisa bulan lalu."""
+    hasil = []
+    for a in D["anggaran"]:
+        p = _dipakai(a, ym)
+        if a.get("gulir"):
+            eff, bawa = batas_efektif(a, ym)
+            a = {**a, "batas": eff, "dasar": int(a["batas"]), "terbawa": bawa}
+        hasil.append((a, p, (p / a["batas"] * 100) if a["batas"] else 0))
     return sorted(hasil, key=lambda x: -x[2])
 
 
@@ -126,7 +146,8 @@ def halaman_anggaran():
             st.markdown(
                 f'<div class="perhatian"><div class="ag"><b>{ikon_ag(a)}{e(label_ag(a))}</b>'
                 f'<span>{rp(pakai)} dari {rp(a["batas"])} · <b>{persen:.0f}%</b></span></div>{batang(pakai, a["batas"])}'
-                f'<div class="ag"><span>{"Lewat " + rp(pakai - a["batas"]) if pakai > a["batas"] else "Sisa " + rp(a["batas"] - pakai)}</span></div></div>',
+                f'<div class="ag"><span>{"Lewat " + rp(pakai - a["batas"]) if pakai > a["batas"] else "Sisa " + rp(a["batas"] - pakai)}'
+                + (f' · termasuk sisa bulan lalu {rp(a["terbawa"])} (batas dasar {rp(a["dasar"])})' if a.get("terbawa") else (" · 🔁 bergulir" if a.get("gulir") else "")) + '</span></div></div>',
                 unsafe_allow_html=True)
             if not hanya_lihat():
                 c1, c2, _ = st.columns([1, 1, 4])
@@ -171,11 +192,19 @@ def halaman_anggaran():
             awal_t = target_ag(edit) if edit and tipe_ag(edit) == tipe else ids[0]
             tg = c1.selectbox(TIPE_AG[tipe], ids, index=ids.index(awal_t) if awal_t in ids else 0, format_func=nama)
             batas = c2.number_input("Batas per bulan (Rp)", min_value=0, step=50000, value=int(edit["batas"]) if edit else 0)
+            gulir = st.checkbox("Bawa sisa ke bulan berikutnya", value=bool(edit and edit.get("gulir")),
+                                help="Sisa batas yang tidak terpakai bulan ini menambah batas bulan depan, mulai bulan ini. Cocok untuk pengeluaran tidak rutin seperti hadiah atau servis.")
             if st.form_submit_button("Simpan perubahan" if edit else "Tambah", type="primary"):
                 if batas <= 0:
                     st.error("Batas harus lebih dari nol.")
                 else:
                     isi = {"tipe": tipe, "target": "" if tipe == "kategori" else tg, "kategori": tg if tipe == "kategori" else "", "batas": int(batas)}
+                    if gulir:
+                        isi["gulir"] = True
+                        isi["gulir_mulai"] = (edit or {}).get("gulir_mulai") or ym_ini()
+                    elif edit:
+                        edit.pop("gulir", None)
+                        edit.pop("gulir_mulai", None)
                     if edit:
                         edit.update(isi)
                     else:
