@@ -98,7 +98,7 @@ def editor_baris(df: pd.DataFrame, key: str, nonaktif=()):
             "Keterangan": st.column_config.TextColumn("Keterangan", max_chars=60),
             "Banyaknya": st.column_config.NumberColumn("Banyaknya", min_value=0.01, step=1.0, default=1.0, format="%g"),
             "Harga satuan": st.column_config.NumberColumn("Harga satuan", min_value=0, step=100, format="%d",
-                                                          help="Kosongkan untuk memakai harga terakhir barang."),
+                                                          help="Kosongkan untuk memakai harga terakhir barang. Isi 0 untuk barang gratis (hadiah atau bonus promo)."),
         })
 
 
@@ -124,23 +124,33 @@ def baca_baris(df: pd.DataFrame):
             salah.append(f"Baris {n}: pilih Barang atau Kategori.")
             continue
         qty = 1.0 if _kosong(r.get("Banyaknya")) else float(r["Banyaknya"])
-        harga = 0 if _kosong(r.get("Harga satuan")) else int(round(float(r["Harga satuan"])))
-        if not harga and b:
+        total = 0 if _kosong(r.get("Total bayar")) else int(round(float(r["Total bayar"])))
+        isi_harga = None if _kosong(r.get("Harga satuan")) else int(round(float(r["Harga satuan"])))
+        if total > 0 and qty > 0:
+            isi_harga = max(1, int(round(total / qty)))
+        gratis = isi_harga == 0  # 0 yang diketik sengaja = barang gratis (hadiah, bonus promo); kosong = pakai harga terakhir
+        harga = isi_harga or 0
+        if isi_harga is None and b:
             harga = int(barang_dari(b).get("harga", 0) or 0)
         if qty <= 0:
             salah.append(f"Baris {n}: banyaknya harus lebih dari 0.")
-        elif harga <= 0:
-            salah.append(f"Baris {n}: isi harga satuan.")
+        elif harga <= 0 and not gratis:
+            salah.append(f"Baris {n}: isi harga satuan (isi 0 bila barang ini gratis).")
         else:
             normal = 0 if _kosong(r.get("Harga normal")) else int(round(float(r["Harga normal"])))
             baris.append({"barang": b, "kategori": kat, "ket": "" if _kosong(r.get("Keterangan")) else str(r["Keterangan"]).strip(),
-                          "qty": qty, "harga": harga, "normal": normal if normal > harga else 0,
+                          "qty": qty, "harga": harga, "normal": normal if normal > harga else 0, "gratis": gratis, "total": total if total > 0 else 0,
                           "asal": "" if _kosong(r.get("Asal")) else str(r["Asal"]).strip()})
     return baris, salah
 
 
+def nilai_baris(x: dict) -> int:
+    """Jumlah yang dibayar untuk satu baris. Harga paket (total) dipakai apa adanya, karena harga satuannya bisa tidak bulat."""
+    return int(x["total"]) if x.get("total") else int(round(x["qty"] * x["harga"]))
+
+
 def total_baris(baris: list) -> int:
-    return sum(int(round(x["qty"] * x["harga"])) for x in baris)
+    return sum(nilai_baris(x) for x in baris)
 
 
 def terapkan_potongan(baris: list, potongan: int) -> list:
@@ -150,16 +160,20 @@ def terapkan_potongan(baris: list, potongan: int) -> list:
     potongan = int(potongan or 0)
     if potongan <= 0 or total <= 0:
         return baris
-    potongan = min(potongan, total - len(baris))  # tiap barang tetap berharga
+    berbayar = [i for i, x in enumerate(baris) if nilai_baris(x) > 0]  # barang gratis tidak ikut dipotong
+    potongan = min(potongan, total - len(berbayar))  # tiap barang tetap berharga
     sisa = potongan
     hasil = []
     for i, x in enumerate(baris):
-        nilai = round(x["qty"] * x["harga"])
-        bagian = sisa if i == len(baris) - 1 else min(sisa, round(potongan * nilai / total))
+        nilai = nilai_baris(x)
+        if nilai <= 0:
+            hasil.append(x)
+            continue
+        bagian = sisa if i == berbayar[-1] else min(sisa, round(potongan * nilai / total))
         sisa -= bagian
         baru = max(1, round((nilai - bagian) / x["qty"]))
         awal = max(x["normal"], x["harga"])
-        hasil.append({**x, "harga": baru, "normal": awal if awal > baru else 0})
+        hasil.append({**x, "harga": baru, "normal": awal if awal > baru else 0, **({"total": max(1, nilai - bagian)} if x.get("total") else {})})
     return hasil
 
 
@@ -170,20 +184,25 @@ def terapkan_tambahan(baris: list, tambahan: int) -> list:
     tambahan = int(tambahan or 0)
     if tambahan <= 0 or total <= 0:
         return baris
+    berbayar = [i for i, x in enumerate(baris) if nilai_baris(x) > 0]  # barang gratis tidak ikut ditambah
     sisa, hasil = tambahan, []
     for i, x in enumerate(baris):
-        nilai = round(x["qty"] * x["harga"])
-        bagian = sisa if i == len(baris) - 1 else round(tambahan * nilai / total)
+        nilai = nilai_baris(x)
+        if nilai <= 0:
+            hasil.append(x)
+            continue
+        bagian = sisa if i == berbayar[-1] else round(tambahan * nilai / total)
         sisa -= bagian
         faktor = (nilai + bagian) / nilai if nilai else 1
         baru = round((nilai + bagian) / x["qty"])
-        hasil.append({**x, "harga": baru, "normal": round(x["normal"] * faktor) if x["normal"] else 0})
+        hasil.append({**x, "harga": baru, "normal": round(x["normal"] * faktor) if x["normal"] else 0,
+                      **({"total": nilai + bagian} if x.get("total") else {})})
     return hasil
 
 
 def baris_pajak(baris: list, pajak: int) -> dict:
     """Satu baris tersendiri 'PPN' berkategori sama dengan barang termahal di struk."""
-    besar = max(baris, key=lambda x: x["qty"] * x["harga"])
+    besar = max(baris, key=nilai_baris)
     return {"barang": "", "kategori": besar["kategori"], "ket": "PPN", "qty": 1, "harga": int(pajak), "normal": 0, "asal": ""}
 
 
@@ -210,17 +229,18 @@ def struk_serupa(tgl_iso: str, toko: str, total: int, foto_hash: str = ""):
 
 
 def simpan_struk(baris: list, tgl, waktu: str, dompet: str, toko: str, lokasi: str, struk: str, catatan: str = "", foto_hash: str = "",
-                 platform: str = "") -> list:
-    """Buat satu transaksi pengeluaran per baris. Pemanggil yang menulis riwayat dan commit."""
-    grup = baru_id()
+                 platform: str = "", grup: str = "", acara: str = "") -> list:
+    """Buat satu transaksi pengeluaran per baris. Pemanggil yang menulis riwayat dan commit.
+    `grup` diisi bila baris ditambahkan ke struk yang sudah ada; `acara` = id acara atau proyek."""
+    grup = grup or baru_id()
     hasil = []
     for x in baris:
         qty = int(x["qty"]) if float(x["qty"]).is_integer() else x["qty"]
         hasil.append(tambah_transaksi(
-            "keluar", tgl, round(x["qty"] * x["harga"]), dompet, x["kategori"], x["ket"] or catatan,
+            "keluar", tgl, nilai_baris(x), dompet, x["kategori"], x["ket"] or catatan,
             barang=x["barang"], qty=qty if x["barang"] else 0, harga_satuan=x["harga"] if x["barang"] else 0,
             harga_normal=x.get("normal", 0) if x["barang"] else 0,
-            toko=toko, platform=platform, lokasi=lokasi, waktu=waktu, struk=struk, grup=grup, foto_hash=foto_hash))
+            toko=toko, platform=platform, lokasi=lokasi, waktu=waktu, struk=struk, grup=grup, foto_hash=foto_hash, acara=acara, gratis=bool(x.get("gratis"))))
     for x in baris:
         if x["barang"]:
             perbarui_harga_barang(x["barang"])
@@ -251,7 +271,9 @@ def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = Fal
                 atur_kategori(f"{kunci}_{n}_c", kid)
             st.session_state[f"{kunci}_{n}_ket"] = r.get("Keterangan") if isinstance(r.get("Keterangan"), str) else ""
             st.session_state[f"{kunci}_{n}_qty"] = float(r["Banyaknya"]) if not _kosong(r.get("Banyaknya")) else 1.0
+            st.session_state[f"{kunci}_{n}_gr"] = not _kosong(r.get("Harga satuan")) and int(r["Harga satuan"]) == 0 and _kosong(r.get("Total bayar"))
             st.session_state[f"{kunci}_{n}_hrg"] = int(r["Harga satuan"]) if not _kosong(r.get("Harga satuan")) else 0
+            st.session_state[f"{kunci}_{n}_tot"] = int(r["Total bayar"]) if not _kosong(r.get("Total bayar")) else 0
             st.session_state[f"{kunci}_{n}_nrm"] = int(r["Harga normal"]) if not _kosong(r.get("Harga normal")) else 0
             st.session_state[f"{kunci}_{n}_raw"] = str(r["Asal"]) if not _kosong(r.get("Asal")) else ""
             n += 1
@@ -303,13 +325,23 @@ def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = Fal
                     ket = st.text_input("Nama / keterangan", key=f"{k}_ket", max_chars=60)
             c1, c2 = st.columns(2)
             qty = c1.number_input("Banyaknya", min_value=0.0, step=1.0, format="%g", key=f"{k}_qty")
-            hrg = c2.number_input("Harga satuan (Rp)", min_value=0, step=500, key=f"{k}_hrg")
-            nrm = st.number_input("Harga normal sebelum diskon (opsional)", min_value=0, step=500, key=f"{k}_nrm",
-                                  help="Isi kalau barang ini sedang diskon. Harga satuan di atas adalah harga yang dibayar.")
+            gratis = st.checkbox("Gratis (hadiah atau bonus promo)", key=f"{k}_gr")
+            hrg = c2.number_input("Harga satuan (Rp)", min_value=0, step=500, key=f"{k}_hrg", disabled=gratis)
+            tot = st.number_input("Total bayar untuk barang ini (opsional)", min_value=0, step=500, key=f"{k}_tot", disabled=gratis,
+                                  help="Untuk harga paket, misalnya beli 3 cuma Rp 5.000: isi banyaknya 3 dan total 5000. Menggantikan harga satuan.")
+            if gratis:
+                hrg = tot = 0
+            nrm = st.number_input("Harga normal sebelum diskon (opsional)", min_value=0, step=500, key=f"{k}_nrm", disabled=gratis,
+                                  help="Harga satuan normal tanpa promo. Harga satuan atau total di atas adalah yang dibayar.")
             b = barang_dari(id_b.get(brg)) if brg else None
-            efektif = int(hrg) or int((b or {}).get("harga", 0) or 0)
-            if b and not hrg:
+            if tot and qty:
+                hrg = max(1, round(tot / qty))
+                st.caption(f"Harga paket: {rp(tot)} untuk {qty:g}, rata-rata {rp(hrg)} per satuan.")
+            efektif = int(hrg) or (0 if gratis else int((b or {}).get("harga", 0) or 0))
+            if b and not hrg and not gratis:
                 st.caption(f"Harga kosong, memakai harga terakhir {rp(efektif)}.")
+            if gratis:
+                st.caption("Dicatat Rp 0, tetap masuk stok.")
             if b:
                 from keuangan.bantu import harga_normal_barang
                 hn_r = harga_normal_barang(b["id"])
@@ -321,9 +353,10 @@ def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = Fal
             if nrm and efektif and nrm > efektif:
                 st.caption(f"Diskon {round((nrm - efektif) / nrm * 100)}% (hemat {rp(nrm - efektif)} per satuan).")
             if efektif and qty:
-                st.caption(f"Subtotal: {rp(round(qty * efektif))}")
+                st.caption(f"Subtotal: {rp(int(tot) if tot else round(qty * efektif))}")
         baris.append({"Barang": brg or None, "Kategori": kat or None, "Keterangan": ket,
-                      "Banyaknya": qty, "Harga satuan": int(hrg) if hrg else None, "Harga normal": int(nrm) if nrm else None,
+                      "Banyaknya": qty, "Harga satuan": 0 if gratis else (int(hrg) if hrg else None), "Harga normal": int(nrm) if nrm else None,
+                      "Total bayar": int(tot) if tot else None,
                       "Asal": st.session_state.get(f"{k}_raw", "")})
     if hapus is not None:
         st.session_state[sk] = [i for i in ids if i != hapus]
@@ -333,7 +366,7 @@ def editor_kartu(kunci: str, awal: pd.DataFrame | None = None, tetap: bool = Fal
         st.session_state[sk] = ids + [st.session_state[f"{kunci}_next"]]
         st.session_state[f"{kunci}_next"] += 1
         st.rerun()
-    df = pd.DataFrame(baris, columns=KOLOM + ["Harga normal", "Asal"])
-    df["Harga satuan"] = df["Harga satuan"].astype("Int64")
-    df["Harga normal"] = df["Harga normal"].astype("Int64")
+    df = pd.DataFrame(baris, columns=KOLOM + ["Harga normal", "Total bayar", "Asal"])
+    for kol in ("Harga satuan", "Harga normal", "Total bayar"):
+        df[kol] = df[kol].astype("Int64")
     return df

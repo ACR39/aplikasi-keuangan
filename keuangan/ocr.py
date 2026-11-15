@@ -10,6 +10,7 @@ import base64
 import difflib
 import io
 import json
+import hashlib
 import re
 import shutil
 
@@ -163,7 +164,7 @@ def _perintah(kategori: list) -> str:
     return (
         "Ini foto struk belanja di Indonesia. Ekstrak isinya sebagai JSON SAJA (tanpa penjelasan, tanpa markdown) dengan bentuk:\n"
         '{"toko": string|null, "tanggal": "YYYY-MM-DD"|null, "waktu": "HH:MM"|null, "total": integer|null, '
-        '"item": [{"nama": string, "qty": number, "harga_satuan": integer, "harga_normal": integer|null, "kategori": string|null}], '
+        '"item": [{"nama": string, "qty": number, "harga_satuan": integer, "harga_normal": integer|null, "kategori": string|null, "gratis": boolean (true hanya untuk barang hadiah, bonus, free, atau gratis dari promo; harga_satuan 0)}], '
         '"potongan": integer (jumlah voucher/diskon pada seluruh pesanan, positif, 0 bila tidak ada), '
         '"biaya": {"ongkir": integer, "layanan": integer, "pengemasan": integer, "resto": integer, "asuransi": integer, "lain": integer} (biaya tambahan pesanan online, 0 bila tidak ada)}\n'
         "Aturan: semua uang dalam rupiah bulat tanpa titik. harga_satuan = harga per satuan yang benar-benar dibayar setelah diskon item. "
@@ -314,7 +315,8 @@ def _rapikan(h: dict, mesin: str) -> dict:
             qty = 1.0
         hs = angka(it.get("harga_satuan"))
         hn = angka(it.get("harga_normal")) if it.get("harga_normal") else 0
-        if nama and qty > 0 and hs > 0:
+        gratis = it.get("gratis") is True and hs == 0  # hadiah atau bonus promo: harga 0 diterima hanya bila ditandai gratis
+        if nama and qty > 0 and (hs > 0 or gratis):
             item.append({"nama": nama, "qty": qty, "harga_satuan": hs, "harga_normal": hn if hn > hs else 0,
                          "kategori": it.get("kategori") or None})
     tgl = h.get("tanggal") if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(h.get("tanggal") or "")) else None
@@ -476,6 +478,14 @@ def pelajari(hasil: dict, baris: list, toko_id: str) -> int:
     return baru
 
 
+def _lupakan_koreksi(bagian: str, kunci: str):
+    from keuangan.bantu import catat, selesai_simpan
+    kor = D.get("pengaturan", {}).get("koreksi_ocr") or {}
+    if kor.get(bagian, {}).pop(kunci, None) is not None:
+        catat("data", f"Lupakan satu koreksi baca struk ({bagian}: {kunci})")
+        selesai_simpan("Satu koreksi dilupakan.")
+
+
 def _panel_koreksi():
     from keuangan.bantu import barang_dari, catat, selesai_simpan, toko_dari
     kor = D.get("pengaturan", {}).get("koreksi_ocr") or {}
@@ -485,13 +495,17 @@ def _panel_koreksi():
             st.caption("Belum ada. Saat Anda mengoreksi hasil baca (mengganti barang, nama, atau toko) lalu menyimpan struk, "
                        "koreksinya diingat dan dipakai di struk berikutnya.")
             return
+        ro = hanya_lihat()
         for k, f in (("toko", lambda v: (toko_dari(v) or {}).get("nama")), ("barang", lambda v: (barang_dari(v) or {}).get("nama")),
                      ("nama", lambda v: v)):
-            for asal, nilai in kor.get(k, {}).items():
-                tampil = f(nilai)
-                if tampil:
-                    st.caption(f"{k.capitalize()}: “{asal}” → {tampil}")
-        if not hanya_lihat() and st.button("Lupakan semua koreksi", key="kor_hapus"):
+            for asal, nilai in list(kor.get(k, {}).items()):
+                tampil = f(nilai) or "(data ini sudah dihapus)"
+                kiri, kanan = st.columns([8, 1], vertical_alignment="center")
+                kiri.caption(f"{k.capitalize()}: “{asal}” → {tampil}")
+                if not ro:
+                    if kanan.button("🗑", key=f"kor_del_{k}_{hashlib.md5(asal.encode()).hexdigest()[:10]}", help="Lupakan koreksi ini saja"):
+                        _lupakan_koreksi(k, asal)
+        if not ro and st.button("Lupakan semua koreksi", key="kor_hapus"):
             D["pengaturan"]["koreksi_ocr"] = {"toko": {}, "barang": {}, "nama": {}}
             catat("data", "Hapus koreksi baca struk")
             selesai_simpan("Koreksi dilupakan.")

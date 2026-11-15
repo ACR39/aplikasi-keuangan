@@ -45,6 +45,10 @@ CSS_GELAP = """
 .sc-val.m,.itm .qt b.merah{color:#f87171 !important}
 .sc-val.g{color:#4ade80 !important}
 .sc-stat{border-left-color:#2a3547 !important}
+.hero{background:#15271f !important;border-color:#24443a !important}
+.hero-baris{border-top-color:#24443a !important}
+.hero-val,.hero-sv{color:#f1f5f9 !important}
+.hero-val.g,.hero-sv.g{color:#4ade80 !important}.hero-val.m,.hero-sv.m{color:#f87171 !important}
 .sub,.itm .mt,.itm .cat,.itm .qt span{color:#9aa7b8 !important}
 .perhatian{border-bottom-color:#2a3547 !important}
 .itm a,.perhatian a,.akt a{color:#93c5fd !important}
@@ -164,6 +168,12 @@ CSS_TERANG = """
 .sc-lab{font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6b7280}
 .sc-val{font-size:1.7rem;font-weight:800;color:#111827;margin-top:.2rem}
 .sc-val.g{color:#166534}.sc-val.m{color:#b42318}
+.hero{background:#f1f7f3;border:1px solid #cfe3d7;border-radius:16px;padding:1.2rem 1.1rem 1rem;margin-bottom:.4rem}
+.hero-val{font-size:2.1rem;font-weight:800;line-height:1.15;margin:.15rem 0 .1rem;color:#111827;word-break:break-word}
+.hero-val.g,.hero-sv.g{color:#166534}.hero-val.m,.hero-sv.m{color:#b42318}
+.hero-baris{display:flex;flex-wrap:wrap;gap:.8rem 1rem;margin-top:.9rem;padding-top:.8rem;border-top:1px solid #cfe3d7}
+.hero-sel{flex:1 1 120px;min-width:0}
+.hero-sv{font-size:1.1rem;font-weight:800;margin-top:.1rem;word-break:break-word}
 [data-testid="stMetric"]{border:1px solid #d9dee7;border-radius:8px;padding:.8rem 1rem;background:#fff}
 [data-testid="stForm"]{border-radius:8px;border-color:#d9dee7;background:#fff}
 [data-testid="InputInstructions"]{display:none}
@@ -580,6 +590,8 @@ def data_kosong() -> dict:
         "barang": [],     # [{"id","nama","kategori"(id kategori atau sub kategori),"harga"(harga satuan terakhir),"satuan"}]
         "anggaran": [],   # [{"id","kategori","batas"}]  batas per bulan, berlaku tiap bulan
         "tagihan": [],    # [{"id","nama","jumlah","kategori","dompet","tiap","berikut","catatan","aktif"}]
+        "acara": [],      # [{"id","nama","mulai","selesai","catatan","aktif"}]  label acara/proyek; transaksi menyimpan id-nya di "acara"
+        "kendaraan": [],  # [{"id","nama","jenis","plat","odo_awal","pajak","servis":[{"id","nama","tiap_km","tiap_bulan","km_terakhir","tgl_terakhir"}]}]; transaksi BBM memakai "kendaraan","odo","liter","sebagian"(true = isi tidak penuh)
         "tabungan": [],   # [{"id","nama","target","tenggat","catatan","setoran":[{"id","tgl","jumlah","catatan"}]}]
         "utang": [],      # [{"id","arah"("utang"|"piutang"),"orang","jumlah","tgl","tenggat","catatan","bayar":[{"id","tgl","jumlah"}]}]
         "aktivitas": [],  # [{"id","waktu","oleh","jenis","rincian"}]

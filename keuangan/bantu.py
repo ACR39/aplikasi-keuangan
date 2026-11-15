@@ -439,6 +439,15 @@ def deretan_stat(*kartu: str):
     st.markdown('<div class="statcard">' + "".join(kartu) + "</div>", unsafe_allow_html=True)
 
 
+def kartu_utama(label: str, nilai: str, ket: str, kelas: str, *sel: tuple):
+    """Kartu saldo utama: satu angka besar, lalu deretan angka pendamping (judul, nilai, keterangan, kelas)."""
+    sel_html = "".join(
+        f'<div class="hero-sel"><div class="sc-lab">{e(j)}</div><div class="hero-sv {k}">{e(v)}</div>'
+        f'<div class="sc-ket">{e(t)}</div></div>' for j, v, t, k in sel)
+    st.markdown(f'<div class="hero"><div class="sc-lab">{e(label)}</div><div class="hero-val {kelas}">{e(nilai)}</div>'
+                f'<div class="sc-ket">{e(ket)}</div><div class="hero-baris">{sel_html}</div></div>', unsafe_allow_html=True)
+
+
 def batang(pakai: float, batas: float, tebal: str = "") -> str:
     """Batang kemajuan. Warna berubah jadi kuning di 80% dan merah kalau lewat 100% (kecuali `tebal` diisi)."""
     persen = (pakai / batas * 100) if batas else 0
@@ -470,6 +479,15 @@ def baris_transaksi(t: dict) -> str:
             baris.append(f'📍 {teks_toko(t)}')
         if t.get("platform"):
             baris.append(f'🛵 Online via {nama_platform(t["platform"])}')
+        if t.get("gratis"):
+            baris.append("🎁 Gratis (hadiah atau bonus promo)")
+        if t.get("acara"):
+            from keuangan.acara import nama_acara
+            baris.append(f'🏷️ Acara {nama_acara(t["acara"])}')
+        if t.get("kendaraan"):
+            from keuangan.kendaraan import nama_kendaraan
+            baris.append(f'🚗 {nama_kendaraan(t["kendaraan"])}' + (f' · km {int(t["odo"]):,}'.replace(",", ".") if t.get("odo") else "")
+                         + (f' · {float(t["liter"]):g} liter' if t.get("liter") else ""))
         if t.get("mu"):
             baris.append(f'🌍 {t["mu"]} {float(t.get("mu_jumlah") or 0):g} × kurs Rp {float(t.get("kurs") or 0):g}')
         d_ = info_diskon(t)

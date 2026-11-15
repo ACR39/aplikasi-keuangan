@@ -7,7 +7,7 @@ import streamlit as st
 
 from keuangan.anggaran import hari_melewati, ikon_ag, jatah_hari_ini, label_ag, status_anggaran
 from keuangan.bantu import (
-    atur, sisa_hari_teks, baris_transaksi, batang, ikon_kat, kat_dari, kunci_urut, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, nama_kat, per_kategori,
+    atur, sisa_hari_teks, baris_transaksi, batang, ikon_kat, kat_dari, kunci_urut, deretan_stat, dompet_aktif, e, geser_bulan, kartu_stat, kartu_utama, nama_kat, per_kategori,
     pindah_halaman, saldo_dompet, total_saldo, ym_ini, akar, barang_dari, toko_dari,
 )
 from keuangan.inti import D, TGL_MAX, TGL_MIN, sisa_hari, fmt_iso, hanya_lihat, hari_ini, nama_bulan, rp
@@ -50,6 +50,8 @@ def _perhatian() -> list:
         if n_ is not None and n_ <= 14:
             baris.append(f'⏳ <b>{e(b_["nama"])}</b> {e(sisa_hari_teks(b_["kedaluwarsa"]))}')
     baris += baris_perhatian()
+    from keuangan.kendaraan import baris_perhatian as _kend
+    baris += _kend()
     from keuangan.harga_naik import baris_perhatian as _naik
     baris += _naik()
     if teks_ringkas():
@@ -182,12 +184,11 @@ def halaman_beranda():
     hari = (b - a).days + 1
     hari_lalu = max(1, (min(b, hari_ini()) - a).days + 1)  # periode berjalan: hitung sampai hari ini saja
     if "ringkasan" not in sembunyi:
-        deretan_stat(kartu_stat("Total saldo", rp(total_saldo()), "semua dompet aktif", "g" if total_saldo() >= 0 else "m"),
-                     kartu_stat("Pemasukan", rp(masuk), _banding(masuk, pm, True), "g"),
-                     kartu_stat("Pengeluaran", rp(keluar), _banding(keluar, pk, False), "m"),
-                     kartu_stat("Selisih", rp(masuk - keluar), "ditabung" if masuk >= keluar else "defisit",
-                                "g" if masuk >= keluar else "m"))
-        st.caption(f"{label} · {hari} hari · {len(ts)} transaksi · rata-rata pengeluaran {rp(round(keluar / hari_lalu))} per hari")
+        kartu_utama("Total saldo", rp(total_saldo()), f"semua dompet aktif · {label}", "g" if total_saldo() >= 0 else "m",
+                    ("Pemasukan", rp(masuk), _banding(masuk, pm, True), "g"),
+                    ("Pengeluaran", rp(keluar), _banding(keluar, pk, False), "m"),
+                    ("Selisih", rp(masuk - keluar), "ditabung" if masuk >= keluar else "defisit", "g" if masuk >= keluar else "m"))
+        st.caption(f"{hari} hari · {len(ts)} transaksi · rata-rata pengeluaran {rp(round(keluar / hari_lalu))} per hari")
     j = jatah_hari_ini()
     if j and "harian" not in sembunyi:
         with st.container(key="kartu_g_br_harian"):

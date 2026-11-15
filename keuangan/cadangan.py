@@ -244,7 +244,7 @@ def halaman_pulih():
             return
         st.markdown("**Perbandingan** (sekarang → versi ini)")
         for lab, kunci in (("Transaksi", "transaksi"), ("Barang", "barang"), ("Toko", "toko"), ("Platform", "platform"), ("Daftar belanja", "belanja"), ("Dompet", "dompet"), ("Kategori", "kategori"), ("Anggaran", "anggaran"),
-                           ("Tagihan", "tagihan"), ("Target tabungan", "tabungan"), ("Utang-piutang", "utang"), ("Tempat sampah", "sampah")):
+                           ("Tagihan", "tagihan"), ("Acara", "acara"), ("Kendaraan", "kendaraan"), ("Target tabungan", "tabungan"), ("Utang-piutang", "utang"), ("Tempat sampah", "sampah")):
             st.markdown(f'<div class="perhatian"><b>{lab}</b>: {len(D.get(kunci, []))} → {len(lama.get(kunci, []))}</div>', unsafe_allow_html=True)
         if json.dumps(lama, sort_keys=True) == json.dumps(D.data, sort_keys=True):
             st.info("Versi ini sama persis dengan data sekarang, tidak ada yang perlu dipulihkan.")

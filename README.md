@@ -17,12 +17,12 @@ Menu dirapikan jadi 15 halaman. Beberapa halaman punya pilihan bagian (pil) di b
 
 - **Beranda**: total saldo, pemasukan dan pengeluaran bulan terpilih, hal yang perlu perhatian (tagihan jatuh tempo, anggaran hampir atau sudah lewat, utang jatuh tempo, saldo negatif), saldo per dompet, anggaran, target tabungan, grafik. Bagian Beranda bisa disembunyikan di Pengaturan > Tampilan.
 - **Transaksi**: Catat transaksi (pemasukan, pengeluaran, transfer dengan biaya admin), Daftar transaksi (filter bulan, jenis, dompet, kategori, kata kunci; ubah dan hapus), Riwayat aktivitas. Menu **Pengaturan** memuat Barang dan produk (misalnya Indomie di Belanja bahan makanan), Toko dan tempat beli (nama, jenis, lokasi), dan Tempat sampah (30 hari). Statistik per barang dan per toko ada di Pantau > Laporan.
-- **Pantau**: Anggaran per kategori, Transaksi berulang (tombol Bayar otomatis membuat pengeluaran dan memajukan jatuh tempo), Target tabungan (perkiraan setoran per bulan), Utang-piutang (cicilan, bisa ikut tercatat di dompet), Laporan (bulanan, tren 12 bulan, per dompet).
+- **Pantau**: Anggaran per kategori, Transaksi berulang (tombol Bayar otomatis membuat pengeluaran dan memajukan jatuh tempo), Target tabungan (perkiraan setoran per bulan), Utang-piutang (cicilan, bisa ikut tercatat di dompet), Acara, Kendaraan, Laporan (bulanan, tren 12 bulan, per dompet).
 - **Pengaturan**: Tampilan, Ekspor dan impor (Excel lengkap, CSV transaksi, impor dari Excel/CSV), Dompet, Kategori (kategori utama + sub kategori dengan ikon dan warna, gabungkan saat menghapus), Cadangan dan pulihkan (unduh JSON, titik pulih dari riwayat commit).
 
 Kategori punya sampai tiga tingkat: kategori utama (Kendaraan), sub kategori (Bahan bakar), dan sub-sub kategori (Pertamax). Transaksi memakai tingkat terdalam yang dipilih. Anggaran, laporan, dan filter pada kategori utama otomatis mencakup semua sub kategorinya. Data lama tanpa sub kategori tetap terbuka (kategori lama jadi kategori utama).
 
-Beranda: pilih periode Minggu, Bulan, Tahun, atau Tanggal custom. Kartu angka dibandingkan dengan periode sebelumnya, ada rata-rata pengeluaran per hari, grafik harian atau bulanan, serta toko dan barang dengan belanja terbesar.
+Beranda: pilih periode Minggu, Bulan, Tahun, atau Tanggal custom. Di atas ada satu kartu saldo utama (Total saldo besar, lalu Pemasukan, Pengeluaran, dan Selisih periode itu). Angka periode dibandingkan dengan periode sebelumnya, ada rata-rata pengeluaran per hari, grafik harian atau bulanan, serta toko dan barang dengan belanja terbesar.
 
 Rincian barang: barcode (bisa dicari langsung di halaman Catat, cocok dengan pembaca barcode USB/Bluetooth), merek, ukuran, tanggal kedaluwarsa (muncul di Perlu perhatian saat tinggal 14 hari), barang langganan, catatan, dan foto. Rincian toko: tautan peta, jam buka, telepon, catatan, favorit, dan foto. Transaksi bisa dilampiri foto struk. Laporan > Barang punya tabel Harga per toko.
 
@@ -230,3 +230,21 @@ Kategori dan jenis toko memakai ikon glyph satu warna (Material Design Icons, li
 - **Kekayaan bersih** (Laporan > Tren): total saldo dompet aktif ditambah piutang dikurangi utang di akhir tiap bulan. Aset lain tidak dihitung.
 - **Mata uang asing**: di form Catat transaksi, bagian "Mata uang asing" menghitung rupiah dari jumlah asing x kurs. Saldo dan laporan tetap rupiah; kurs terakhir tiap mata uang diingat. Mata uang yang tersedia: USD, EUR, SGD, MYR, JPY, SAR, AUD, GBP, CNY, KRW, THB, HKD, AED.
 - **Biaya per pemakaian** (Laporan > Barang awet): isi "Perkiraan umur pakai (bulan)" di barang. Harga terakhir dibagi umur jadi biaya per bulan dan per hari, juga tampil di daftar barang.
+
+## Kelola struk yang sudah tersimpan
+Di kartu struk (Daftar transaksi), buka **Kelola struk**. Tab **Pisah atau pindah**: pilih barang yang salah masuk, lalu pindahkan ke struk baru (pisah) atau struk lain; barang yang pindah ikut tanggal, jam, toko, dompet, dan foto struk tujuan. Tab **Gabung struk**: seluruh barang struk lain masuk ke struk ini. Tab **Biaya dan potongan**: tambah ongkir, biaya layanan, pengemasan, resto, asuransi, atau diskon ongkir sebagai baris sendiri; atau bagi potongan seluruh struk (voucher) ke harga barang, dengan harga sebelumnya tersimpan sebagai harga normal (biaya online tidak dipotong).
+
+## Acara dan proyek
+Pantau > **Acara**: buat label seperti Liburan Bali atau Renovasi (tanggal dan perkiraan biaya opsional). Pilih acaranya di Catat transaksi, form struk, atau ubah banyak sekaligus (Edit banyak). Halaman Acara menampilkan total, perbandingan dengan perkiraan, rincian per kategori, dan daftar transaksi; Daftar transaksi bisa difilter per acara. Menghapus acara hanya melepas label, transaksinya tetap ada.
+
+## Kendaraan
+Pantau > **Kendaraan**: tambah kendaraan (odometer awal, jatuh tempo pajak) dan pengingat servis (tiap sekian km dan/atau bulan). Saat mencatat pembelian BBM, buka bagian **Kendaraan** di form Pengeluaran, isi kilometer dan liter. Km per liter dihitung dari dua pengisian penuh berurutan (isi yang tidak penuh ikut dijumlahkan ke pengisian penuh berikutnya); biaya per km dihitung dari BBM dan dari semua biaya yang ditandai kendaraan itu. Servis yang hampir atau sudah jatuh tempo dan pajak (30 hari ke depan) muncul di Perlu perhatian di Beranda. Tombol **Sudah dilakukan** mencatat kilometer dan tanggal servis; biayanya dicatat sebagai pengeluaran biasa dengan kendaraan yang sama.
+
+## Barang gratis (hadiah atau bonus promo)
+Di kartu barang pada form struk (dan Tambah barang yang terlewat), centang **Gratis**. Barang tersimpan di struk dengan jumlah Rp 0 dan tanda 🎁, ikut dihitung dalam stok, tidak mengubah harga terakhir barang, dan tidak ikut dipotong voucher atau ditambah PPN. Saat baca struk, AI menandai barang hadiah, bonus, atau free sebagai gratis.
+
+## Harga paket
+Untuk promo seperti beli 3 cuma Rp 5.000, isi **Banyaknya 3** dan **Total bayar 5000** di kartu barang; harga satuan dihitung otomatis dan jumlah tersimpan persis Rp 5.000 (tanpa selisih pembulatan). Isi Harga normal per satuan (misalnya 2000) bila ingin diskonnya tercatat.
+
+## Koreksi yang dipelajari
+Di panel Koreksi yang sudah dipelajari, tiap koreksi punya tombol 🗑 untuk melupakan satu saja; Lupakan semua koreksi tetap ada.

@@ -5,7 +5,7 @@ from keuangan.bantu import catat, f_dompet, f_kat, f_toko, kategori_jenis, ringk
 from keuangan.inti import D, fmt_iso
 
 
-def ubah_banyak(ids: set, kategori: str = "", dompet: str = "", toko: str = "") -> dict:
+def ubah_banyak(ids: set, kategori: str = "", dompet: str = "", toko: str = "", acara: str = "") -> dict:
     """Terapkan ke transaksi berid ids. Kategori hanya untuk transaksi sejenis; transfer dilewati untuk kategori dan toko.
     Kembalikan {'diubah': n, 'dilewati': n}."""
     from keuangan.bantu import kat_dari
@@ -30,6 +30,11 @@ def ubah_banyak(ids: set, kategori: str = "", dompet: str = "", toko: str = "") 
             t["toko"], berubah = (None if toko == "-" else toko), True
             if t["toko"] is None:
                 t.pop("toko")
+        if acara and t["jenis"] != "transfer":
+            if acara == "-":
+                berubah = bool(t.pop("acara", None)) or berubah
+            else:
+                t["acara"], berubah = acara, True
         diubah += berubah
     return {"diubah": diubah, "dilewati": lewat}
 
@@ -63,8 +68,10 @@ def panel_massal(hasil: list):
         kat = c1.selectbox("Kategori", kat_opsi, format_func=f_kat({"": "(tidak diubah)"}), key=f"tb_kat_{versi()}")
         dom = c2.selectbox("Dompet", [""] + [d["id"] for d in D["dompet"] if not d.get("arsip")], format_func=f_dompet({"": "(tidak diubah)"}), key=f"tb_dom_{versi()}")
         tk = c3.selectbox("Toko", ["", "-"] + [x["id"] for x in D["toko"]], format_func=f_toko({"": "(tidak diubah)", "-": "(kosongkan toko)"}), key=f"tb_tk_{versi()}")
-        if st.button("Terapkan", key="tb_terapkan", type="primary", disabled=not ids or not (kat or dom or tk)):
-            r = ubah_banyak(set(ids), kat, dom, tk)
+        ac = st.selectbox("Acara atau proyek", ["", "-"] + [a["id"] for a in D["acara"]], key=f"tb_ac_{versi()}",
+                          format_func=lambda i: {"": "(tidak diubah)", "-": "(lepas dari acara)"}.get(i) or next((a["nama"] for a in D["acara"] if a["id"] == i), i)) if D["acara"] else ""
+        if st.button("Terapkan", key="tb_terapkan", type="primary", disabled=not ids or not (kat or dom or tk or ac)):
+            r = ubah_banyak(set(ids), kat, dom, tk, ac)
             catat("ubah", f"Ubah banyak: {r['diubah']} transaksi")
             selesai_simpan(f"{r['diubah']} transaksi diubah" + (f", {r['dilewati']} dilewati (jenis kategori tidak cocok)." if r["dilewati"] else "."))
         st.divider()
