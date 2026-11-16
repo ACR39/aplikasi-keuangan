@@ -39,11 +39,11 @@ GABUNGAN = {
                     ("Platform beli online", "Platform beli online", False), ("Aturan kategori", "Aturan kategori", False), ("Dompet", "Dompet", True), ("Kategori", "Kategori", True)],
     "AI dan baca struk": [("Privasi AI", "Privasi AI", False), ("Mesin baca struk", "Mesin baca struk", False)],
     "Laporan": [("Statistik", "Laporan", False), ("Harga naik", "Harga naik", False), ("Tanya dan ringkasan AI", "Asisten AI", False)],
-    "Perawatan data": [("Riwayat aktivitas", "Riwayat aktivitas", False), ("Tempat sampah", "Tempat sampah", False), ("Pemeriksa data", "Pemeriksa data", False), ("Cocokkan saldo", "Cocokkan saldo", False), ("Tutup buku", "Tutup buku", False)],
+    "Perawatan data": [("Riwayat aktivitas", "Riwayat aktivitas", False), ("Tempat sampah", "Tempat sampah", False), ("Pemeriksa data", "Pemeriksa data", False), ("Rapikan dengan AI", "Rapikan dengan AI", False), ("Cocokkan saldo", "Cocokkan saldo", False), ("Tutup buku", "Tutup buku", False)],
     "Data dan cadangan": [("Ekspor dan impor", "Ekspor dan impor", False), ("Cadangan dan pulihkan", "Cadangan dan pulihkan", True)],
 }
 ALIAS = {lama: (hal, label) for hal, bagian in GABUNGAN.items() for label, lama, _ in bagian if lama != hal}
-IKON = {"Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Platform beli online": "delivery_dining", "Asisten AI": "auto_awesome", "Privasi AI": "shield", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
+IKON = {"Rapikan dengan AI": "auto_fix_high", "Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Platform beli online": "delivery_dining", "Asisten AI": "auto_awesome", "Privasi AI": "shield", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
         "Data master": "database", "Jenis toko": "category", "AI dan baca struk": "document_scanner", "Perawatan data": "build", "Data dan cadangan": "backup",
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Transaksi berulang": "event_repeat", "Target tabungan": "savings",
         "Utang-piutang": "handshake", "Acara": "label", "Kendaraan": "directions_car", "Langganan": "subscriptions", "Amplop": "savings", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner", "Pemeriksa data": "fact_check",
@@ -87,6 +87,7 @@ DESKRIPSI = {
     "Amplop": "Bagi pemasukan ke amplop (makan, transport, tabungan): tiap pengeluaran memotong amplopnya, sisa terlihat jelas.",
     "Kendaraan": "Catat kilometer dan liter saat isi BBM, lihat km per liter dan biaya per km, dan dapatkan pengingat servis dan pajak.",
     "Tampilan": "Pilih bagian Beranda yang ditampilkan.",
+    "Rapikan dengan AI": "Rapikan nama toko ganda, kategori hasil impor, dan catatan mentah dengan bantuan AI; semua usulan dicentang dulu.",
     "Pemeriksa data": "Cari transaksi yang janggal (barang kosong, kategori tak cocok, jumlah tak sinkron) dan perbaiki dengan satu ketukan.",
     "Mesin baca struk": "Lihat mesin pembaca foto struk yang aktif, atur urutan percobaannya, dan uji apakah tiap mesin berfungsi.",
     "Ekspor dan impor": "Unduh data ke Excel atau CSV, atau tambah banyak transaksi sekaligus dari file.",
@@ -273,6 +274,9 @@ def tampilkan_isi(halaman):
         halaman_laporan()
     elif halaman == "Tampilan":
         halaman_tampilan()
+    elif halaman == "Rapikan dengan AI":
+        from keuangan.rapikan_ai import halaman_rapikan
+        halaman_rapikan()
     elif halaman == "Pemeriksa data":
         from keuangan.periksa import halaman_periksa
         halaman_periksa()

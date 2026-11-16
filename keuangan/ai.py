@@ -42,6 +42,11 @@ FITUR = {
         "kirim": "Hanya kalimat pertanyaanmu (nomor panjang disamarkan), tanggal hari ini, nama kategori, dan nama platform.",
         "tidak": "Transaksi, nominal, nama toko, dan dompet. Perhitungan dikerjakan di server ini, bukan oleh AI.",
     },
+    "rapikan": {
+        "nama": "Rapikan hasil impor",
+        "kirim": "Nama toko, nama kategori hasil impor, atau catatan transaksi yang ingin dirapikan (nomor, telepon, email, dan nama penerima disamarkan), ditambah daftar nama kategori dan arti kategori.",
+        "tidak": "Nominal, tanggal, saldo, nama dompet, dan transaksi lain.",
+    },
     "ringkasan": {
         "nama": "Ringkasan bulanan tertulis",
         "kirim": "Angka agregat satu bulan dan bulan sebelumnya: total masuk dan keluar, total per kategori (dibulatkan ke ribuan), dan total online. "
