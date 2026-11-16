@@ -14,6 +14,7 @@ import streamlit as st
 from keuangan import ai, ocr
 from keuangan.ai import gerbang, json_dari, kirim_dengan_pratinjau, samarkan
 from keuangan.bantu import (
+    arti_kategori,
     anak_dari, turunan, daftar_bulan, dompet_aktif, kat_dari, kategori_jenis, nama_kat, nama_platform, toko_dari, transaksi_bulan, versi, ym_ini,
 )
 from keuangan.inti import D, SEP, hari_ini, nama_bulan, rp
@@ -62,7 +63,7 @@ def paket_mutasi(baris: list) -> dict:
             unik[kunci] = len(unik)
             samar += n
         asal[(str(r["ket"]).strip(), r["jenis"])] = unik[kunci]
-    isi = {"kategori_keluar": _nama_kategori("keluar"), "kategori_masuk": _nama_kategori("masuk"), "platform": [p["nama"] for p in D["platform"]],
+    isi = {"kategori_keluar": _nama_kategori("keluar"), "arti_kategori": arti_kategori(), "kategori_masuk": _nama_kategori("masuk"), "platform": [p["nama"] for p in D["platform"]],
            "baris": [{"i": i, "teks": m, "jenis": j} for (m, j), i in unik.items()]}
     sistem = (PERAN + 'Tiap baris adalah keterangan mutasi rekening. Balas daftar JSON: [{"i": nomor baris, "kategori": satu nama PERSIS dari kategori_keluar bila jenis keluar '
               'atau kategori_masuk bila jenis masuk, atau null bila ragu, "platform": satu nama PERSIS dari daftar platform bila ini jelas pembelian lewat aplikasi (GoFood, ShopeeFood, dst) selain itu null}]. '
@@ -116,7 +117,7 @@ def panel_mutasi(baris: list, usulan_lokal, kunci: str) -> dict:
 # ================================================================ 2. tangkap cepat bebas
 def paket_tangkap(kalimat: str) -> dict:
     m, n = samarkan(kalimat, ketat=False)
-    isi = {"kalimat": m, "kategori_keluar": _nama_kategori("keluar"), "kategori_masuk": _nama_kategori("masuk"),
+    isi = {"kalimat": m, "kategori_keluar": _nama_kategori("keluar"), "arti_kategori": arti_kategori(), "kategori_masuk": _nama_kategori("masuk"),
            "dompet": [d["nama"] for d in dompet_aktif()], "platform": [p["nama"] for p in D["platform"]]}
     sistem = (PERAN + 'Ubah kalimat pencatatan keuangan jadi satu objek JSON: {"jenis": "keluar"|"masuk", "jumlah_total": rupiah bulat total transaksi (8rb=8000, 1,5jt=1500000; '
               'bila ada banyaknya, kalikan), "qty": banyaknya atau 1, "barang": nama barang singkat atau null, "kategori": satu nama PERSIS dari kategori_keluar atau kategori_masuk '
@@ -177,7 +178,7 @@ BIAYA = (("ongkir", "ong"), ("biaya_layanan", "lay"), ("biaya_pengemasan", "kms"
 
 
 def paket_layar(jpeg: bytes) -> dict:
-    isi = {"kategori_keluar": _nama_kategori("keluar"), "platform": [p["nama"] for p in D["platform"]]}
+    isi = {"kategori_keluar": _nama_kategori("keluar"), "arti_kategori": arti_kategori(), "platform": [p["nama"] for p in D["platform"]]}
     sistem = (PERAN + "Gambar adalah tangkapan layar rincian pesanan di aplikasi belanja atau makanan online di Indonesia. "
               'Balas satu objek JSON: {"platform": satu nama PERSIS dari daftar platform atau null, "toko": nama toko/restoran atau null, "tanggal": "YYYY-MM-DD" atau null, "waktu": "HH:MM" atau null, '
               '"total": total yang dibayar (integer) atau null, "item": [{"nama": string, "qty": number, "harga_satuan": integer (harga PER SATU porsi/unit; harga di kanan baris biasanya total untuk seluruh qty, jadi bagi dengan qty), "harga_normal": integer per satu unit sebelum diskon (harga yang dicoret) atau null, "kategori": satu nama PERSIS dari kategori_keluar atau null}], '
@@ -244,7 +245,7 @@ KELOMPOK_OK = ("kategori", "bulan", "platform", "toko", "tidak")
 
 def paket_tanya(pertanyaan: str) -> dict:
     m, n = samarkan(pertanyaan, ketat=False)
-    isi = {"pertanyaan": m[:300], "hari_ini": hari_ini().isoformat(), "kategori_keluar": _nama_kategori("keluar"), "kategori_masuk": _nama_kategori("masuk"),
+    isi = {"pertanyaan": m[:300], "hari_ini": hari_ini().isoformat(), "kategori_keluar": _nama_kategori("keluar"), "arti_kategori": arti_kategori(), "kategori_masuk": _nama_kategori("masuk"),
            "platform": [p["nama"] for p in D["platform"]]}
     sistem = (PERAN + "Kamu TIDAK punya akses ke data transaksi. Tugasmu hanya mengubah pertanyaan jadi rencana hitung, yang dijalankan di tempat lain. "
               'Balas satu objek JSON: {"metrik": "total"|"jumlah"|"rata_rata", "jenis": "keluar"|"masuk", "dari": "YYYY-MM" atau null, "sampai": "YYYY-MM" atau null, '

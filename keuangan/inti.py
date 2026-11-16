@@ -50,7 +50,7 @@ CSS_GELAP = """
 .hero-val,.hero-sv{color:#f1f5f9 !important}
 .mg-val,.lg b{color:#f1f5f9 !important}.lg .lab,.lg small{color:#94a3b8 !important}
 .rt-t{fill:#f1f5f9 !important}.kb{background:#1d2a3d !important}.kb i{background:#2f6f56 !important}.kb i.top{background:#5ccf9c !important}
-.kh span,.lg-ket{color:#94a3b8 !important}.stk{background:#1d2a3d !important}.stk i.a,.lg-ket s.a{background:#5ccf9c !important}.stk i.b,.lg-ket s.b{background:#2f6f56 !important}
+.kh span,.lg-ket,.rt .ds{color:#94a3b8 !important}.stk{background:#1d2a3d !important}.stk i.a,.lg-ket s.a{background:#5ccf9c !important}.stk i.b,.lg-ket s.b{background:#2f6f56 !important}
 .hero-val.g,.hero-sv.g{color:#4ade80 !important}.hero-val.m,.hero-sv.m{color:#f87171 !important}
 .sub,.itm .mt,.itm .cat,.itm .qt span{color:#9aa7b8 !important}
 .perhatian{border-bottom-color:#2a3547 !important}
@@ -402,6 +402,7 @@ details.rinci > summary{cursor:pointer;list-style:none}details.rinci > summary::
 [class*="st-key-tx_kt_"] .rt{align-items:center;padding-bottom:.9rem}
 [class*="st-key-tx_kt_"] .rt .mt{flex:0 0 auto;white-space:nowrap;margin:0}
 .statcard .sc-val{font-size:clamp(.95rem,4.6vw,1.35rem) !important;white-space:nowrap}
+.rt .ds{font-size:.8rem;line-height:1.35;color:#6b7280;margin-top:.15rem;font-weight:400}
 /* langganan dan amplop: tombol tetap sebaris, tidak menumpuk satu per satu di HP */
 [class*="st-key-abo_"] [data-testid="stHorizontalBlock"],[class*="st-key-amp_"] [data-testid="stHorizontalBlock"]{flex-direction:row !important;flex-wrap:wrap !important;gap:.5rem !important}
 [class*="st-key-abo_"] [data-testid="stColumn"],[class*="st-key-amp_"] [data-testid="stColumn"]{flex:0 0 auto !important;width:auto !important;min-width:0 !important}

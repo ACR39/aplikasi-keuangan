@@ -263,3 +263,6 @@ Menu **Pantau > Amplop**: buat amplop dengan jatah per bulan dan pilih kategori 
 
 ## Foto struk
 Foto struk sudah bisa disimpan: unggah di form struk atau form Catat transaksi, lalu dibuka dari Daftar transaksi.
+
+## Definisi kategori
+Setiap kategori dan sub kategori punya kolom **Definisi** (opsional, maksimal 300 huruf) di form Tambah dan Ubah di Data master > Kategori, misalnya "Es Krim & Dessert: jajanan manis yang sifatnya dingin, lembut, atau berkuah manis". Definisi tampil di bawah nama di daftar kategori dan sebagai keterangan di bawah pilihan kategori saat mencatat. Definisi juga dikirim ke AI (baca struk, kategorisasi mutasi, tangkap cepat) sebagai patokan memilih kategori. Definisi ikut tersimpan di cadangan JSON; ekspor Excel belum memuatnya.

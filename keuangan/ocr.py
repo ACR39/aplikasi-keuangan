@@ -160,6 +160,11 @@ def _kecilkan(mentah: bytes, sisi: int = 1600) -> bytes:
 
 
 # ---------------------------------------------------------------- Claude
+def _arti() -> dict:
+    from keuangan.bantu import arti_kategori
+    return arti_kategori()
+
+
 def _perintah(kategori: list) -> str:
     return (
         "Ini foto struk belanja di Indonesia. Ekstrak isinya sebagai JSON SAJA (tanpa penjelasan, tanpa markdown) dengan bentuk:\n"
@@ -173,6 +178,7 @@ def _perintah(kategori: list) -> str:
         "voucher/diskon pesanan masuk ke potongan, biaya antar dan layanan masuk ke biaya. Bila harga dicoret, pakai angka akhir yang dibayar. "
         "Perbaiki singkatan nama barang jadi nama yang mudah dibaca. "
         f"kategori: pilih SATU dari daftar ini yang paling cocok, atau null bila ragu: {json.dumps(kategori, ensure_ascii=False)}. "
+        + (f"Arti tiap kategori (patokan memilih): {json.dumps(_arti(), ensure_ascii=False)}. " if _arti() else "") +
         "Jangan menebak data yang tidak terlihat; pakai null.")
 
 

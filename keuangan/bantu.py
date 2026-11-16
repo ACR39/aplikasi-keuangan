@@ -557,7 +557,7 @@ def ringkas_teks(t: dict) -> str:
             + (f' ("{t["catatan"]}")' if t.get("catatan") else ""))
 
 
-def pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_sub: bool = True, kosong: bool = False) -> str:
+def _pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_sub: bool = True, kosong: bool = False) -> str:
     """Kotak bertingkat: Kategori, lalu Sub kategori, lalu Sub-sub kategori (bila ada). Kembalikan id kategori efektif
     (yang terdalam dipilih). Dipakai di luar st.form agar tingkat bawahnya ikut berubah."""
     utama = [k["id"] for k in kategori_utama(jenis)]
@@ -603,6 +603,22 @@ def pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_su
     sub2 = st.selectbox("Sub-sub kategori", pilihan2, index=pilihan2.index(awal2) if awal2 in pilihan2 else 0,
                         format_func=lambda i: nama_sub2.get(i, "(dihapus)"), key=f"{kunci}_sub2")
     return sub2 or sub
+
+
+def pilih_kategori(kunci: str, jenis: str, awal: str = "", kolom=None, tampil_sub: bool = True, kosong: bool = False) -> str:
+    """Kotak bertingkat seperti `_pilih_kategori`, ditambah definisi kategori yang terpilih (bila ada) di bawahnya."""
+    hasil = _pilih_kategori(kunci, jenis, awal, kolom, tampil_sub, kosong)
+    for i in reversed(rantai(hasil) if hasil and kat_dari(hasil) else []):
+        k = kat_dari(i)
+        if k and k.get("definisi"):
+            st.caption(f"{k['nama']}: {k['definisi']}")
+            break
+    return hasil
+
+
+def arti_kategori() -> dict:
+    """{nama lengkap kategori: definisi} untuk kategori yang punya definisi; dikirim ke AI agar tebakan kategorinya tepat."""
+    return {nama_kat(k["id"]): k["definisi"] for k in D["kategori"] if k.get("definisi")}
 
 
 def atur_kategori(kunci: str, id_: str):
