@@ -270,7 +270,7 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
             hs = int(round(jumlah / qty))
         else:
             hs = jumlah
-    if jumlah <= 0:
+    if jumlah <= 0 and not (awal.get("gratis") and jenis == "keluar"):  # barang gratis (hadiah, bonus promo) memang bernilai 0
         st.error("Jumlah harus lebih dari nol." if not b else "Banyaknya dan harga satuan harus lebih dari nol.")
         return None
     if jenis == "transfer" and dari == ke:
@@ -685,6 +685,8 @@ def _tampil_tx(t: dict, edit_id, hapus_id, foto: bool = True):
                 if isi["mu"]:
                     t.update({"mu": isi["mu"], "mu_jumlah": isi["mu_jumlah"], "kurs": isi["kurs"]})
                     _ingat_kurs(isi)
+                if t.get("gratis") and t["jumlah"] > 0:
+                    t.pop("gratis", None)  # sudah diberi harga: bukan barang gratis lagi
                 if t["jenis"] != "transfer":
                     t["kategori"] = isi["kategori"]
                     isi["struk"] = proses_foto(isi["struk_berkas"], isi["struk_hapus"], t.get("struk", ""), "struk")
