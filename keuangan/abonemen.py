@@ -87,7 +87,7 @@ def halaman_langganan():
     ro = hanya_lihat()
     edit = next((a for a in D["abonemen"] if a["id"] == st.session_state.get("edit_abo")), None)
     if not ro:
-        with st.expander("Ubah langganan" if edit else "Tambah langganan", expanded=bool(edit) or not D["abonemen"]):
+        with st.container():
             _form(edit)
             if edit:
                 st.button("Batal", key="batal_abo", on_click=atur, args=("edit_abo", None))

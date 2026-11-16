@@ -102,7 +102,7 @@ def halaman_acara():
     ro = hanya_lihat()
     edit = next((a for a in D["acara"] if a["id"] == st.session_state.get("edit_acara")), None)
     if not ro:
-        with st.expander("✏️ Ubah acara" if edit else "➕ Tambah acara", expanded=bool(edit) or not D["acara"]):
+        with st.container():
             _form_acara(edit)
             if edit:
                 st.button("Batal", key="batal_acara", on_click=atur, args=("edit_acara", None))

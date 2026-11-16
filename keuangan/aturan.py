@@ -27,7 +27,7 @@ def halaman_aturan():
     st.caption("Kalau catatan memuat kata kunci, kategori terisi sendiri saat tangkap cepat dan impor mutasi. Dompet dan toko ikut terisi di tangkap cepat bila tidak disebut. "
                "Kata kunci yang lebih panjang menang. Catat transaksi lewat form lengkap tidak memakai aturan ini.")
     if not hanya_lihat():
-        with st.expander("➕ Tambah aturan", expanded=not daftar()):
+        with st.container():
             jenis = st.radio("Untuk", ["keluar", "masuk"], horizontal=True, format_func=lambda j: "Pengeluaran" if j == "keluar" else "Pemasukan", key=f"ar_jenis_{versi()}")
             with st.form(f"f_aturan_{versi()}_{jenis}", clear_on_submit=True):
                 kata = st.text_input("Kata kunci di catatan", placeholder="Contoh: gojek, indomaret, gaji")

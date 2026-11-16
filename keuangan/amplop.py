@@ -93,7 +93,7 @@ def halaman_amplop():
     ym = hari_ini().strftime("%Y-%m")
     edit = next((a for a in D["amplop"] if a["id"] == st.session_state.get("edit_amp")), None)
     if not ro:
-        with st.expander("Ubah amplop" if edit else "Tambah amplop", expanded=bool(edit) or not D["amplop"]):
+        with st.container():
             _form(edit)
             if edit:
                 st.button("Batal", key="batal_amp", on_click=atur, args=("edit_amp", None))
