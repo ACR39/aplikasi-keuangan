@@ -145,4 +145,7 @@ def halaman_tahun():
         st.caption(f"Hari paling boros: {fmt_iso(d['hari_boros'][0])} ({rp(d['hari_boros'][1])})")
     if d["terbesar"]:
         st.caption(f"Pengeluaran tunggal terbesar: {ringkas_teks(d['terbesar'])}")
-    st.download_button("Unduh laporan (HTML, bisa dicetak jadi PDF)", html_tahun(d).encode("utf-8"), file_name=f"laporan-{y}.html", mime="text/html", key="th_unduh")
+    from keuangan.pdf import html_ke_pdf
+    a, b = st.columns(2)
+    a.download_button("Unduh PDF", html_ke_pdf(html_tahun(d), f"Laporan {y}"), file_name=f"laporan-{y}.pdf", mime="application/pdf", key="th_unduh_pdf")
+    b.download_button("Unduh HTML", html_tahun(d).encode("utf-8"), file_name=f"laporan-{y}.html", mime="text/html", key="th_unduh")

@@ -18,7 +18,7 @@ from keuangan.tabungan import terkumpul
 from keuangan.tagihan import status_tagihan, tagihan_mendekat
 from keuangan.utang import jatuh_tempo_dekat, sisa
 
-SEKSI_BERANDA = [("ringkasan", "Ringkasan angka"), ("harian", "Jatah pengeluaran hari ini"), ("perhatian", "Perlu perhatian"), ("mingguan", "Ringkasan mingguan"), ("online", "Belanja online vs offline"), ("prakiraan", "Prakiraan akhir bulan"), ("dompet", "Saldo per dompet"),
+SEKSI_BERANDA = [("ringkasan", "Ringkasan angka"), ("harian", "Jatah pengeluaran hari ini"), ("gajian", "Sisa uang sampai gajian"), ("amplop", "Amplop bulan ini"), ("perhatian", "Perlu perhatian"), ("mingguan", "Ringkasan mingguan"), ("online", "Belanja online vs offline"), ("prakiraan", "Prakiraan akhir bulan"), ("dompet", "Saldo per dompet"),
                  ("anggaran", "Anggaran periode ini"), ("tabungan", "Target tabungan"), ("g_kategori", "Grafik pengeluaran per kategori"),
                  ("g_tren", "Grafik pemasukan dan pengeluaran"), ("teratas", "Toko dan barang teratas"), ("terakhir", "Transaksi terakhir")]
 
@@ -52,6 +52,10 @@ def _perhatian() -> list:
     baris += baris_perhatian()
     from keuangan.kendaraan import baris_perhatian as _kend
     baris += _kend()
+    from keuangan.abonemen import baris_perhatian as _abo
+    baris += _abo()
+    from keuangan.pengingat import baris_perhatian as _ingat
+    baris += _ingat()
     from keuangan.harga_naik import baris_perhatian as _naik
     baris += _naik()
     if teks_ringkas():
@@ -199,6 +203,12 @@ def halaman_beranda():
             lewat = hari_melewati(hari_ini().strftime("%Y-%m"))
             if lewat:
                 st.caption(f"Bulan ini {lewat} hari melewati batas harian.")
+    if "gajian" not in sembunyi:
+        from keuangan.gajian import kartu_gajian
+        kartu_gajian()
+    if "amplop" not in sembunyi:
+        from keuangan.amplop import kartu_amplop
+        kartu_amplop()
     if "perhatian" not in sembunyi:
         with st.container(key="kartu_perhatian"):
             st.markdown("**Perlu perhatian**")

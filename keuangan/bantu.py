@@ -464,7 +464,7 @@ def kolom_harian(nilai: list, label: list) -> str:
     for v, lb in zip(nilai, label):
         tinggi = round(v / puncak * 100) if puncak and v else 0
         kelas = "kol top" if puncak and v == puncak else "kol"
-        isi += (f'<div class="kc"><div class="kb"><i class="{kelas}" style="height:{max(tinggi, 3) if v else 0}%" title="{e(label_rp(v))}"></i></div>'
+        isi += (f'<div class="kh"><div class="kb"><i class="{kelas}" style="height:{max(tinggi, 3) if v else 0}%" title="{e(label_rp(v))}"></i></div>'
                 f'<span>{e(lb)}</span></div>')
     return f'<div class="kolom">{isi}</div>'
 

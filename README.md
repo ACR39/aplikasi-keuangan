@@ -22,7 +22,7 @@ Menu dirapikan jadi 15 halaman. Beberapa halaman punya pilihan bagian (pil) di b
 
 Kategori punya sampai tiga tingkat: kategori utama (Kendaraan), sub kategori (Bahan bakar), dan sub-sub kategori (Pertamax). Transaksi memakai tingkat terdalam yang dipilih. Anggaran, laporan, dan filter pada kategori utama otomatis mencakup semua sub kategorinya. Data lama tanpa sub kategori tetap terbuka (kategori lama jadi kategori utama).
 
-Beranda: pilih periode Minggu, Bulan, Tahun, atau Tanggal custom. Di atas ada satu kartu saldo utama (Total saldo besar, lalu Pemasukan, Pengeluaran, dan Selisih periode itu). Angka periode dibandingkan dengan periode sebelumnya, ada rata-rata pengeluaran per hari, grafik harian atau bulanan, serta toko dan barang dengan belanja terbesar.
+Beranda: pilih periode Minggu, Bulan, Tahun, atau Tanggal custom. Di atas ada satu kartu saldo utama (Total saldo besar, lalu Pemasukan, Pengeluaran, dan Selisih periode itu). Ringkasan mingguan menampilkan angka besar, diagram batang per hari (hari terboros disorot), dan batang per kategori; Belanja online vs offline memakai cincin persentase; Prakiraan akhir bulan memakai batang sudah keluar dan perkiraan sisa. Angka periode dibandingkan dengan periode sebelumnya, ada rata-rata pengeluaran per hari, grafik harian atau bulanan, serta toko dan barang dengan belanja terbesar.
 
 Rincian barang: barcode (bisa dicari langsung di halaman Catat, cocok dengan pembaca barcode USB/Bluetooth), merek, ukuran, tanggal kedaluwarsa (muncul di Perlu perhatian saat tinggal 14 hari), barang langganan, catatan, dan foto. Rincian toko: tautan peta, jam buka, telepon, catatan, favorit, dan foto. Transaksi bisa dilampiri foto struk. Laporan > Barang punya tabel Harga per toko.
 
@@ -180,7 +180,7 @@ Tanggal `2026-03-15` atau `15/03/2026`; angka boleh `1.250.000`. Contoh file bis
 - **Mode gelap otomatis**: bila belum pernah memilih, tema mengikuti perangkat. Pilihan manual tetap diingat. Aplikasi sudah bisa dipasang ke layar utama (PWA) lewat menu peramban "Tambahkan ke layar utama".
 - **Kunci PIN**: Pengaturan > Tampilan > Kunci PIN (4–12 angka, per akun, disimpan sebagai hash). Aplikasi terkunci saat dibuka ulang di perangkat yang masih tersambung, atau lewat tombol Kunci di menu samping. 5 salah = tunggu 60 detik.
 - **Harga per satuan**: Laporan > Per satuan membandingkan harga per 100 g / 100 ml / buah antar barang sekategori dari "Ukuran / isi kemasan" (contoh: 85 g, 1 liter, 2 x 250 ml, isi 12).
-- **Laporan akhir tahun**: Laporan > Akhir tahun. Ringkasan, grafik per bulan, kategori dan toko teratas, barang tersering, rekor, perbandingan dengan tahun lalu, dan unduhan HTML (cetak ke PDF dari peramban).
+- **Laporan akhir tahun**: Laporan > Akhir tahun. Ringkasan, grafik per bulan, kategori dan toko teratas, barang tersering, rekor, perbandingan dengan tahun lalu, dan unduhan PDF langsung atau HTML.
 
 ## Pencatatan lebih cepat dan pemeriksaan data
 
@@ -219,7 +219,7 @@ Kategori dan jenis toko memakai ikon glyph satu warna (Material Design Icons, li
   ```
   Setiap cadangan (otomatis maupun manual) juga ditulis ke repo itu, maksimal 10 terakhir. Bila salinan kedua gagal, cadangan utama tetap jadi dan muncul peringatan.
 - **Laporan > Kuartal dan tahun**: pengeluaran per kategori utama untuk satu kuartal atau tahun, dibanding periode yang sama tahun lalu (atau kuartal sebelumnya), lengkap dengan selisih dan persen.
-- **Laporan > Bulanan > unduh laporan**: satu halaman HTML berisi ringkasan, kategori, toko teratas, pengeluaran terbesar, dan harga naik; buka lalu cetak ke PDF dari browser untuk dibagikan.
+- **Laporan > Bulanan > unduh laporan**: unduh PDF langsung atau HTML, berisi ringkasan, kategori, toko teratas, pengeluaran terbesar, dan harga naik.
 - **Anggaran > Saran batas dari riwayat**: rata-rata pengeluaran kategori utama dari maksimal 3 bulan penuh terakhir, dibulatkan ke atas ke Rp 10.000. Angkanya bisa diubah sebelum dibuat.
 - **Pemeriksa data** kini juga menandai kemungkinan transaksi ganda (tanggal, jenis, jumlah, dompet, toko, dan catatan sama). Yang paling awal dicatat dianggap asli; sisanya bisa dipindah ke Tempat sampah satu per satu. Transaksi dalam struk dan transfer tidak diperiksa.
 - **Aturan kategori** (Pengaturan > Data master > Aturan kategori): kata kunci di catatan mengisi kategori otomatis, dan dompet atau toko bila diatur. Dipakai di tangkap cepat dan impor mutasi; kata kunci yang lebih panjang menang. Form Catat transaksi lengkap tidak memakainya.
@@ -248,3 +248,18 @@ Untuk promo seperti beli 3 cuma Rp 5.000, isi **Banyaknya 3** dan **Total bayar 
 
 ## Koreksi yang dipelajari
 Di panel Koreksi yang sudah dipelajari, tiap koreksi punya tombol 🗑 untuk melupakan satu saja; Lupakan semua koreksi tetap ada.
+
+## Pengingat belum mencatat dan kategori lebih boros
+Di **Perlu perhatian** (Beranda) muncul dua peringatan baru. Pertama, bila sudah 2 hari atau lebih tanpa transaksi (atau malam setelah pukul 18.00 hari ini belum ada catatan). Kedua, bila satu kategori utama bulan ini sampai tanggal yang sama sudah lebih dari 30% dan Rp 50.000 di atas rata-rata 3 bulan terakhir; hanya kategori yang punya data di minimal 2 dari 3 bulan itu. Kode: `keuangan/pengingat.py`.
+
+## Sisa uang sampai gajian
+Di Beranda, isi tanggal gajian lewat kartu **Sisa uang sampai gajian**. Aplikasi menghitung saldo semua dompet aktif (tanpa kartu kredit) dikurangi tagihan aktif yang jatuh tempo sebelum gajian, dibagi sisa hari. Bila laju pengeluaran 14 hari terakhir lebih besar, muncul perkiraan tanggal uang habis. Bagian ini bisa disembunyikan di menu Tampilan. Kode: `keuangan/gajian.py`.
+
+## Langganan
+Menu **Pantau > Langganan** mencatat langganan berbayar (nama, biaya, ditagih tiap minggu, bulan, 3 bulan atau tahun, tanggal habis atau perpanjangan, perpanjang otomatis atau tidak). Ada total per bulan dan per tahun, tombol Perpanjang (geser tanggal ke periode berikutnya), Hentikan, dan pengingat di Beranda 7 hari sebelum jatuh tempo. Ini catatan masa berlaku saja; pembayarannya dicatat sebagai transaksi biasa atau lewat Transaksi berulang. Kode: `keuangan/abonemen.py`, data `D["abonemen"]`.
+
+## Amplop
+Menu **Pantau > Amplop**: buat amplop dengan jatah per bulan dan pilih kategori utama yang memotongnya (satu kategori hanya bisa di satu amplop). Pengeluaran kategori itu mengurangi sisa amplop. Opsi "bawa sisa" menambahkan sisa tiap bulan (maksimal 12 bulan ke belakang, kelebihan pakai tidak dibawa). Halaman menampilkan pemasukan bulan ini, total jatah, dan yang belum dibagi; kartu **Amplop bulan ini** tampil di Beranda. Kode: `keuangan/amplop.py`, data `D["amplop"]`.
+
+## Foto struk
+Foto struk sudah bisa disimpan: unggah di form struk atau form Catat transaksi, lalu dibuka dari Daftar transaksi.

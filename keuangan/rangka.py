@@ -30,7 +30,7 @@ from keuangan.utang import halaman_utang
 from keuangan.inti import pasang_css
 
 UTAMA = ["Pencarian", "Catat transaksi", "Daftar belanja", "Daftar transaksi"]
-PANTAU = ["Anggaran", "Transaksi berulang", "Target tabungan", "Utang-piutang", "Acara", "Kendaraan", "Laporan"]
+PANTAU = ["Anggaran", "Transaksi berulang", "Target tabungan", "Utang-piutang", "Acara", "Kendaraan", "Langganan", "Amplop", "Laporan"]
 PENGATURAN_MENU = ["Tampilan", "Data master", "AI dan baca struk", "Perawatan data", "Data dan cadangan"]
 EDIT_SAJA = ("Catat transaksi",)
 # Halaman gabungan: nama halaman -> [(label bagian, nama halaman lama, hanya admin)]. Nama lama tetap dikenali sebagai pintasan (lihat ALIAS).
@@ -46,7 +46,7 @@ ALIAS = {lama: (hal, label) for hal, bagian in GABUNGAN.items() for label, lama,
 IKON = {"Beranda": "home", "Pencarian": "search", "Catat transaksi": "add_circle", "Daftar transaksi": "receipt_long", "Barang dan produk": "inventory_2", "Toko dan tempat beli": "storefront", "Platform beli online": "delivery_dining", "Asisten AI": "auto_awesome", "Privasi AI": "shield", "Daftar belanja": "shopping_cart", "Riwayat aktivitas": "history",
         "Data master": "database", "Jenis toko": "category", "AI dan baca struk": "document_scanner", "Perawatan data": "build", "Data dan cadangan": "backup",
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Transaksi berulang": "event_repeat", "Target tabungan": "savings",
-        "Utang-piutang": "handshake", "Acara": "label", "Kendaraan": "directions_car", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner", "Pemeriksa data": "fact_check",
+        "Utang-piutang": "handshake", "Acara": "label", "Kendaraan": "directions_car", "Langganan": "subscriptions", "Amplop": "savings", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner", "Pemeriksa data": "fact_check",
         "Harga naik": "trending_up", "Aturan kategori": "rule", "Cocokkan saldo": "balance", "Tutup buku": "lock", "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
 LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">'
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
@@ -83,6 +83,8 @@ DESKRIPSI = {
     "Utang-piutang": "Catat utang dan piutang beserta cicilannya. Bisa ikut tercatat di saldo dompet.",
     "Laporan": "Statistik bulanan, tren 12 bulan, arus tiap dompet, belanja per barang dan toko, serta tanya data dan ringkasan bulanan dengan AI.",
     "Acara": "Label lintas kategori untuk satu keperluan (liburan, renovasi, lebaran): lihat total biaya dan rinciannya di satu tempat.",
+    "Langganan": "Catatan langganan berbayar: total per bulan dan per tahun, kapan habis atau diperpanjang, dengan pengingat sebelum jatuh tempo.",
+    "Amplop": "Bagi pemasukan ke amplop (makan, transport, tabungan): tiap pengeluaran memotong amplopnya, sisa terlihat jelas.",
     "Kendaraan": "Catat kilometer dan liter saat isi BBM, lihat km per liter dan biaya per km, dan dapatkan pengingat servis dan pajak.",
     "Tampilan": "Pilih bagian Beranda yang ditampilkan.",
     "Pemeriksa data": "Cari transaksi yang janggal (barang kosong, kategori tak cocok, jumlah tak sinkron) dan perbaiki dengan satu ketukan.",
@@ -258,6 +260,12 @@ def tampilkan_isi(halaman):
     elif halaman == "Acara":
         from keuangan.acara import halaman_acara
         halaman_acara()
+    elif halaman == "Langganan":
+        from keuangan.abonemen import halaman_langganan
+        halaman_langganan()
+    elif halaman == "Amplop":
+        from keuangan.amplop import halaman_amplop
+        halaman_amplop()
     elif halaman == "Kendaraan":
         from keuangan.kendaraan import halaman_kendaraan
         halaman_kendaraan()

@@ -119,7 +119,10 @@ def html_bulan(ym: str) -> str:
 
 
 def tombol_unduh_bulan(ym: str):
-    st.download_button("⬇ Laporan bulan ini (HTML, bisa dicetak ke PDF)", html_bulan(ym).encode("utf-8"), file_name=f"laporan-{ym}.html", mime="text/html", key=f"unduh_bln_{ym}")
+    from keuangan.pdf import html_ke_pdf
+    a, b = st.columns(2)
+    a.download_button("Unduh PDF", html_ke_pdf(html_bulan(ym), f"Laporan {ym}"), file_name=f"laporan-{ym}.pdf", mime="application/pdf", key=f"unduh_pdf_bln_{ym}")
+    b.download_button("Unduh HTML", html_bulan(ym).encode("utf-8"), file_name=f"laporan-{ym}.html", mime="text/html", key=f"unduh_bln_{ym}")
 
 
 # ---------------------------------------------------------------- saran anggaran dari riwayat

@@ -50,7 +50,7 @@ CSS_GELAP = """
 .hero-val,.hero-sv{color:#f1f5f9 !important}
 .mg-val,.lg b{color:#f1f5f9 !important}.lg .lab,.lg small{color:#94a3b8 !important}
 .rt-t{fill:#f1f5f9 !important}.kb{background:#1d2a3d !important}.kb i{background:#2f6f56 !important}.kb i.top{background:#5ccf9c !important}
-.kc span,.lg-ket{color:#94a3b8 !important}.stk{background:#1d2a3d !important}.stk i.a,.lg-ket s.a{background:#5ccf9c !important}.stk i.b,.lg-ket s.b{background:#2f6f56 !important}
+.kh span,.lg-ket{color:#94a3b8 !important}.stk{background:#1d2a3d !important}.stk i.a,.lg-ket s.a{background:#5ccf9c !important}.stk i.b,.lg-ket s.b{background:#2f6f56 !important}
 .hero-val.g,.hero-sv.g{color:#4ade80 !important}.hero-val.m,.hero-sv.m{color:#f87171 !important}
 .sub,.itm .mt,.itm .cat,.itm .qt span{color:#9aa7b8 !important}
 .perhatian{border-bottom-color:#2a3547 !important}
@@ -188,10 +188,10 @@ CSS_TERANG = """
 .ring{width:7.2rem;height:7.2rem;flex:0 0 auto}.rg{fill:none;stroke-width:4.2}.rg.b{stroke:#34a874}.rg.a{stroke:#3b82c4}
 .rt-t{font-size:6.2px;font-weight:800;fill:#111827}
 .lg.v{flex-direction:column;gap:.7rem;margin:0;flex:1 1 auto}
-.kolom{display:flex;gap:.45rem;margin:.7rem 0 .8rem;height:6.6rem !important;min-height:6.6rem}.kc{flex:1 1 0;min-width:0;text-align:center}
-.kc{display:block !important;height:6.6rem !important}.kb{position:relative;display:block !important;width:100% !important;height:4.6rem;background:#f1f4f8;border-radius:8px;overflow:hidden}
+.kolom{display:flex;gap:.45rem;margin:.7rem 0 .8rem;height:6.6rem !important;min-height:6.6rem}.kh{flex:1 1 0;min-width:0;text-align:center}
+.kh{display:block !important;height:6.6rem !important}.kb{position:relative;display:block !important;width:100% !important;height:4.6rem;background:#f1f4f8;border-radius:8px;overflow:hidden}
 .kb i{display:block;position:absolute;left:0;right:0;bottom:0;background:#9fd3b9}.kb i.top{background:#256b4a}
-.kc span{display:block;font-size:.72rem;font-weight:700;color:#6b7280;margin-top:.25rem}
+.kh span{display:block;font-size:.72rem;font-weight:700;color:#6b7280;margin-top:.25rem}
 .stk{display:flex;height:14px;border-radius:999px;overflow:hidden;margin:.5rem 0 .4rem;background:#e8ecf1}
 .stk i{display:block;height:100%}.stk i.a{background:#256b4a}.stk i.b{background:#9fd3b9}
 .lg-ket{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-size:.78rem;color:#6b7280;margin-bottom:.4rem}
@@ -396,6 +396,15 @@ details.rinci > summary{cursor:pointer;list-style:none}details.rinci > summary::
 [class*="st-key-aksi_"]{margin-top:.2rem}
 [class*="st-key-tx_"] .rt .mt{line-height:1.35}
 [class*="st-key-tx_"] .rt .nom{font-size:1rem;padding-top:.1rem}
+/* baris kategori (Pengaturan > Kategori): nama di baris sendiri, tombol di baris bawahnya, supaya nama tidak terpotong di HP */
+[class*="st-key-tx_kt_"][class*="st-key-tx_kt_"] [data-testid="stHorizontalBlock"]{flex-wrap:wrap !important;gap:.5rem !important;align-items:center}
+[class*="st-key-tx_kt_"][class*="st-key-tx_kt_"] [data-testid="stColumn"]:first-child{flex:1 1 100% !important;min-width:100% !important}
+[class*="st-key-tx_kt_"] .rt{align-items:center;padding-bottom:.9rem}
+[class*="st-key-tx_kt_"] .rt .mt{flex:0 0 auto;white-space:nowrap;margin:0}
+.statcard .sc-val{font-size:clamp(.95rem,4.6vw,1.35rem) !important;white-space:nowrap}
+/* langganan dan amplop: tombol tetap sebaris, tidak menumpuk satu per satu di HP */
+[class*="st-key-abo_"] [data-testid="stHorizontalBlock"],[class*="st-key-amp_"] [data-testid="stHorizontalBlock"]{flex-direction:row !important;flex-wrap:wrap !important;gap:.5rem !important}
+[class*="st-key-abo_"] [data-testid="stColumn"],[class*="st-key-amp_"] [data-testid="stColumn"]{flex:0 0 auto !important;width:auto !important;min-width:0 !important}
 [class*="st-key-aksi_"] [data-testid="stHorizontalBlock"]{gap:.5rem !important;justify-content:flex-start}
 [class*="st-key-aksi_"] [data-testid="stColumn"]:first-child,[class*="st-key-aksi_"] [data-testid="stColumn"]{flex:0 0 auto !important;width:auto !important}
 [class*="st-key-bayar_"] button{background:#256b4a !important;border-color:#256b4a !important;color:#fff !important;font-weight:600}
@@ -614,6 +623,8 @@ def data_kosong() -> dict:
         "anggaran": [],   # [{"id","kategori","batas"}]  batas per bulan, berlaku tiap bulan
         "tagihan": [],    # [{"id","nama","jumlah","kategori","dompet","tiap","berikut","catatan","aktif"}]
         "acara": [],      # [{"id","nama","mulai","selesai","catatan","aktif"}]  label acara/proyek; transaksi menyimpan id-nya di "acara"
+        "abonemen": [],   # catatan langganan: [{"id","nama","jumlah","tiap","berikut","otomatis","aktif","catatan"}]
+        "amplop": [],     # [{"id","nama","jatah","kategori":[id utama],"bawa"}]
         "kendaraan": [],  # [{"id","nama","jenis","plat","odo_awal","pajak","servis":[{"id","nama","tiap_km","tiap_bulan","km_terakhir","tgl_terakhir"}]}]; transaksi BBM memakai "kendaraan","odo","liter","sebagian"(true = isi tidak penuh)
         "tabungan": [],   # [{"id","nama","target","tenggat","catatan","setoran":[{"id","tgl","jumlah","catatan"}]}]
         "utang": [],      # [{"id","arah"("utang"|"piutang"),"orang","jumlah","tgl","tenggat","catatan","bayar":[{"id","tgl","jumlah"}]}]
