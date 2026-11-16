@@ -10,3 +10,4 @@ pytesseract>=0.3.10
 zxing-cpp>=2.2
 python-calamine>=0.2
 reportlab>=4.0
+pypdfium2>=4.30

@@ -8,7 +8,7 @@ from keuangan.tutup_buku import tolak
 from keuangan.bantu import (
     atur_kategori,
     barang_dalam, barang_dari, f_barang, perbarui_harga_barang, teks_barang,
-    f_dompet, f_kat, turunan, harga_normal_barang, tampil_peringatan_harga, peringatan_harga, salin_transaksi, pilih_kategori, kolom_foto, proses_foto, kat_dari, f_toko, toko_dari, teks_toko, kunci_urut, akar,
+    f_dompet, f_kat, turunan, harga_normal_barang, tampil_peringatan_harga, peringatan_harga, teks_harga_toko, salin_transaksi, pilih_kategori, kolom_foto, proses_foto, kat_dari, f_toko, toko_dari, teks_toko, kunci_urut, akar,
     atur, baris_transaksi, catat, dompet_aktif, dompet_dari, kat_pertama, kategori_jenis, nama_dompet, nama_kat,
     ringkas_teks, info_diskon, e, selesai_simpan, tambah_transaksi, versi, hapus_foto_bebas, daftar_bulan, deretan_stat, kartu_stat,
     f_platform, nama_platform, anak_dari,
@@ -176,6 +176,8 @@ def form_transaksi(kunci: str, jenis: str, awal: dict | None = None, tombol: str
     if b:
         hn_riwayat = harga_normal_barang(brg)
         st.caption(f"Harga terakhir {rp(b.get('harga') or 0)}" + (f" · harga normal biasanya {rp(hn_riwayat)}" if hn_riwayat else ""))
+        if jenis == "keluar" and (kt := teks_harga_toko(brg, toko)):
+            st.caption(kt)
     with st.form(f"{kunci}_f_{brg}_{toko}", clear_on_submit=False):
         c1, c2 = st.columns(2)
         tgl = c1.date_input("Tanggal", value=iso_ke_date(awal.get("tgl")) or hari_ini(), min_value=TGL_MIN, max_value=TGL_MAX,
@@ -300,8 +302,8 @@ def form_struk():
     ocr = st.session_state.get("struk_ocr")
     n_up = st.session_state.get("struk_up_n", 0)
     mesin = mesin_tersedia()
-    berkas = st.file_uploader("Foto struk, opsional", type=["jpg", "jpeg", "png", "webp"], key=f"f_struk_up_{n_up}",
-                              help="Foto diperkecil otomatis. Di HP bisa langsung memotret. Foto yang sama dilampirkan ke struk ini.")
+    berkas = st.file_uploader("Foto atau PDF struk, opsional", type=["jpg", "jpeg", "png", "webp", "pdf"], key=f"f_struk_up_{n_up}",
+                              help="Bisa foto atau PDF faktur (maks 3 halaman pertama dibaca). Di HP bisa langsung memotret. Berkas yang sama dilampirkan ke struk ini.")
     if berkas is not None and mesin:
         if st.button("📷 Baca isi struk dari foto ini", key=f"{base}_baca"):
             try:
@@ -578,7 +580,7 @@ def halaman_catat():
             isi = form_transaksi(kunci, jenis, awal=awal_salin, tombol="Simpan transaksi", bersih=True)
         if isi and not tolak(isi["tgl"]):
             struk = proses_foto(isi["struk_berkas"], False, "", "struk")
-            ph = peringatan_harga(isi["barang"], isi["harga_satuan"]) if jenis == "keluar" and isi["barang"] else None
+            ph = peringatan_harga(isi["barang"], isi["harga_satuan"], isi.get("toko", "")) if jenis == "keluar" and isi["barang"] else None
             t = tambah_transaksi(jenis, isi["tgl"], isi["jumlah"], isi["dompet"], isi["kategori"], isi["catatan"],
                                  isi["ke"], isi["biaya"], barang=isi["barang"], qty=isi["qty"], harga_satuan=isi["harga_satuan"],
                                  harga_normal=isi["harga_normal"], toko=isi["toko"], platform=isi["platform"], lokasi=isi["lokasi"], waktu=isi["waktu"], struk=struk,
@@ -832,7 +834,7 @@ def _kartu_struk(isi: list, edit_id, hapus_id):
             else:
                 st.button("➕ Tambah barang yang terlupa", key=f"tbs_buka_{g}", on_click=atur, args=("tbs_buka", g))
             def tab_foto():
-                f = st.file_uploader("Foto struk", type=["jpg", "jpeg", "png", "webp"], key=f"fs_{g}_{versi()}")
+                f = st.file_uploader("Foto struk", type=["jpg", "jpeg", "png", "webp", "pdf"], key=f"fs_{g}_{versi()}")
                 a1, a2 = st.columns(2)
                 if a1.button("Simpan foto", key=f"fs_ok_{g}_{versi()}", disabled=f is None, type="primary"):
                     _simpan_foto_struk(g, f, False)

@@ -152,6 +152,8 @@ def angka(s) -> int:
 
 def _kecilkan(mentah: bytes, sisi: int = 1600) -> bytes:
     from PIL import Image, ImageOps
+    from keuangan.pdf_baca import gambar_dari
+    mentah = gambar_dari(mentah)
     im = ImageOps.exif_transpose(Image.open(io.BytesIO(mentah))).convert("RGB")
     im.thumbnail((sisi, sisi))
     out = io.BytesIO()

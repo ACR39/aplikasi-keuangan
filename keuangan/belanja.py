@@ -122,7 +122,7 @@ def _panel_selesai(l: dict):
     awal_toko = l.get("toko") if l.get("toko") in tops else ""
     toko = c4.selectbox("Toko", tops, index=tops.index(awal_toko), format_func=f_toko(), key=f"{base}_toko")
     lokasi = st.text_input("Lokasi", value=(toko_dari(toko) or {}).get("lokasi", ""), max_chars=80, key=f"{base}_lok_{toko}")
-    berkas = st.file_uploader("Foto struk, opsional", type=["jpg", "jpeg", "png", "webp"], key=f"{base}_up")
+    berkas = st.file_uploader("Foto struk, opsional", type=["jpg", "jpeg", "png", "webp", "pdf"], key=f"{base}_up")
     a, b, _ = st.columns([1.3, 1, 3])
     if a.button("Catat sebagai transaksi", type="primary", key=f"{base}_catat"):
         baris, salah = baca_baris(df)

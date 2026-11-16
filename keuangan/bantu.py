@@ -275,7 +275,30 @@ def harga_normal_barang(id_) -> int:
     return 0
 
 
-def peringatan_harga(id_, harga: int):
+def harga_di_toko(id_, toko: str) -> dict | None:
+    """Riwayat harga satuan barang di satu toko: {biasa (median 5 terakhir), n, terakhir, tgl}, atau None bila belum pernah dibeli di sana."""
+    hs = [t for t in transaksi_barang(id_) if t.get("toko") == toko and t.get("harga_satuan") and t["jenis"] == "keluar"]
+    if not hs:
+        return None
+    urut = sorted(int(t["harga_satuan"]) for t in hs[:5])
+    return {"biasa": urut[len(urut) // 2], "n": len(hs), "terakhir": int(hs[0]["harga_satuan"]), "tgl": hs[0]["tgl"]}
+
+
+def teks_harga_toko(id_, toko: str) -> str:
+    """Satu kalimat harga biasa barang di toko terpilih, ditambah toko lain yang lebih murah. Kosong bila belum ada riwayat."""
+    if not id_ or not toko:
+        return ""
+    nama = (toko_dari(toko) or {}).get("nama", "toko ini")
+    h = harga_di_toko(id_, toko)
+    teks = f"Di {nama}: biasanya {rp(h['biasa'])} ({h['n']} kali dibeli, terakhir {rp(h['terakhir'])})." if h else f"Belum pernah dibeli di {nama}."
+    from keuangan.struk import termurah
+    tm = termurah(id_)
+    if tm and (not h or tm[1] < h["biasa"]) and tm[0] != nama:
+        teks += f" Termurah: {tm[0]} {rp(tm[1])}."
+    return teks
+
+
+def peringatan_harga(id_, harga: int, toko: str = ""):
     """Bandingkan harga yang sedang dicatat dengan riwayat barang itu.
     Kembalikan (tingkat, teks) dengan tingkat 'mahal' | 'murah' | 'info', atau None bila tidak ada yang perlu disampaikan."""
     harga = int(harga or 0)
@@ -284,14 +307,18 @@ def peringatan_harga(id_, harga: int):
         return None
     urut = sorted(riwayat)
     biasa = urut[len(urut) // 2]  # median pembelian terakhir
+    di = "biasanya"
+    ht = harga_di_toko(id_, toko) if toko else None
+    if ht and ht["n"] >= 2:  # cukup riwayat di toko ini: bandingkan dengan toko yang sama
+        biasa, di = ht["biasa"], f"biasanya di {(toko_dari(toko) or {}).get('nama', 'toko ini')}"
     pesan = []
     tingkat = "info"
     if harga >= biasa * 1.10:
         tingkat = "mahal"
-        pesan.append(f"Lebih mahal {round((harga - biasa) / biasa * 100)}% dari biasanya ({rp(biasa)}).")
+        pesan.append(f"Lebih mahal {round((harga - biasa) / biasa * 100)}% dari {di} ({rp(biasa)}).")
     elif harga <= biasa * 0.90:
         tingkat = "murah"
-        pesan.append(f"Lebih murah {round((biasa - harga) / biasa * 100)}% dari biasanya ({rp(biasa)}).")
+        pesan.append(f"Lebih murah {round((biasa - harga) / biasa * 100)}% dari {di} ({rp(biasa)}).")
     from keuangan.struk import termurah
     tm = termurah(id_)
     if tm and harga >= tm[1] * 1.05 and tm[1] < biasa:

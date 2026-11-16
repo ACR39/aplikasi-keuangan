@@ -147,6 +147,8 @@ def samarkan(teks: str, ketat: bool = False, kecuali: tuple | list = ()):
 def siapkan_gambar(mentah: bytes, atas: int = 0, bawah: int = 0) -> bytes:
     """Potong bagian atas dan bawah (persen), kecilkan, lalu simpan ulang sebagai JPEG. Penyimpanan ulang membuang EXIF termasuk lokasi GPS."""
     from PIL import Image, ImageOps
+    from keuangan.pdf_baca import gambar_dari
+    mentah = gambar_dari(mentah)
     im = ImageOps.exif_transpose(Image.open(io.BytesIO(mentah))).convert("RGB")
     w, h = im.size
     a, b = int(h * max(0, min(atas, 60)) / 100), int(h * (1 - max(0, min(bawah, 60)) / 100))

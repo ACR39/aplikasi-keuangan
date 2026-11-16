@@ -275,3 +275,15 @@ Merapikan hasil impor dari aplikasi lain: nama toko ganda digabung, kategori imp
 
 ## Banding harga (Laporan)
 Tabel barang × toko dari riwayat pembelian, sel termurah ditandai, plus selisih dari termurah dan toko yang paling sering termurah. Filter kategori; pilih harga terakhir atau rata-rata 3 bulan. Hanya barang yang dibeli di minimal dua toko.
+
+## Faktur PDF
+Di Catat transaksi (form struk), Daftar belanja, dan tab foto Kelola struk, berkas PDF bisa diunggah selain foto. PDF diubah jadi satu gambar (maks 3 halaman pertama) lalu dibaca mesin baca struk dan disimpan sebagai foto struk. Memakai `pypdfium2`.
+
+## Peringatan harga di toko
+Di Catat transaksi, setelah barang dan toko dipilih tampil harga biasa barang di toko itu (median 5 pembelian terakhir) dan toko termurah. Pesan setelah menyimpan membandingkan dengan toko yang sama bila sudah dibeli di sana minimal dua kali.
+
+## Hemat promo (Laporan)
+Total hemat dari diskon (harga normal dikurangi harga bayar, termasuk voucher) dan nilai barang gratis (perkiraan dari harga barang), per bulan, per barang, dan per toko.
+
+## Kalender (Pantau)
+Tampilan bulan berisi tagihan berulang, langganan, tenggat utang-piutang, gajian, serta pajak dan servis kendaraan, plus daftar per tanggal dan perkiraan total tagihan.

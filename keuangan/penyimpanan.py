@@ -163,6 +163,8 @@ def kecilkan_foto(mentah: bytes, jenis: str = "barang") -> bytes:
     """Perkecil dan kompres foto jadi JPEG supaya ringan disimpan."""
     from PIL import Image, ImageOps
     sisi, mutu = UKURAN_FOTO.get(jenis, UKURAN_FOTO["barang"])
+    from keuangan.pdf_baca import gambar_dari
+    mentah = gambar_dari(mentah)
     im = ImageOps.exif_transpose(Image.open(io.BytesIO(mentah)))
     if im.mode in ("RGBA", "LA", "P"):
         im = im.convert("RGBA")
