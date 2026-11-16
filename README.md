@@ -272,3 +272,6 @@ Di bawah tiap struk di Daftar transaksi kini hanya ada dua baris: tombol **Tamba
 
 ## Rapikan dengan AI (Perawatan data)
 Merapikan hasil impor dari aplikasi lain: nama toko ganda digabung, kategori impor (ikon 🏷️ abu-abu) dipindah ke kategori yang sudah ada, dan catatan transaksi dirapikan (catatan asli disimpan di `catatan_asli`). AI hanya memberi usulan; tidak ada yang berubah sebelum dicentang dan ditekan Terapkan. Perlu dinyalakan di Pengaturan > Privasi AI ("Rapikan hasil impor"). Catatan berisi banyak barang tidak dipecah otomatis.
+
+## Banding harga (Laporan)
+Tabel barang × toko dari riwayat pembelian, sel termurah ditandai, plus selisih dari termurah dan toko yang paling sering termurah. Filter kategori; pilih harga terakhir atau rata-rata 3 bulan. Hanya barang yang dibeli di minimal dua toko.

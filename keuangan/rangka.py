@@ -38,7 +38,7 @@ GABUNGAN = {
     "Data master": [("Barang dan produk", "Barang dan produk", False), ("Toko dan tempat beli", "Toko dan tempat beli", False), ("Jenis toko", "Jenis toko", False),
                     ("Platform beli online", "Platform beli online", False), ("Aturan kategori", "Aturan kategori", False), ("Dompet", "Dompet", True), ("Kategori", "Kategori", True)],
     "AI dan baca struk": [("Privasi AI", "Privasi AI", False), ("Mesin baca struk", "Mesin baca struk", False)],
-    "Laporan": [("Statistik", "Laporan", False), ("Harga naik", "Harga naik", False), ("Tanya dan ringkasan AI", "Asisten AI", False)],
+    "Laporan": [("Statistik", "Laporan", False), ("Harga naik", "Harga naik", False), ("Banding harga", "Banding harga", False), ("Tanya dan ringkasan AI", "Asisten AI", False)],
     "Perawatan data": [("Riwayat aktivitas", "Riwayat aktivitas", False), ("Tempat sampah", "Tempat sampah", False), ("Pemeriksa data", "Pemeriksa data", False), ("Rapikan dengan AI", "Rapikan dengan AI", False), ("Cocokkan saldo", "Cocokkan saldo", False), ("Tutup buku", "Tutup buku", False)],
     "Data dan cadangan": [("Ekspor dan impor", "Ekspor dan impor", False), ("Cadangan dan pulihkan", "Cadangan dan pulihkan", True)],
 }
@@ -47,7 +47,7 @@ IKON = {"Rapikan dengan AI": "auto_fix_high", "Beranda": "home", "Pencarian": "s
         "Data master": "database", "Jenis toko": "category", "AI dan baca struk": "document_scanner", "Perawatan data": "build", "Data dan cadangan": "backup",
         "Tempat sampah": "delete", "Anggaran": "donut_small", "Transaksi berulang": "event_repeat", "Target tabungan": "savings",
         "Utang-piutang": "handshake", "Acara": "label", "Kendaraan": "directions_car", "Langganan": "subscriptions", "Amplop": "savings", "Laporan": "bar_chart", "Tampilan": "tune", "Ekspor dan impor": "import_export", "Mesin baca struk": "document_scanner", "Pemeriksa data": "fact_check",
-        "Harga naik": "trending_up", "Aturan kategori": "rule", "Cocokkan saldo": "balance", "Tutup buku": "lock", "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
+        "Harga naik": "trending_up", "Banding harga": "compare_arrows", "Aturan kategori": "rule", "Cocokkan saldo": "balance", "Tutup buku": "lock", "Dompet": "account_balance_wallet", "Kategori": "sell", "Cadangan dan pulihkan": "backup"}
 LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">'
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
         '<stop offset="0" stop-color="#34a874"/><stop offset="1" stop-color="#1f6b49"/></linearGradient></defs>'
@@ -71,6 +71,7 @@ DESKRIPSI = {
     "Aturan kategori": "Kata kunci di catatan yang mengisi kategori (dan dompet atau toko) otomatis.",
     "Cocokkan saldo": "Samakan saldo dompet di aplikasi dengan saldo asli dan catat selisihnya.",
     "Tutup buku": "Tutup bulan yang sudah selesai setelah daftar periksa akhir bulan, lalu kunci dari perubahan.",
+    "Banding harga": "Harga satuan tiap barang di berbagai toko dalam satu tabel, dengan yang termurah ditandai.",
     "Harga naik": "Barang yang harga belinya naik dibanding pembelian sebelumnya, beserta toko yang pernah lebih murah.",
     "Asisten AI": "Tanya data dengan bahasa biasa dan minta ringkasan bulanan tertulis. Perhitungan dikerjakan di server ini; AI tidak melihat transaksimu.",
     "Privasi AI": "Nyalakan fitur AI satu per satu, lihat apa yang dikirim dan tidak dikirim ke penyedia, dan riwayat kiriman. Semua mati secara bawaan.",
@@ -235,6 +236,9 @@ def tampilkan_isi(halaman):
     elif halaman == "Tutup buku":
         from keuangan.tutup_buku import halaman_tutup_buku
         halaman_tutup_buku()
+    elif halaman == "Banding harga":
+        from keuangan.banding_harga import halaman_banding_harga
+        halaman_banding_harga()
     elif halaman == "Harga naik":
         from keuangan.harga_naik import halaman_harga_naik
         halaman_harga_naik()
