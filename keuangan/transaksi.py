@@ -831,15 +831,19 @@ def _kartu_struk(isi: list, edit_id, hapus_id):
                     st.button("Tutup", key=f"tbs_tutup_{g}", on_click=atur, args=("tbs_buka", None))
             else:
                 st.button("➕ Tambah barang yang terlupa", key=f"tbs_buka_{g}", on_click=atur, args=("tbs_buka", g))
-            panel_kelola(g, isi)
-            with st.expander("📷 Ganti foto struk" if ada else "📷 Tambah foto struk (untuk semua barang)"):
-                f = st.file_uploader("Foto struk", type=["jpg", "jpeg", "png", "webp"],
-                                     key=f"fs_{g}_{versi()}", label_visibility="collapsed")
+            def tab_foto():
+                f = st.file_uploader("Foto struk", type=["jpg", "jpeg", "png", "webp"], key=f"fs_{g}_{versi()}")
                 a1, a2 = st.columns(2)
                 if a1.button("Simpan foto", key=f"fs_ok_{g}_{versi()}", disabled=f is None, type="primary"):
                     _simpan_foto_struk(g, f, False)
                 if ada and a2.button("Hapus foto", key=f"fs_del_{g}_{versi()}"):
                     _simpan_foto_struk(g, None, True)
+
+            def tab_hapus():
+                st.caption("Semua barang di struk ini ikut dihapus dan masuk Tempat sampah, jadi masih bisa dikembalikan.")
+                st.button("Hapus seluruh struk", key=f"hapus_grup_{g}", on_click=atur, args=("hapus_grup", g))
+
+            panel_kelola(g, isi, tab_foto, tab_hapus, "Ganti foto" if ada else "Tambah foto")
             if st.session_state.get("hapus_grup") == g:
                 semua = [x for x in D["transaksi"] if x.get("grup") == g]
                 st.warning(f"Hapus seluruh struk ini ({len(semua)} barang, {rp(sum(int(x['jumlah']) for x in semua))})? "
@@ -848,8 +852,6 @@ def _kartu_struk(isi: list, edit_id, hapus_id):
                 if a.button("Ya, hapus struk", key=f"ya_grup_{g}", type="primary"):
                     _hapus_struk(g)
                 b.button("Batal", key=f"batal_grup_{g}", on_click=atur, args=("hapus_grup", None))
-            else:
-                st.button("🗑 Hapus seluruh struk", key=f"hapus_grup_{g}", on_click=atur, args=("hapus_grup", g))
 
 
 def _satuan_tampil(hasil: list) -> list:

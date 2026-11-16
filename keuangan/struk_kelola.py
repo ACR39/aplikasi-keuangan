@@ -70,11 +70,18 @@ def terapkan_potongan_struk(g: str, potongan: int) -> int:
     return sebelum - sum(x["jumlah"] for x in ts)
 
 
-def panel_kelola(g: str, isi: list):
+def panel_kelola(g: str, isi: list, tab_foto=None, tab_hapus=None, label_foto: str = "Foto"):
     """Panel 'Kelola struk' di kartu struk."""
     t0 = isi[0]
-    with st.expander("🧰 Kelola struk: pisah, gabung, biaya, potongan"):
-        tab1, tab2, tab3 = st.tabs(["Pisah atau pindah", "Gabung struk", "Biaya dan potongan"])
+    nama_tab = ["Pisah", "Gabung", "Biaya"] + ([label_foto] if tab_foto else []) + (["Hapus"] if tab_hapus else [])
+    with st.expander("Kelola struk"):
+        tab1, tab2, tab3, *tab_lain = st.tabs(nama_tab)
+        if tab_foto:
+            with tab_lain[0]:
+                tab_foto()
+        if tab_hapus:
+            with tab_lain[-1]:
+                tab_hapus()
         with tab1:
             st.caption("Pilih barang yang salah masuk struk ini, lalu pindahkan ke struk baru atau struk lain. Barang yang pindah ikut tanggal, jam, toko, dompet, dan foto struk tujuan.")
             pilih = {x["id"]: _label_barang(x) for x in isi}

@@ -266,3 +266,6 @@ Foto struk sudah bisa disimpan: unggah di form struk atau form Catat transaksi, 
 
 ## Definisi kategori
 Setiap kategori dan sub kategori punya kolom **Definisi** (opsional, maksimal 300 huruf) di form Tambah dan Ubah di Data master > Kategori, misalnya "Es Krim & Dessert: jajanan manis yang sifatnya dingin, lembut, atau berkuah manis". Definisi tampil di bawah nama di daftar kategori dan sebagai keterangan di bawah pilihan kategori saat mencatat. Definisi juga dikirim ke AI (baca struk, kategorisasi mutasi, tangkap cepat) sebagai patokan memilih kategori. Definisi ikut tersimpan di cadangan JSON; ekspor Excel belum memuatnya.
+
+## Kartu struk lebih ringkas
+Di bawah tiap struk di Daftar transaksi kini hanya ada dua baris: tombol **Tambah barang yang terlupa** dan panel **Kelola struk** dengan lima tab: Pisah, Gabung, Biaya, Foto, dan Hapus. Penghapusan tetap meminta konfirmasi dan barangnya masuk Tempat sampah.
