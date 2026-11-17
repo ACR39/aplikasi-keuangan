@@ -94,8 +94,8 @@ def _form_kat(kunci: str, jenis: str, awal: dict | None = None, induk: str = "",
                                                             if x["id"] not in ke_bawah and tingkat(x["id"]) + tg <= MAKS_TINGKAT]
             letak = st.selectbox("Letak", opsi, index=opsi.index(letak) if letak in opsi else 0,
                                  format_func=f_kat({"": "Kategori utama"}))
-        definisi = st.text_area("Definisi, opsional", value=awal.get("definisi", ""), max_chars=300, height=90,
-                                placeholder="Contoh: jajanan manis yang dingin, lembut, atau berkuah manis",
+        definisi = st.text_area("Definisi, opsional", value=awal.get("definisi", ""), max_chars=600, height=90,
+                                placeholder="Contoh: jajanan manis yang dingin, lembut, atau berkuah manis (maks 600 huruf)",
                                 help="Menjelaskan barang apa saja yang masuk ke sini. Tampil di daftar dan di bawah pilihan kategori, dan dipakai AI saat menebak kategori.")
         kirim = st.form_submit_button(tombol, type="primary")
     if not kirim:
